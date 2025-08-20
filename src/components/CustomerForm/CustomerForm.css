@@ -1,0 +1,15 @@
+/* CustomerForm styles */
+.customer-form-container input::placeholder {
+    color: #6c757d;
+    font-style: italic;
+    font-size: 0.875rem;
+}
+
+.customer-form-container input:focus::placeholder {
+    color: #adb5bd;
+}
+
+/* Make placeholder text more visible */
+.customer-form-container input[type="text"]::placeholder {
+    opacity: 0.7;
+}
