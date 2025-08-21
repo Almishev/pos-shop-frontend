@@ -2,7 +2,7 @@ import {useContext, useState} from "react";
 import {assets} from "../../assets/assets.js";
 import {AppContext} from "../../context/AppContext.jsx";
 import toast from "react-hot-toast";
-import {addItem} from "../../Service/ItemService.js";
+import {addItem, generateBarcode} from "../../Service/ItemService.js";
 
 const ItemForm = () => {
     const {categories, setItemsData, itemsData, setCategories} = useContext(AppContext);
@@ -13,12 +13,28 @@ const ItemForm = () => {
         categoryId: "",
         price: "",
         description: "",
+        barcode: "",
     });
 
     const onChangeHandler = (e) => {
         const value = e.target.value;
         const name = e.target.name;
         setData((data) => ({...data, [name]: value}));
+    }
+
+    const handleGenerateBarcode = async () => {
+        try {
+            const response = await generateBarcode();
+            if (response.status === 200) {
+                setData(prev => ({...prev, barcode: response.data.barcode}));
+                toast.success("Barcode generated successfully");
+            } else {
+                toast.error("Failed to generate barcode");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to generate barcode");
+        }
     }
 
     const onSubmitHandler = async (e) => {
@@ -44,6 +60,7 @@ const ItemForm = () => {
                     description: "",
                     price: "",
                     categoryId: "",
+                    barcode: "",
                 })
                 setImage(false);
             } else {
@@ -92,6 +109,23 @@ const ItemForm = () => {
                                             <option key={index} value={category.categoryId}>{category.name}</option>
                                         ))}
                                     </select>
+                                </div>
+                                <div className="mb-3">
+                                    <label htmlFor="barcode" className="form-label">Barcode</label>
+                                    <div className="input-group">
+                                        <input type="text"
+                                               name="barcode"
+                                               id="barcode"
+                                               className="form-control"
+                                               placeholder="Enter barcode or generate one"
+                                               onChange={onChangeHandler}
+                                               value={data.barcode}
+                                        />
+                                        <button type="button" className="btn btn-outline-secondary" onClick={handleGenerateBarcode}>
+                                            <i className="bi bi-arrow-clockwise"></i> Generate
+                                        </button>
+                                    </div>
+                                    <small className="form-text text-muted">Leave empty to auto-generate a barcode</small>
                                 </div>
                                 <div className="mb-3">
                                     <label htmlFor="price" className="form-label">Price</label>

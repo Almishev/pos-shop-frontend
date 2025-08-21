@@ -2,14 +2,15 @@ import './Item.css';
 import {useContext} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
 
-const Item = ({itemName, itemPrice, itemImage, itemId}) => {
+const Item = ({itemName, itemPrice, itemImage, itemId, itemBarcode}) => {
     const {addToCart} = useContext(AppContext);
     const handleAddToCart = () => {
         addToCart({
             name: itemName,
             price: itemPrice,
             quantity: 1,
-            itemId: itemId
+            itemId: itemId,
+            barcode: itemBarcode
         });
     }
     return (
@@ -19,7 +20,12 @@ const Item = ({itemName, itemPrice, itemImage, itemId}) => {
             </div>
 
             <div className="flex-grow-1 ms-2">
-                <h6 className="mb-1.text-light">{itemName}</h6>
+                <h6 className="mb-1 text-light">{itemName}</h6>
+                {itemBarcode && (
+                    <small className="text-light d-block mb-1">
+                        <i className="bi bi-upc-scan"></i> {itemBarcode}
+                    </small>
+                )}
                 <p className="mb-0 fw-bold text-light">₹{itemPrice}</p>
             </div>
 

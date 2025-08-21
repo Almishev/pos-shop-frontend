@@ -52,6 +52,16 @@ const Dashboard = () => {
                             <p>{data.todayOrderCount}</p>
                         </div>
                     </div>
+
+                    <div className="stat-card">
+                        <div className="stat-icon">
+                            <i className="bi bi-upc-scan"></i>
+                        </div>
+                        <div className="stat-content">
+                            <h3>Barcode Scans</h3>
+                            <p>{data.recentOrders.length}</p>
+                        </div>
+                    </div>
                 </div>
                 <div className="recent-orders-card">
                     <h3 className="recent-orders-title">

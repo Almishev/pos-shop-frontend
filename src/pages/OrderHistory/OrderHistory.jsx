@@ -21,7 +21,13 @@ const OrderHistory = () => {
     }, []);
 
     const formatItems = (items) => {
-        return items.map((item) => `${item.name} x ${item.quantity}`).join(', ');
+        return items.map((item) => {
+            let itemText = `${item.name} x ${item.quantity}`;
+            if (item.barcode) {
+                itemText += ` (${item.barcode})`;
+            }
+            return itemText;
+        }).join(', ');
     }
 
     const formatDate = (dateString) => {
@@ -67,7 +73,20 @@ const OrderHistory = () => {
                             <td>{order.customerName} <br/>
                                 <small className="text-muted">{order.phoneNumber}</small>
                             </td>
-                            <td>{formatItems(order.items)}</td>
+                            <td>
+                                <div className="items-list">
+                                    {order.items.map((item, index) => (
+                                        <div key={index} className="item-detail">
+                                            <span>{item.name} x {item.quantity}</span>
+                                            {item.barcode && (
+                                                <small className="text-dark d-block">
+                                                    <i className="bi bi-upc-scan"></i> {item.barcode}
+                                                </small>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </td>
                             <td>₹{order.grandTotal}</td>
                             <td>{order.paymentMethod}</td>
                             <td>

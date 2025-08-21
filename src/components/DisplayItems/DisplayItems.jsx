@@ -11,14 +11,17 @@ const DisplayItems = ({selectedCategory}) => {
     const filteredItems = itemsData.filter(item => {
         if(!selectedCategory) return true;
         return item.categoryId === selectedCategory;
-    }).filter(item => item.name.toLowerCase().includes(searchText.toLowerCase()));
+    }).filter(item => 
+        item.name.toLowerCase().includes(searchText.toLowerCase()) ||
+        (item.barcode && item.barcode.toLowerCase().includes(searchText.toLowerCase()))
+    );
 
     return (
         <div className="p-3">
             <div className="d-flex justify-content-between align-items-center align-items-center mb-4">
                 <div></div>
                 <div>
-                    <SearchBox onSearch={setSearchText} />
+                    <SearchBox onSearch={setSearchText} placeholder="Search by name or barcode..." />
                 </div>
             </div>
             <div className="row g-3">
@@ -29,6 +32,7 @@ const DisplayItems = ({selectedCategory}) => {
                             itemPrice={item.price}
                             itemImage={item.imgUrl}
                             itemId={item.itemId}
+                            itemBarcode={item.barcode}
                         />
                     </div>
                 ))}

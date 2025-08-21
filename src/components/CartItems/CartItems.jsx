@@ -20,6 +20,13 @@ const CartItems = () => {
                                     ₹{(item.price * item.quantity).toFixed(2)}
                                 </p>
                             </div>
+                            {item.barcode && (
+                                <div className="mb-2">
+                                    <small className="text-light">
+                                        <i className="bi bi-upc-scan"></i> {item.barcode}
+                                    </small>
+                                </div>
+                            )}
                             <div className="d-flex justify-content-between align-item-center">
                                 <div className="d-flex align-items center gap-2">
                                     <button className="btn btn-danger btn-sm"

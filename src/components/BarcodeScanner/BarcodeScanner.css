@@ -1,0 +1,157 @@
+.barcode-scanner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+}
+
+.barcode-scanner-modal {
+    background: #2c2c2c;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.barcode-scanner-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #444;
+    background: #333;
+    border-radius: 12px 12px 0 0;
+}
+
+.barcode-scanner-header h5 {
+    color: #fff;
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.barcode-scanner-header .btn-close {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.barcode-scanner-header .btn-close:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.barcode-scanner-body {
+    padding: 1.5rem;
+}
+
+.barcode-scanner-body .form-control {
+    background: #444;
+    border: 2px solid #555;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 500;
+    letter-spacing: 1px;
+}
+
+.barcode-scanner-body .form-control:focus {
+    background: #444;
+    border-color: #ffc107;
+    color: #fff;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+.barcode-scanner-body .form-control::placeholder {
+    color: #aaa;
+}
+
+.barcode-scanner-body .btn {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.scan-history {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.scan-history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: #444;
+    border-radius: 8px;
+    border-left: 4px solid #ffc107;
+}
+
+.scan-item-info {
+    flex: 1;
+}
+
+.scan-item-info strong {
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.scan-item-info small {
+    font-size: 0.75rem;
+}
+
+.scan-item-info .badge {
+    font-size: 0.7rem;
+    margin-top: 0.25rem;
+}
+
+.scan-history-item .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* Scrollbar styling */
+.scan-history::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scan-history::-webkit-scrollbar-track {
+    background: #333;
+    border-radius: 3px;
+}
+
+.scan-history::-webkit-scrollbar-thumb {
+    background: #666;
+    border-radius: 3px;
+}
+
+.scan-history::-webkit-scrollbar-thumb:hover {
+    background: #888;
+}
+
+/* Responsive design */
+@media (max-width: 576px) {
+    .barcode-scanner-modal {
+        width: 95%;
+        margin: 1rem;
+    }
+    
+    .barcode-scanner-body {
+        padding: 1rem;
+    }
+    
+    .barcode-scanner-body .form-control {
+        font-size: 1rem;
+    }
+}

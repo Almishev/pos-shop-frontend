@@ -27,11 +27,40 @@
     padding: 5px 8px;
 }
 
+.items-list {
+    max-width: 300px;
+}
+
+.item-detail {
+    margin-bottom: 0.5rem;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.item-detail:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.item-detail span {
+    font-weight: 500;
+    color: #333;
+}
+
+.item-detail small {
+    font-size: 0.75rem;
+    color: #666;
+}
+
 @media (max-width: 768px) {
     .table-responsive {
         overflow-x: auto;
     }
     .table td, .table th {
         white-space: nowrap;
+    }
+    
+    .items-list {
+        max-width: 200px;
     }
 }

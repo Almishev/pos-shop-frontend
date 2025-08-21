@@ -6,16 +6,35 @@ import DisplayItems from "../../components/DisplayItems/DisplayItems.jsx";
 import CustomerForm from "../../components/CustomerForm/CustomerForm.jsx";
 import CartItems from "../../components/CartItems/CartItems.jsx";
 import CartSummary from "../../components/CartSummary/CartSummary.jsx";
+import BarcodeScanner from "../../components/BarcodeScanner/BarcodeScanner.jsx";
 
 const Explore = () => {
-    const {categories} = useContext(AppContext);
+    const {categories, addToCart} = useContext(AppContext);
     const [selectedCategory, setSelectedCategory] = useState("");
     const [customerName, setCustomerName] = useState("");
     const [mobileNumber, setMobileNumber] = useState("");
+    const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+
+    const handleItemFound = (item) => {
+        if (addToCart) {
+            addToCart(item);
+        }
+        setShowBarcodeScanner(false);
+    };
+
     return (
         <div className="explore-container text-light">
             <div className="left-column">
                 <div className="first-row" style={{overflowY: 'auto'}}>
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                        <h5><i className="bi bi-grid"></i> Categories</h5>
+                        <button 
+                            className="btn btn-warning btn-sm"
+                            onClick={() => setShowBarcodeScanner(true)}
+                        >
+                            <i className="bi bi-upc-scan"></i> Scan Barcode
+                        </button>
+                    </div>
                     <DisplayCategory
                         selectedCategory={selectedCategory}
                         setSelectedCategory={setSelectedCategory}
@@ -48,6 +67,13 @@ const Explore = () => {
                     />
                 </div>
             </div>
+
+            {showBarcodeScanner && (
+                <BarcodeScanner
+                    onItemFound={handleItemFound}
+                    onClose={() => setShowBarcodeScanner(false)}
+                />
+            )}
         </div>
     )
 }
