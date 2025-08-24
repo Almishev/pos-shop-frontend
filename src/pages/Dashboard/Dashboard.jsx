@@ -35,11 +35,11 @@ const Dashboard = () => {
                 <div className="stats-grid">
                     <div className="stat-card">
                         <div className="stat-icon">
-                            <i className="bi bi-currency-rupee"></i>
+                            <i className="bi bi-currency-euro"></i>
                         </div>
                         <div className="stat-content">
                             <h3>Today's Sales</h3>
-                            <p>₹{data.todaySales.toFixed(2)}</p>
+                            <p>€{data.todaySales.toFixed(2)}</p>
                         </div>
                     </div>
 
@@ -85,7 +85,7 @@ const Dashboard = () => {
                                 <tr key={order.orderId}>
                                     <td>{order.orderId.substring(0,8)}...</td>
                                     <td>{order.customerName}</td>
-                                    <td>₹{order.grandTotal.toFixed(2)}</td>
+                                    <td>€{order.grandTotal.toFixed(2)}</td>
                                     <td>
                                         <span className={`payment-method ${order.paymentMethod.toLowerCase()}`}>
                                             {order.paymentMethod}

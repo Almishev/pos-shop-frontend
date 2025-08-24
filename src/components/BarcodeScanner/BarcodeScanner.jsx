@@ -16,6 +16,8 @@ const BarcodeScanner = ({ onItemFound, onClose }) => {
         }
     }, []);
 
+
+
     const handleBarcodeSubmit = async (e) => {
         e.preventDefault();
         if (!barcode.trim()) return;
@@ -113,7 +115,7 @@ const BarcodeScanner = ({ onItemFound, onClose }) => {
                                                 Barcode: {item.barcode}
                                             </small>
                                             <span className="badge bg-warning text-dark">
-                                                ₹{item.price}
+                                                €{item.price}
                                             </span>
                                         </div>
                                         <button 

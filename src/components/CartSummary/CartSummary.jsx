@@ -15,7 +15,7 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
     const [showPopup, setShowPopup] = useState(false);
 
     const totalAmount = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
-    const tax = totalAmount * 0.01;
+    const tax = totalAmount * 0.20; // 20% ДДС за България
     const grandTotal = totalAmount + tax;
 
     const clearAll = () => {
@@ -160,16 +160,16 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
         <div className="mt-2">
             <div className="cart-summary-details">
                 <div className="d-flex justify-content-between mb-2">
-                    <span className="text-light">Item: </span>
-                    <span className="text-light">₹{totalAmount.toFixed(2)}</span>
+                                            <span className="text-light">Subtotal: </span>
+                                            <span className="text-light">€{totalAmount.toFixed(2)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-2">
-                    <span className="text-light">Tax (1%):</span>
-                    <span className="text-light">₹{tax.toFixed(2)}</span>
+                                            <span className="text-light">VAT (20%):</span>
+                                            <span className="text-light">€{tax.toFixed(2)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-4">
-                    <span className="text-light">Total:</span>
-                    <span className="text-light">₹{grandTotal.toFixed(2)}</span>
+                                            <span className="text-light">Total:</span>
+                                            <span className="text-light">€{grandTotal.toFixed(2)}</span>
                 </div>
             </div>
 
