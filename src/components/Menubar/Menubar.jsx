@@ -56,6 +56,31 @@ const Menubar = () => {
                     <li className="nav-item">
                         <Link className={`nav-link ${isActive('/orders') ? 'fw-bold text-warning': ''}`} to="/orders">Order History</Link>
                     </li>
+                    {
+                        isAdmin && (
+                            <>
+                                <li className="nav-item dropdown">
+                                    <a className="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        🏪 Fiscal System
+                                    </a>
+                                    <ul className="dropdown-menu">
+                                        <li>
+                                            <Link className="dropdown-item" to="/fiscal-devices">
+                                                <i className="bi bi-printer me-2"></i>
+                                                Fiscal Devices
+                                            </Link>
+                                        </li>
+                                        <li>
+                                            <Link className="dropdown-item" to="/fiscal-reports">
+                                                <i className="bi bi-file-earmark-text me-2"></i>
+                                                Fiscal Reports
+                                            </Link>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </>
+                        )
+                    }
                 </ul>
                 {/*Add the dropdown for userprofile*/}
                 <ul className="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">

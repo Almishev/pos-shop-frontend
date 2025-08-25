@@ -23,6 +23,11 @@
     box-sizing: border-box;
 }
 
+.first-row .btn {
+    white-space: nowrap;
+    font-size: 0.875rem;
+}
+
 .horizontal-line {
     margin: 20px 0;
     border: 0;

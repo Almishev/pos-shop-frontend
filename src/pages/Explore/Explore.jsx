@@ -28,12 +28,21 @@ const Explore = () => {
                 <div className="first-row" style={{overflowY: 'auto'}}>
                     <div className="d-flex justify-content-between align-items-center mb-3">
                         <h5><i className="bi bi-grid"></i> Categories</h5>
-                        <button 
-                            className="btn btn-warning btn-sm"
-                            onClick={() => setShowBarcodeScanner(true)}
-                        >
-                            <i className="bi bi-upc-scan"></i> Scan Barcode
-                        </button>
+                        <div className="d-flex gap-2">
+                            <button 
+                                className="btn btn-outline-light btn-sm"
+                                onClick={() => window.location.reload()}
+                                title="Refresh"
+                            >
+                                <i className="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                            <button 
+                                className="btn btn-warning btn-sm"
+                                onClick={() => setShowBarcodeScanner(true)}
+                            >
+                                <i className="bi bi-upc-scan"></i> Scan Barcode
+                            </button>
+                        </div>
                     </div>
                     <DisplayCategory
                         selectedCategory={selectedCategory}

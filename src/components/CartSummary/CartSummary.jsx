@@ -6,6 +6,7 @@ import {createOrder, deleteOrder} from "../../Service/OrderService.js";
 import toast from "react-hot-toast";
 import {createRazorpayOrder, verifyPayment} from "../../Service/PaymentService.js";
 import {AppConstants} from "../../util/constants.js";
+import FiscalService from "../../Service/FiscalService.js";
 
 const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerName}) => {
     const {cartItems, clearCart} = useContext(AppContext);
@@ -75,6 +76,15 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
 
             const response = await createOrder(orderData);
             const savedData = response.data;
+            
+            // Send to fiscal device after successful order creation
+            try {
+                await sendToFiscalDevice(savedData);
+            } catch (fiscalError) {
+                console.error('Fiscal device error:', fiscalError);
+                toast.error('Warning: Fiscal receipt not sent');
+            }
+            
             if (response.status === 201 && paymentMode === "cash") {
                 toast.success("Cash received");
                 setOrderDetails(savedData);
@@ -127,6 +137,42 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
             setIsProcessing(false);
         }
     }
+
+    const sendToFiscalDevice = async (orderData) => {
+        try {
+            // Get first available fiscal device
+            const devices = await FiscalService.getAllDevices();
+            if (devices.length === 0) {
+                throw new Error('No fiscal devices registered');
+            }
+            
+            const device = devices[0]; // Use first device
+            const fiscalReceiptData = {
+                orderId: orderData.orderId,
+                deviceSerialNumber: device.serialNumber,
+                subtotal: orderData.subtotal,
+                vatAmount: orderData.tax,
+                grandTotal: orderData.grandTotal,
+                cashierName: "Cashier", // You can get this from context
+                items: orderData.cartItems.map(item => ({
+                    itemName: item.name,
+                    barcode: item.barcode || '',
+                    unitPrice: item.price,
+                    quantity: item.quantity,
+                    totalPrice: item.price * item.quantity,
+                    vatRate: 20.00
+                }))
+            };
+            
+            const fiscalResponse = await FiscalService.sendReceipt(fiscalReceiptData);
+            console.log('Fiscal receipt sent:', fiscalResponse);
+            toast.success('Fiscal receipt sent successfully');
+            
+        } catch (error) {
+            console.error('Error sending to fiscal device:', error);
+            throw error;
+        }
+    };
 
     const verifyPaymentHandler = async (response, savedOrder) => {
         const paymentData = {

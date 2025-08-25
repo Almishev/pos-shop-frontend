@@ -2,15 +2,22 @@ import './Dashboard.css';
 import {useEffect, useState} from "react";
 import {fetchDashboardData} from "../../Service/Dashboard.js";
 import toast from "react-hot-toast";
+import FiscalService from "../../Service/FiscalService.js";
 
 const Dashboard = () => {
     const [data, setData] = useState(null);
+    const [fiscalStats, setFiscalStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    
     useEffect(() => {
         const loadData = async () => {
             try {
-                const response = await fetchDashboardData();
-                setData(response.data);
+                const [dashboardResponse, fiscalData] = await Promise.all([
+                    fetchDashboardData(),
+                    loadFiscalStats()
+                ]);
+                setData(dashboardResponse.data);
+                setFiscalStats(fiscalData);
             } catch (error) {
                 console.error(error);
                 toast.error("Unable to view the data");
@@ -20,6 +27,35 @@ const Dashboard = () => {
         }
         loadData();
     }, []);
+
+    const loadFiscalStats = async () => {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const [sales, vat, receipts, devices] = await Promise.all([
+                FiscalService.getSalesForDate(today),
+                FiscalService.getVATForDate(today),
+                FiscalService.getReceiptsForDate(today),
+                FiscalService.getAllDevices()
+            ]);
+            
+            return {
+                todaySales: sales || 0,
+                todayVAT: vat || 0,
+                todayReceipts: receipts || 0,
+                activeDevices: devices.filter(d => d.status === 'ACTIVE').length,
+                totalDevices: devices.length
+            };
+        } catch (error) {
+            console.error('Error loading fiscal stats:', error);
+            return {
+                todaySales: 0,
+                todayVAT: 0,
+                todayReceipts: 0,
+                activeDevices: 0,
+                totalDevices: 0
+            };
+        }
+    };
 
     if (loading) {
         return <div className="loading">Loading dashboard...</div>
@@ -62,6 +98,40 @@ const Dashboard = () => {
                             <p>{data.recentOrders.length}</p>
                         </div>
                     </div>
+
+                    {fiscalStats && (
+                        <>
+                            <div className="stat-card">
+                                <div className="stat-icon">
+                                    <i className="bi bi-printer"></i>
+                                </div>
+                                <div className="stat-content">
+                                    <h3>Fiscal Receipts</h3>
+                                    <p>{fiscalStats.todayReceipts}</p>
+                                </div>
+                            </div>
+
+                            <div className="stat-card">
+                                <div className="stat-icon">
+                                    <i className="bi bi-calculator"></i>
+                                </div>
+                                <div className="stat-content">
+                                    <h3>Today's VAT</h3>
+                                    <p>€{fiscalStats.todayVAT.toFixed(2)}</p>
+                                </div>
+                            </div>
+
+                            <div className="stat-card">
+                                <div className="stat-icon">
+                                    <i className="bi bi-wifi"></i>
+                                </div>
+                                <div className="stat-content">
+                                    <h3>Active Devices</h3>
+                                    <p>{fiscalStats.activeDevices}/{fiscalStats.totalDevices}</p>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
                 <div className="recent-orders-card">
                     <h3 className="recent-orders-title">
