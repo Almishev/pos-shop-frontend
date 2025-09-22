@@ -21,7 +21,7 @@ const DisplayItems = ({selectedCategory}) => {
             <div className="d-flex justify-content-between align-items-center align-items-center mb-4">
                 <div></div>
                 <div>
-                    <SearchBox onSearch={setSearchText} placeholder="Search by name or barcode..." />
+                    <SearchBox onSearch={setSearchText} placeholder="Търси по име или баркод..." />
                 </div>
             </div>
             <div className="row g-3">
@@ -33,6 +33,7 @@ const DisplayItems = ({selectedCategory}) => {
                             itemImage={item.imgUrl}
                             itemId={item.itemId}
                             itemBarcode={item.barcode}
+                            itemVatRate={item.vatRate}
                         />
                     </div>
                 ))}

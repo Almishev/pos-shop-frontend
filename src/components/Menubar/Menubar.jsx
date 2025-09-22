@@ -33,50 +33,50 @@ const Menubar = () => {
             <div className="collapse navbar-collapse p-2" id="navbarNav">
                 <ul className="navbar-nav me-auto mb-2 mb-lg-0">
                     <li className="nav-item">
-                        <Link className={`nav-link ${isActive('/dashboard') ? 'fw-bold text-warning': ''}`} to="/dashboard">Dashboard</Link>
+                        <Link className={`nav-link ${isActive('/dashboard') ? 'fw-bold text-warning': ''}`} to="/dashboard">Табло</Link>
                     </li>
                     <li className="nav-item">
-                        <Link className={`nav-link ${isActive('/explore') ? 'fw-bold text-warning': ''}`} to="/explore">Explore</Link>
+                        <Link className={`nav-link ${isActive('/explore') ? 'fw-bold text-warning': ''}`} to="/explore">Продажби</Link>
                     </li>
                     {
                         isAdmin && (
                             <>
                                 <li className="nav-item">
-                                    <Link className={`nav-link ${isActive('/items') ? 'fw-bold text-warning': ''}`} to="/items">Manage Items</Link>
+                                    <Link className={`nav-link ${isActive('/items') ? 'fw-bold text-warning': ''}`} to="/items">Артикули</Link>
                                 </li>
                                 <li className="nav-item">
-                                    <Link className={`nav-link ${isActive('/category') ? 'fw-bold text-warning': ''}`} to="/category">Manage Categories</Link>
+                                    <Link className={`nav-link ${isActive('/category') ? 'fw-bold text-warning': ''}`} to="/category">Категории</Link>
                                 </li>
                                 <li className="nav-item">
-                                    <Link className={`nav-link ${isActive('/users') ? 'fw-bold text-warning': ''}`} to="/users">Manage Users</Link>
+                                    <Link className={`nav-link ${isActive('/users') ? 'fw-bold text-warning': ''}`} to="/users">Потребители</Link>
                                 </li>
                                 <li className="nav-item">
-                                    <Link className={`nav-link ${isActive('/inventory') ? 'fw-bold text-warning': ''}`} to="/inventory">📦 Inventory</Link>
+                                    <Link className={`nav-link ${isActive('/inventory') ? 'fw-bold text-warning': ''}`} to="/inventory">📦 Склад</Link>
                                 </li>
                             </>
                         )
                     }
                     <li className="nav-item">
-                        <Link className={`nav-link ${isActive('/orders') ? 'fw-bold text-warning': ''}`} to="/orders">Order History</Link>
+                        <Link className={`nav-link ${isActive('/orders') ? 'fw-bold text-warning': ''}`} to="/orders">Поръчки</Link>
                     </li>
                     {
                         isAdmin && (
                             <>
                                 <li className="nav-item dropdown">
                                     <a className="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        🏪 Fiscal System
+                                        🏪 Фискална система
                                     </a>
                                     <ul className="dropdown-menu">
                                         <li>
                                             <Link className="dropdown-item" to="/fiscal-devices">
                                                 <i className="bi bi-printer me-2"></i>
-                                                Fiscal Devices
+                                                Фискални устройства
                                             </Link>
                                         </li>
                                         <li>
                                             <Link className="dropdown-item" to="/fiscal-reports">
                                                 <i className="bi bi-file-earmark-text me-2"></i>
-                                                Fiscal Reports
+                                                Фискални отчети
                                             </Link>
                                         </li>
                                     </ul>
@@ -94,12 +94,12 @@ const Menubar = () => {
                         <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                             <li>
                                 <a href="#!" className="dropdown-item">
-                                    Settings
+                                    Настройки
                                 </a>
                             </li>
                             <li>
                                 <a href="#!" className="dropdown-item">
-                                    Activity log
+                                    Дневник
                                 </a>
                             </li>
                             <li>
@@ -107,7 +107,7 @@ const Menubar = () => {
                             </li>
                             <li>
                                 <a href="#!" className="dropdown-item" onClick={logout}>
-                                    Logout
+                                    Изход
                                 </a>
                             </li>
                         </ul>

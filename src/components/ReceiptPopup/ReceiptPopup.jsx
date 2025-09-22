@@ -2,6 +2,24 @@ import './ReceiptPopup.css';
 import './Print.css';
 
 const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
+    const formatBGN = (amount) => new Intl.NumberFormat('bg-BG', { style: 'currency', currency: 'BGN' }).format(amount || 0);
+    const groupByVat = (items = []) => {
+        const groups = {};
+        items.forEach(i => {
+            const rate = (i.vatRate ?? 0.20);
+            const key = `${Math.round(rate * 100)}`; // "20", "9", "0"
+            const qty = i.quantity ?? 0;
+            const unit = i.price ?? i.unitPrice ?? 0;
+            const lineTotal = unit * qty; // assuming price is gross (incl. VAT)
+            const base = rate >= 0 ? lineTotal / (1 + rate) : 0;
+            const vatAmount = lineTotal - base;
+            if (!groups[key]) groups[key] = { base: 0, vat: 0 };
+            groups[key].base += base;
+            groups[key].vat += vatAmount;
+        });
+        return groups;
+    };
+    const vatGroups = groupByVat(orderDetails?.items || []);
     return (
         <div className="receipt-popup-overlay text-dark">
             <div className="receipt-popup">
@@ -24,7 +42,7 @@ const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
                     {orderDetails.items.map((item, index) => (
                         <div key={index} className="d-flex justify-content-between mb-2">
                             <span>{item.name} x{item.quantity}</span>
-                            <span>€{(item.price * item.quantity).toFixed(2)}</span>
+                            <span>{formatBGN((item.price * item.quantity))}</span>
                         </div>
                     ))}
                 </div>
@@ -33,19 +51,28 @@ const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
                     <span>
                         <strong>Subtotal:</strong>
                     </span>
-                                            <span>€{orderDetails.subtotal.toFixed(2)}</span>
+                    <span>{formatBGN(orderDetails.subtotal)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-2">
                     <span>
-                        <strong>VAT (20%):</strong>
+                        <strong>ДДС:</strong>
                     </span>
-                                            <span>€{orderDetails.tax.toFixed(2)}</span>
+                    <span>{formatBGN(orderDetails.tax)}</span>
+                </div>
+                <div className="mb-2">
+                    <small>
+                        {Object.keys(vatGroups).map((k) => (
+                            <div key={k}>
+                                Ставка {k}%: Основа {formatBGN(vatGroups[k].base)} | ДДС {formatBGN(vatGroups[k].vat)}
+                            </div>
+                        ))}
+                    </small>
                 </div>
                 <div className="d-flex justify-content-between mb-4">
                     <span>
                         <strong>Grand Total:</strong>
                     </span>
-                                            <span>€{orderDetails.grandTotal.toFixed(2)}</span>
+                    <span>{formatBGN(orderDetails.grandTotal)}</span>
                 </div>
                 <p>
                     <strong>Payment Method: </strong> {orderDetails.paymentMethod}

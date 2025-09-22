@@ -16,9 +16,13 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
     const [orderDetails, setOrderDetails] = useState(null);
     const [showPopup, setShowPopup] = useState(false);
 
-    const totalAmount = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
-    const tax = totalAmount * 0.20; // 20% ДДС за България
-    const grandTotal = totalAmount + tax;
+    const formatBGN = (amount) => new Intl.NumberFormat('bg-BG', { style: 'currency', currency: 'BGN' }).format(amount || 0);
+
+    const getItemVatRate = (item) => (item.vatRate ?? 0.20);
+
+    const subtotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+    const tax = cartItems.reduce((total, item) => total + (item.price * item.quantity) * getItemVatRate(item), 0);
+    const grandTotal = subtotal + tax;
 
     const clearAll = () => {
         setCustomerName("");
@@ -56,18 +60,18 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
 
     const completePayment = async (paymentMode) => {
         // Използваме дефаултни стойности ако не са въведени данни
-        const finalCustomerName = customerName.trim() || "Walk-in Customer";
+        const finalCustomerName = customerName.trim() || "Случаен клиент";
         const finalMobileNumber = mobileNumber.trim() || "0000000000";
 
         if (cartItems.length === 0) {
-            toast.error("Your cart is empty");
+            toast.error("Количката е празна");
             return;
         }
         const orderData = {
             customerName: finalCustomerName,
             phoneNumber: finalMobileNumber,
             cartItems,
-            subtotal: totalAmount,
+            subtotal: subtotal,
             tax,
             grandTotal,
             paymentMethod: paymentMode.toUpperCase()
@@ -83,19 +87,19 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                 await sendToFiscalDevice(savedData);
             } catch (fiscalError) {
                 console.error('Fiscal device error:', fiscalError);
-                toast.error('Warning: Fiscal receipt not sent');
+                toast.error('Внимание: Фискалният бон не е изпратен');
             }
             
             // Inventory is now updated server-side inside OrderServiceImpl#createOrder.
             // We skip the client-side inventory call to avoid duplicate updates and 403s.
             
             if (response.status === 201 && paymentMode === "cash") {
-                toast.success("Cash received");
+                toast.success("Плащане в брой прието");
                 setOrderDetails(savedData);
             } else if (response.status === 201 && paymentMode === "upi") {
                 const razorpayLoaded = await loadRazorpayScript();
                 if (!razorpayLoaded) {
-                    toast.error('Unable to load razorpay');
+                    toast.error('Неуспешно зареждане на Razorpay');
                     await deleteOrderOnFailure(savedData.orderId);
                     return;
                 }
@@ -122,21 +126,21 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                     modal: {
                         ondismiss: async () => {
                             await deleteOrderOnFailure(savedData.orderId);
-                            toast.error("Payment cancelled");
+                            toast.error("Плащането е отменено");
                         }
                     },
                 };
                 const rzp = new window.Razorpay(options);
                 rzp.on("payment.failed", async (response) => {
                     await deleteOrderOnFailure(savedData.orderId);
-                    toast.error("Payment failed");
+                    toast.error("Плащането неуспешно");
                     console.error(response.error.description);
                 });
                 rzp.open();
             }
         }catch(error) {
             console.error(error);
-            toast.error("Payment processing failed");
+            toast.error("Грешка при обработка на плащането");
         } finally {
             setIsProcessing(false);
         }
@@ -164,13 +168,13 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                     unitPrice: item.price,
                     quantity: item.quantity,
                     totalPrice: item.price * item.quantity,
-                    vatRate: 20.00
+                    vatRate: Math.round(((item.vatRate ?? 0.20) * 100) * 100) / 100
                 }))
             };
             
             const fiscalResponse = await FiscalService.sendReceipt(fiscalReceiptData);
             console.log('Fiscal receipt sent:', fiscalResponse);
-            toast.success('Fiscal receipt sent successfully');
+            toast.success('Фискалният бон е изпратен');
             
         } catch (error) {
             console.error('Error sending to fiscal device:', error);
@@ -190,7 +194,7 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                 );
             }
             console.log('Inventory updated successfully');
-            toast.success('Inventory updated successfully');
+            toast.success('Складът е обновен');
             
         } catch (error) {
             console.error('Error updating inventory:', error);
@@ -222,7 +226,7 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
             }
         } catch (error) {
             console.error(error);
-            toast.error("Payment failed");
+            toast.error("Плащането неуспешно");
         }
     };
 
@@ -230,16 +234,16 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
         <div className="mt-2">
             <div className="cart-summary-details">
                 <div className="d-flex justify-content-between mb-2">
-                                            <span className="text-light">Subtotal: </span>
-                                            <span className="text-light">€{totalAmount.toFixed(2)}</span>
+                    <span className="text-light">Междинна сума:</span>
+                    <span className="text-light">{formatBGN(subtotal)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-2">
-                                            <span className="text-light">VAT (20%):</span>
-                                            <span className="text-light">€{tax.toFixed(2)}</span>
+                    <span className="text-light">ДДС (20%):</span>
+                    <span className="text-light">{formatBGN(tax)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-4">
-                                            <span className="text-light">Total:</span>
-                                            <span className="text-light">€{grandTotal.toFixed(2)}</span>
+                    <span className="text-light">Общо:</span>
+                    <span className="text-light">{formatBGN(grandTotal)}</span>
                 </div>
             </div>
 
@@ -248,13 +252,13 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                     onClick={() => completePayment("cash")}
                         disabled={isProcessing}
                 >
-                    {isProcessing ? "Processing...": "Cash"}
+                    {isProcessing ? "Обработка...": "В брой"}
                 </button>
                 <button className="btn btn-primary flex-grow-1"
                         onClick={() => completePayment("upi")}
                         disabled={isProcessing}
                 >
-                    {isProcessing ? "Processing...": "UPI"}
+                    {isProcessing ? "Обработка...": "UPI"}
                 </button>
             </div>
             <div className="d-flex gap-3 mt-3">
@@ -262,7 +266,7 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                     onClick={placeOrder}
                     disabled={isProcessing || !orderDetails}
                 >
-                    Place Order
+                    Разпечатай бележка
                 </button>
             </div>
             {

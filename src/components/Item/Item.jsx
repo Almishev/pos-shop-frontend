@@ -2,7 +2,7 @@ import './Item.css';
 import {useContext} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
 
-const Item = ({itemName, itemPrice, itemImage, itemId, itemBarcode}) => {
+const Item = ({itemName, itemPrice, itemImage, itemId, itemBarcode, itemVatRate}) => {
     const {addToCart} = useContext(AppContext);
     const handleAddToCart = () => {
         addToCart({
@@ -10,7 +10,8 @@ const Item = ({itemName, itemPrice, itemImage, itemId, itemBarcode}) => {
             price: itemPrice,
             quantity: 1,
             itemId: itemId,
-            barcode: itemBarcode
+            barcode: itemBarcode,
+            vatRate: itemVatRate ?? 0.20
         });
     }
     return (

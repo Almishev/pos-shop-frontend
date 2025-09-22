@@ -18,13 +18,13 @@ const CategoryList = () => {
             if (response.status === 204) {
                 const updatedCategories = categories.filter(category => category.categoryId !== categoryId);
                 setCategories(updatedCategories);
-                toast.success("Category deleted");
+                toast.success("Категорията е изтрита");
             } else {
-                toast.error("Unable to delete category");
+                toast.error("Неуспешно изтриване на категория");
             }
         } catch (error) {
             console.error(error);
-            toast.error("Unable to delete category");
+            toast.error("Неуспешно изтриване на категория");
         }
     }
 
@@ -35,7 +35,7 @@ const CategoryList = () => {
                     <input type="text"
                            name="keyword"
                            id="keyword"
-                           placeholder="Search by keyword"
+                           placeholder="Търси по ключова дума"
                            className="form-control"
                             onChange={(e) => setSearchTerm(e.target.value)}
                            value={searchTerm}
@@ -55,7 +55,7 @@ const CategoryList = () => {
                                 </div>
                                 <div className="flex-grow-1">
                                     <h5 className="mb-1 text-white">{category.name}</h5>
-                                    <p className="mb-0 text-white">{category.items} Items</p>
+                                    <p className="mb-0 text-white">{category.items} артикула</p>
                                 </div>
                                 <div>
                                     <button className="btn btn-danger btn-sm"

@@ -27,7 +27,7 @@ const ItemList = () => {
             setSearchResults(response.data);
         } catch (error) {
             console.error(error);
-            toast.error("Search failed");
+            toast.error("Търсенето се провали");
         } finally {
             setIsSearching(false);
         }
@@ -39,13 +39,13 @@ const ItemList = () => {
             if (response.status === 204) {
                 const updatedItems = itemsData.filter(item => item.itemId !== itemId);
                 setItemsData(updatedItems);
-                toast.success("Item deleted");
+                toast.success("Артикулът е изтрит");
             } else {
-                toast.error("Unable to delete item");
+                toast.error("Неуспешно изтриване на артикул");
             }
         }catch(err) {
             console.error(err);
-            toast.error("Unable to delete item");
+            toast.error("Неуспешно изтриване на артикул");
         }
     }
 
@@ -58,7 +58,7 @@ const ItemList = () => {
                     <input type="text"
                            name="keyword"
                            id="keyword"
-                           placeholder="Search by name or barcode"
+                           placeholder="Търси по име или баркод"
                            className="form-control"
                            onChange={(e) => setSearchTerm(e.target.value)}
                            value={searchTerm}
@@ -85,10 +85,10 @@ const ItemList = () => {
                                 setSearchTerm("");
                             }}
                         >
-                            <i className="bi bi-x-circle"></i> Clear Search
+                            <i className="bi bi-x-circle"></i> Изчисти търсенето
                         </button>
                         <span className="ms-2 text-muted">
-                            Found {searchResults.length} result(s)
+                            Намерени {searchResults.length} резултата
                         </span>
                     </div>
                 )}
@@ -104,15 +104,15 @@ const ItemList = () => {
                                 <div className="flex-grow-1">
                                     <h6 className="mb-1 text-white">{item.name}</h6>
                                     <p className="mb-1 text-white">
-                                        Category: {item.categoryName}
+                                        Категория: {item.categoryName}
                                     </p>
                                     {item.barcode && (
                                         <p className="mb-1 text-white small">
-                                            <i className="bi bi-upc-scan"></i> Barcode: {item.barcode}
+                                            <i className="bi bi-upc-scan"></i> Баркод: {item.barcode}
                                         </p>
                                     )}
                                     <span className="mb-0 text-block badge rounded-pill text-bg-warning">
-                                        &#8377;{item.price}
+                                        {(new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'})).format(item.price)}
                                     </span>
                                 </div>
                                 <div>

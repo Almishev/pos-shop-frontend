@@ -14,6 +14,7 @@ const ItemForm = () => {
         price: "",
         description: "",
         barcode: "",
+        vatRate: 0.20,
     });
 
     const onChangeHandler = (e) => {
@@ -27,13 +28,13 @@ const ItemForm = () => {
             const response = await generateBarcode();
             if (response.status === 200) {
                 setData(prev => ({...prev, barcode: response.data.barcode}));
-                toast.success("Barcode generated successfully");
+                toast.success("Баркодът е генериран успешно");
             } else {
-                toast.error("Failed to generate barcode");
+                toast.error("Грешка при генериране на баркод");
             }
         } catch (error) {
             console.error(error);
-            toast.error("Failed to generate barcode");
+            toast.error("Грешка при генериране на баркод");
         }
     }
 
@@ -45,7 +46,7 @@ const ItemForm = () => {
         formData.append("file", image);
         try {
             if (!image) {
-                toast.error("Select image");
+                toast.error("Изберете изображение");
                 return;
             }
 
@@ -54,7 +55,7 @@ const ItemForm = () => {
                 setItemsData([...itemsData, response.data]);
                 setCategories((prevCategories) =>
                 prevCategories.map((category) => category.categoryId === data.categoryId ? {...category, items: category.items + 1} : category));
-                toast.success("Item added");
+                toast.success("Артикулът е добавен");
                 setData({
                     name: "",
                     description: "",
@@ -64,11 +65,11 @@ const ItemForm = () => {
                 })
                 setImage(false);
             } else {
-                toast.error("Unable to add item");
+                toast.error("Неуспешно добавяне на артикул");
             }
         } catch (error) {
             console.error(error);
-            toast.error("Unable to add item");
+            toast.error("Неуспешно добавяне на артикул");
         } finally {
             setLoading(false);
         }
@@ -88,12 +89,12 @@ const ItemForm = () => {
                                     <input type="file" name="image" id="image" className='form-control' hidden onChange={(e) => setImage(e.target.files[0])} />
                                 </div>
                                 <div className="mb-3">
-                                    <label htmlFor="name" className="form-label">Name</label>
+                                    <label htmlFor="name" className="form-label">Име</label>
                                     <input type="text"
                                            name="name"
                                            id="name"
                                            className="form-control"
-                                           placeholder="Item Name"
+                                           placeholder="Име на артикул"
                                            onChange={onChangeHandler}
                                            value={data.name}
                                            required
@@ -101,48 +102,62 @@ const ItemForm = () => {
                                 </div>
                                 <div className="mb-3">
                                     <label className="form-label" htmlFor="category">
-                                        Category
+                                        Категория
                                     </label>
                                     <select name="categoryId" id="category" className="form-control" onChange={onChangeHandler} value={data.categoryId} required>
-                                        <option value="">--SELECT CATEGORY--</option>
+                                        <option value="">--ИЗБЕРЕТЕ КАТЕГОРИЯ--</option>
                                         {categories.map((category, index) => (
                                             <option key={index} value={category.categoryId}>{category.name}</option>
                                         ))}
                                     </select>
                                 </div>
                                 <div className="mb-3">
-                                    <label htmlFor="barcode" className="form-label">Barcode</label>
+                                    <label htmlFor="barcode" className="form-label">Баркод</label>
                                     <div className="input-group">
                                         <input type="text"
                                                name="barcode"
                                                id="barcode"
                                                className="form-control"
-                                               placeholder="Enter barcode or generate one"
+                                               placeholder="Въведете баркод или генерирайте"
                                                onChange={onChangeHandler}
                                                value={data.barcode}
                                         />
                                         <button type="button" className="btn btn-outline-secondary" onClick={handleGenerateBarcode}>
-                                            <i className="bi bi-arrow-clockwise"></i> Generate
+                                            <i className="bi bi-arrow-clockwise"></i> Генерирай
                                         </button>
                                     </div>
-                                    <small className="form-text text-muted">Leave empty to auto-generate a barcode</small>
+                                    <small className="form-text text-muted">Оставете празно за автоматично генериране</small>
                                 </div>
                                 <div className="mb-3">
-                                    <label htmlFor="price" className="form-label">Price</label>
+                                    <label htmlFor="vatRate" className="form-label">ДДС ставка</label>
+                                    <select
+                                        name="vatRate"
+                                        id="vatRate"
+                                        className="form-control"
+                                        onChange={(e) => setData(prev => ({...prev, vatRate: parseFloat(e.target.value)}))}
+                                        value={data.vatRate}
+                                    >
+                                        <option value={0.20}>20% (Стандартна)</option>
+                                        <option value={0.09}>9% (Намалена)</option>
+                                        <option value={0.00}>0% (Нулева)</option>
+                                    </select>
+                                </div>
+                                <div className="mb-3">
+                                    <label htmlFor="price" className="form-label">Цена</label>
                                     <input type="number" name="price" id="price" className="form-control" placeholder="&#8377;200.00" onChange={onChangeHandler} value={data.price} required/>
                                 </div>
                                 <div className="mb-3">
-                                    <label htmlFor="description" className="form-label">Description</label>
+                                    <label htmlFor="description" className="form-label">Описание</label>
                                     <textarea
                                         rows="5"
                                         name="description"
                                         id="description"
                                         className="form-control"
-                                        placeholder="Write content here.."
+                                        placeholder="Опишете артикула..."
                                         onChange={onChangeHandler}
                                         value={data.description}></textarea>
                                 </div>
-                                <button type="submit" className="btn btn-warning w-100" disabled={loading}>{loading ? "Loading..." : "Save"}</button>
+                                <button type="submit" className="btn btn-warning w-100" disabled={loading}>{loading ? "Зареждане..." : "Запази"}</button>
                             </form>
                         </div>
                     </div>

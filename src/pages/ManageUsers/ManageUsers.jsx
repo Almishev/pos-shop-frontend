@@ -17,7 +17,7 @@ const ManageUsers = () => {
                 setUsers(response.data);
             } catch (error) {
                 console.error(error);
-                toast.error("Unable to fetch users");
+                toast.error("Неуспешно зареждане на потребители");
             } finally {
                 setLoading(false);
             }

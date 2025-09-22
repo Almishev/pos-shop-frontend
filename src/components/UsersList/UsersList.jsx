@@ -13,10 +13,10 @@ const UsersList = ({users, setUsers}) => {
         try {
             await deleteUser(id);
             setUsers(prevUsers => prevUsers.filter(user => user.userId !== id));
-            toast.success("User deleted");
+            toast.success("Потребителят е изтрит");
         }catch (e) {
             console.error(e);
-            toast.error("Unable to deleting user");
+            toast.error("Неуспешно изтриване на потребител");
         }
     }
 
@@ -28,7 +28,7 @@ const UsersList = ({users, setUsers}) => {
                     <input type="text"
                            name="keyword"
                            id="keyword"
-                           placeholder="Search by keyword"
+                           placeholder="Търси по ключова дума"
                            className="form-control"
                            onChange={(e) => setSearchTerm(e.target.value)}
                            value={searchTerm}

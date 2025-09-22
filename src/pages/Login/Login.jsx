@@ -26,7 +26,7 @@ const Login = () => {
         try {
             const response = await login(data);
             if (response.status === 200) {
-                toast.success("Login successfull");
+                toast.success("Успешен вход");
                 localStorage.setItem("token", response.data.token);
                 localStorage.setItem("role", response.data.role);
                 setAuthData(response.data.token, response.data.role);
@@ -34,7 +34,7 @@ const Login = () => {
             }
         } catch (error) {
             console.error(error);
-            toast.error("Email/Password Invalid");
+            toast.error("Невалиден имейл/парола");
         } finally {
             setLoading(false);
         }
@@ -45,28 +45,28 @@ const Login = () => {
             <div className="card shoadow-lg w-100" style={{maxWidth: '480px'}}>
                 <div className="card-body">
                     <div className="text-center">
-                        <h1 className="card-title">Sign in</h1>
+                        <h1 className="card-title">Вход</h1>
                         <p className="card-text text-muted">
-                            Sign in below to access your account
+                            Влезте, за да достъпите профила си
                         </p>
                     </div>
                     <div className="mt-4">
                         <form onSubmit={onSubmitHandler}>
                             <div className="mb-4">
                                 <label htmlFor="email" className="form-label text-muted">
-                                    Email address
+                                    Имейл адрес
                                 </label>
                                 <input type="text" name="email" id="email" placeholder="yourname@example.com" className="form-control" onChange={onChangeHandler} value={data.email} />
                             </div>
                             <div className="mb-4">
                                 <label htmlFor="password" className="form-label text-muted">
-                                    Password
+                                    Парола
                                 </label>
                                 <input type="password" name="password" id="password" placeholder="**********" className="form-control" onChange={onChangeHandler} value={data.password} />
                             </div>
                             <div className="d-grid">
                                 <button type="sumbit" className="btn btn-dark btn-lg" disabled={loading}>
-                                    {loading ? "Loading..." : "Sign in"}
+                                    {loading ? "Зареждане..." : "Вход"}
                                 </button>
                             </div>
                         </form>

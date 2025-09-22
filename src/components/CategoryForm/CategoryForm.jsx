@@ -25,7 +25,7 @@ const CategoryForm = () => {
         e.preventDefault();
 
         if (!image) {
-            toast.error("Select image for category");
+            toast.error("Изберете изображение за категорията");
             return;
         }
         setLoading(true);
@@ -36,7 +36,7 @@ const CategoryForm = () => {
             const response = await addCategory(formData);
             if (response.status === 201) {
                 setCategories([...categories, response.data]);
-                toast.success("Category added");
+                toast.success("Категорията е добавена");
                 setData({
                     name: "",
                     description: "",
@@ -46,7 +46,7 @@ const CategoryForm = () => {
             }
         }catch(err) {
             console.error(err);
-            toast.error("Error adding category");
+            toast.error("Грешка при добавяне на категория");
         }finally {
             setLoading(false);
         }
@@ -65,31 +65,31 @@ const CategoryForm = () => {
                                 <input type="file" name="image" id="image" className='form-control' hidden onChange={(e) => setImage(e.target.files[0])} />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="name" className="form-label">Name</label>
+                                <label htmlFor="name" className="form-label">Име</label>
                                 <input type="text"
                                     name="name"
                                     id="name"
                                     className="form-control"
-                                    placeholder="Category Name"
+                                    placeholder="Име на категория"
                                     onChange={onChangeHandler}
                                     value={data.name}
                                     required
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="description" className="form-label">Description</label>
+                                <label htmlFor="description" className="form-label">Описание</label>
                                 <textarea
                                         rows="5"
                                        name="description"
                                        id="description"
                                        className="form-control"
-                                       placeholder="Write content here.."
+                                       placeholder="Опишете категорията..."
                                         onChange={onChangeHandler}
                                         value={data.description}
                                 ></textarea>
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="bgcolor" className="form-label">Background color</label>
+                                <label htmlFor="bgcolor" className="form-label">Цвят на фона</label>
                                 <br/>
                                 <input type="color"
                                        name="bgColor"
@@ -101,7 +101,7 @@ const CategoryForm = () => {
                             </div>
                             <button type="submit"
                                     disabled={loading}
-                                    className="btn btn-warning w-100">{loading ? "Loading..." : "Submit"}</button>
+                                    className="btn btn-warning w-100">{loading ? "Зареждане..." : "Запази"}</button>
                         </form>
                     </div>
                 </div>

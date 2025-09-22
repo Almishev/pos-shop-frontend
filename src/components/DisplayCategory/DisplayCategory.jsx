@@ -7,7 +7,7 @@ const DisplayCategory = ({selectedCategory, setSelectedCategory, categories}) =>
         <div className="row g-3" style={{width: '100%', margin: 0}}>
             <div key="all" className="col-md-3 col-sm-6" style={{padding: '0 10px'}}>
                 <Category
-                    categoryName="All Items"
+                    categoryName="Всички артикули"
                     imgUrl={assets.device}
                     numberOfItems={categories.reduce((acc, cat) => acc + cat.items, 0)}
                     bgColor="#6c757d"

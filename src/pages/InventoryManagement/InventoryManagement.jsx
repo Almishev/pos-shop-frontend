@@ -44,7 +44,7 @@ const InventoryManagement = () => {
             setRecentTransactions(transactionsData);
             setActiveAlerts(alertsData);
         } catch (error) {
-            toast.error('Error loading inventory data');
+            toast.error('Грешка при зареждане на складовите данни');
             console.error('Error loading inventory data:', error);
         } finally {
             setLoading(false);
@@ -73,7 +73,7 @@ const InventoryManagement = () => {
 
     const handleStockOperation = async (operation) => {
         if (!selectedItem) {
-            toast.error('Please select an item first');
+            toast.error('Моля, първо изберете артикул');
             return;
         }
 
@@ -101,15 +101,15 @@ const InventoryManagement = () => {
                     result = await InventoryService.adjustStock(request);
                     break;
                 default:
-                    toast.error('Invalid operation');
+                    toast.error('Невалидна операция');
                     return;
             }
             
-            toast.success(`${operation.charAt(0).toUpperCase() + operation.slice(1)} stock operation completed successfully`);
+            toast.success('Операцията е изпълнена успешно');
             resetForm();
             loadInventoryData();
         } catch (error) {
-            toast.error(error.response?.data?.message || `Error performing ${operation} operation`);
+            toast.error(error.response?.data?.message || 'Грешка при изпълнение на операцията');
             console.error(`Error performing ${operation} operation:`, error);
         }
     };
@@ -146,9 +146,9 @@ const InventoryManagement = () => {
     };
 
     const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('de-DE', {
+        return new Intl.NumberFormat('bg-BG', {
             style: 'currency',
-            currency: 'EUR'
+            currency: 'BGN'
         }).format(amount || 0);
     };
 
@@ -169,13 +169,13 @@ const InventoryManagement = () => {
             <div className="row">
                 <div className="col-12">
                     <div className="d-flex justify-content-between align-items-center mb-4">
-                        <h2>📦 Inventory Management</h2>
+                        <h2>📦 Склад</h2>
                         <button 
                             className="btn btn-primary"
                             onClick={() => setShowStockForm(true)}
                         >
                             <i className="bi bi-plus-circle me-2"></i>
-                            Stock Operation
+                            Складова операция
                         </button>
                     </div>
 
@@ -185,7 +185,7 @@ const InventoryManagement = () => {
                             <div className="col-md-3">
                                 <div className="card bg-primary text-white">
                                     <div className="card-body">
-                                        <h5 className="card-title">Total Items</h5>
+                                        <h5 className="card-title">Общо артикули</h5>
                                         <h3>{summary.totalItems}</h3>
                                     </div>
                                 </div>
@@ -193,7 +193,7 @@ const InventoryManagement = () => {
                             <div className="col-md-3">
                                 <div className="card bg-warning text-dark">
                                     <div className="card-body">
-                                        <h5 className="card-title">Low Stock</h5>
+                                        <h5 className="card-title">Ниска наличност</h5>
                                         <h3>{summary.lowStockItems}</h3>
                                     </div>
                                 </div>
@@ -201,7 +201,7 @@ const InventoryManagement = () => {
                             <div className="col-md-3">
                                 <div className="card bg-danger text-white">
                                     <div className="card-body">
-                                        <h5 className="card-title">Out of Stock</h5>
+                                        <h5 className="card-title">Изчерпани</h5>
                                         <h3>{summary.outOfStockItems}</h3>
                                     </div>
                                 </div>
@@ -209,7 +209,7 @@ const InventoryManagement = () => {
                             <div className="col-md-3">
                                 <div className="card bg-success text-white">
                                     <div className="card-body">
-                                        <h5 className="card-title">Total Value</h5>
+                                        <h5 className="card-title">Обща стойност</h5>
                                         <h3>{formatCurrency(summary.totalInventoryValue)}</h3>
                                     </div>
                                 </div>
@@ -221,12 +221,12 @@ const InventoryManagement = () => {
                     {showStockForm && (
                         <div className="card mb-4">
                             <div className="card-header">
-                                <h5>Stock Operation</h5>
+                                <h5>Складова операция</h5>
                             </div>
                             <div className="card-body">
                                 <div className="row">
                                     <div className="col-md-6 mb-3">
-                                        <label className="form-label">Item</label>
+                                        <label className="form-label">Артикул</label>
                                         <select
                                             className="form-select"
                                             value={selectedItem?.itemId || ''}
@@ -235,47 +235,47 @@ const InventoryManagement = () => {
                                                 setSelectedItem(item);
                                             }}
                                         >
-                                            <option value="">Select Item</option>
+                                            <option value="">Изберете артикул</option>
                                             {allItems.map((item) => (
                                                 <option key={item.itemId} value={item.itemId}>
-                                                    {item.name} - Current: {item.stockQuantity || 0} {item.unitOfMeasure || 'pcs'}
+                                                    {item.name} - Наличност: {item.stockQuantity || 0} бр
                                                 </option>
                                             ))}
                                         </select>
                                     </div>
                                     <div className="col-md-6 mb-3">
-                                        <label className="form-label">Operation Type</label>
+                                        <label className="form-label">Вид операция</label>
                                         <select
                                             className="form-select"
                                             name="adjustmentType"
                                             value={formData.adjustmentType}
                                             onChange={handleInputChange}
                                         >
-                                            <option value="COUNT_CORRECTION">Count Correction</option>
-                                            <option value="DAMAGE">Damage</option>
-                                            <option value="EXPIRY">Expiry</option>
-                                            <option value="THEFT">Theft</option>
-                                            <option value="LOSS">Loss</option>
-                                            <option value="FOUND">Found</option>
-                                            <option value="OTHER">Other</option>
+                                            <option value="COUNT_CORRECTION">Корекция на наличност</option>
+                                            <option value="DAMAGE">Повреда</option>
+                                            <option value="EXPIRY">Изтекъл срок</option>
+                                            <option value="THEFT">Кражба</option>
+                                            <option value="LOSS">Загуба</option>
+                                            <option value="FOUND">Намерени</option>
+                                            <option value="OTHER">Друго</option>
                                         </select>
                                     </div>
                                 </div>
                                 
                                 <div className="row">
                                     <div className="col-md-4 mb-3">
-                                        <label className="form-label">Quantity</label>
+                                        <label className="form-label">Количество</label>
                                         <input
                                             type="number"
                                             className="form-control"
                                             name="quantity"
                                             value={formData.quantity}
                                             onChange={handleInputChange}
-                                            placeholder="Enter quantity"
+                                            placeholder="Въведете количество"
                                         />
                                     </div>
                                     <div className="col-md-4 mb-3">
-                                        <label className="form-label">Unit Price</label>
+                                        <label className="form-label">Единична цена</label>
                                         <input
                                             type="number"
                                             step="0.01"
@@ -283,31 +283,31 @@ const InventoryManagement = () => {
                                             name="unitPrice"
                                             value={formData.unitPrice}
                                             onChange={handleInputChange}
-                                            placeholder="Enter unit price"
+                                            placeholder="Въведете единична цена"
                                         />
                                     </div>
                                     <div className="col-md-4 mb-3">
-                                        <label className="form-label">Reason</label>
+                                        <label className="form-label">Причина</label>
                                         <input
                                             type="text"
                                             className="form-control"
                                             name="reason"
                                             value={formData.reason}
                                             onChange={handleInputChange}
-                                            placeholder="Enter reason"
+                                            placeholder="Въведете причина"
                                         />
                                     </div>
                                 </div>
 
                                 <div className="mb-3">
-                                    <label className="form-label">Notes</label>
+                                    <label className="form-label">Бележки</label>
                                     <textarea
                                         className="form-control"
                                         name="notes"
                                         value={formData.notes}
                                         onChange={handleInputChange}
                                         rows="3"
-                                        placeholder="Additional notes..."
+                                        placeholder="Допълнителни бележки..."
                                     />
                                 </div>
 
@@ -318,7 +318,7 @@ const InventoryManagement = () => {
                                         disabled={!selectedItem}
                                     >
                                         <i className="bi bi-plus-circle me-2"></i>
-                                        Add Stock
+                                        Добави
                                     </button>
                                     <button 
                                         className="btn btn-warning"
@@ -326,7 +326,7 @@ const InventoryManagement = () => {
                                         disabled={!selectedItem}
                                     >
                                         <i className="bi bi-dash-circle me-2"></i>
-                                        Remove Stock
+                                        Намали
                                     </button>
                                     <button 
                                         className="btn btn-info"
@@ -334,13 +334,13 @@ const InventoryManagement = () => {
                                         disabled={!selectedItem}
                                     >
                                         <i className="bi bi-arrow-clockwise me-2"></i>
-                                        Adjust Stock
+                                        Коригирай
                                     </button>
                                     <button 
                                         className="btn btn-secondary"
                                         onClick={resetForm}
                                     >
-                                        Cancel
+                                        Отказ
                                     </button>
                                 </div>
                             </div>
@@ -350,23 +350,23 @@ const InventoryManagement = () => {
                     {/* Low Stock Items */}
                     <div className="card mb-4 low-stock-card">
                         <div className="card-header">
-                            <h5>⚠️ Low Stock Items ({lowStockItems.length})</h5>
+                            <h5>⚠️ Ниска наличност ({lowStockItems.length})</h5>
                         </div>
                         <div className="card-body">
                             {lowStockItems.length === 0 ? (
-                                <p className="text-muted">No low stock items.</p>
+                                <p className="text-muted">Няма артикули с ниска наличност.</p>
                             ) : (
                                 <div className="table-responsive scroll-y">
                                     <table className="table table-hover">
                                         <thead>
                                             <tr>
-                                                <th>Item Name</th>
-                                                <th>Barcode</th>
-                                                <th>Current Stock</th>
-                                                <th>Reorder Point</th>
-                                                <th>Status</th>
-                                                <th>Needs Reorder</th>
-                                                <th>Actions</th>
+                                                <th>Артикул</th>
+                                                <th>Баркод</th>
+                                                <th>Наличност</th>
+                                                <th>Точка за презареждане</th>
+                                                <th>Статус</th>
+                                                <th>Нужда от поръчка</th>
+                                                <th>Действия</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -375,15 +375,15 @@ const InventoryManagement = () => {
                                                     <td>{item.itemName || item.name}</td>
                                                     <td>{item.barcode}</td>
                                                     <td>
-                                                        <strong>{(item.currentStock ?? item.stockQuantity ?? 0)} {item.unitOfMeasure}</strong>
+                                                        <strong>{(item.currentStock ?? item.stockQuantity ?? 0)} бр</strong>
                                                     </td>
-                                                    <td>{item.reorderPoint} {item.unitOfMeasure}</td>
+                                                    <td>{item.reorderPoint} бр</td>
                                                     <td>{getStockStatusBadge(item.stockStatus)}</td>
                                                     <td>
                                                         {item.needsReorder ? (
-                                                            <span className="badge bg-danger">Yes</span>
+                                                            <span className="badge bg-danger">Да</span>
                                                         ) : (
-                                                            <span className="badge bg-success">No</span>
+                                                            <span className="badge bg-success">Не</span>
                                                         )}
                                                     </td>
                                                     <td>
@@ -394,7 +394,7 @@ const InventoryManagement = () => {
                                                                 setShowStockForm(true);
                                                             }}
                                                         >
-                                                            <i className="bi bi-plus-circle"></i> Add Stock
+                                                            <i className="bi bi-plus-circle"></i> Добави
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -409,24 +409,24 @@ const InventoryManagement = () => {
                     {/* Recent Transactions */}
                     <div className="card recent-transactions-card">
                         <div className="card-header">
-                            <h5>📊 Recent Transactions</h5>
+                            <h5>📊 Последни транзакции</h5>
                         </div>
                         <div className="card-body">
                             {recentTransactions.length === 0 ? (
-                                <p className="text-muted">No recent transactions.</p>
+                                <p className="text-muted">Няма последни транзакции.</p>
                             ) : (
                                 <div className="table-responsive">
                                     <table className="table table-hover">
                                         <thead>
                                             <tr>
-                                                <th>Item</th>
-                                                <th>Type</th>
-                                                <th>Quantity</th>
-                                                <th>Previous Stock</th>
-                                                <th>New Stock</th>
-                                                <th>Unit Price</th>
-                                                <th>Total Value</th>
-                                                <th>Date</th>
+                                                <th>Артикул</th>
+                                                <th>Тип</th>
+                                                <th>Количество</th>
+                                                <th>Стара наличност</th>
+                                                <th>Нова наличност</th>
+                                                <th>Единична цена</th>
+                                                <th>Обща стойност</th>
+                                                <th>Дата</th>
                                             </tr>
                                         </thead>
                                         <tbody>

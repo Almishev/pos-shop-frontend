@@ -8,7 +8,7 @@ const CartItems = () => {
         <div className="p-3 h-100 overflow-y-auto">
             {cartItems.length === 0 ? (
                 <p className="text-light">
-                    Your cart is empty.
+                    Количката е празна.
                 </p>
             ) : (
                 <div className="cart-items-list">
@@ -17,7 +17,7 @@ const CartItems = () => {
                             <div className="d-flex justify-content-between align-items-center mb-2">
                                 <h6 className="mb-0 text-light">{item.name}</h6>
                                 <p className="mb-0 text-light">
-                                    €{(item.price * item.quantity).toFixed(2)}
+                                    {(new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'})).format(item.price * item.quantity)}
                                 </p>
                             </div>
                             {item.barcode && (

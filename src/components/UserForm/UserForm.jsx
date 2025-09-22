@@ -23,7 +23,7 @@ const UserForm = ({setUsers}) => {
         try {
             const response = await addUser(data);
             setUsers((prevUsers) => [...prevUsers, response.data]);
-            toast.success("User Added");
+            toast.success("Потребителят е добавен");
             setData({
                 name: "",
                 email: "",
@@ -32,7 +32,7 @@ const UserForm = ({setUsers}) => {
             })
         } catch (e) {
             console.error(e);
-            toast.error("Error adding user");
+            toast.error("Грешка при добавяне на потребител");
         } finally {
             setLoading(false);
         }
@@ -45,19 +45,19 @@ const UserForm = ({setUsers}) => {
                     <div className="card-body">
                         <form onSubmit={onSubmitHandler}>
                             <div className="mb-3">
-                                <label htmlFor="name" className="form-label">Name</label>
+                                <label htmlFor="name" className="form-label">Име</label>
                                 <input type="text"
                                        name="name"
                                        id="name"
                                        className="form-control"
-                                       placeholder="Jhon Doe"
+                                       placeholder="Иван Иванов"
                                        onChange={onChangeHandler}
                                        value={data.name}
                                        required
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="email" className="form-label">Email</label>
+                                <label htmlFor="email" className="form-label">Имейл</label>
                                 <input type="email"
                                        name="email"
                                        id="email"
@@ -69,7 +69,7 @@ const UserForm = ({setUsers}) => {
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="password" className="form-label">Password</label>
+                                <label htmlFor="password" className="form-label">Парола</label>
                                 <input type="password"
                                        name="password"
                                        id="password"
@@ -81,7 +81,7 @@ const UserForm = ({setUsers}) => {
                                 />
                             </div>
                             <button type="submit" className="btn btn-warning w-100" disabled={loading}>
-                                {loading ? "Loading..." : "Save"}
+                                {loading ? "Зареждане..." : "Запази"}
                             </button>
                         </form>
                     </div>

@@ -30,7 +30,7 @@ const FiscalReports = () => {
             setReports(reportsData);
             setDevices(devicesData);
         } catch (error) {
-            toast.error('Error loading data');
+            toast.error('Грешка при зареждане на данни');
             console.error('Error loading data:', error);
         } finally {
             setLoading(false);
@@ -60,7 +60,7 @@ const FiscalReports = () => {
         e.preventDefault();
         
         if (!selectedReportType) {
-            toast.error('Please select a report type');
+            toast.error('Моля, изберете тип отчет');
             return;
         }
 
@@ -80,27 +80,27 @@ const FiscalReports = () => {
                     result = await FiscalService.generateYearlyReport(formData);
                     break;
                 default:
-                    toast.error('Invalid report type');
+                    toast.error('Невалиден тип отчет');
                     return;
             }
             
-            toast.success(`${selectedReportType} report generated successfully`);
+            toast.success('Отчетът е генериран успешно');
             resetForm();
             loadData();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Error generating report');
+            toast.error(error.response?.data?.message || 'Грешка при генериране на отчет');
             console.error('Error generating report:', error);
         }
     };
 
     const sendReportToNAF = async (reportId) => {
-        if (window.confirm('Are you sure you want to send this report to NAF?')) {
+        if (window.confirm('Сигурни ли сте, че искате да изпратите този отчет към НАП?')) {
             try {
                 await FiscalService.sendReportToNAF(reportId);
-                toast.success('Report sent to NAF successfully');
+                toast.success('Отчетът е изпратен към НАП');
                 loadData();
             } catch (error) {
-                toast.error('Error sending report to NAF');
+                toast.error('Грешка при изпращане към НАП');
                 console.error('Error sending report:', error);
             }
         }
@@ -139,9 +139,9 @@ const FiscalReports = () => {
     };
 
     const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('de-DE', {
+        return new Intl.NumberFormat('bg-BG', {
             style: 'currency',
-            currency: 'EUR'
+            currency: 'BGN'
         }).format(amount || 0);
     };
 
@@ -162,41 +162,41 @@ const FiscalReports = () => {
             <div className="row">
                 <div className="col-12">
                     <div className="d-flex justify-content-between align-items-center mb-4">
-                        <h2>📊 Fiscal Reports Management</h2>
+                        <h2>📊 Фискални отчети</h2>
                         <button 
                             className="btn btn-primary"
                             onClick={() => setShowGenerateForm(true)}
                         >
                             <i className="bi bi-plus-circle me-2"></i>
-                            Generate Report
+                            Генерирай отчет
                         </button>
                     </div>
 
                     {showGenerateForm && (
                         <div className="card mb-4">
                             <div className="card-header">
-                                <h5>Generate New Fiscal Report</h5>
+                                <h5>Генерирай нов фискален отчет</h5>
                             </div>
                             <div className="card-body">
                                 <form onSubmit={generateReport}>
                                     <div className="row">
                                         <div className="col-md-6 mb-3">
-                                            <label className="form-label">Report Type *</label>
+                                            <label className="form-label">Тип отчет *</label>
                                             <select
                                                 className="form-select"
                                                 value={selectedReportType}
                                                 onChange={(e) => setSelectedReportType(e.target.value)}
                                                 required
                                             >
-                                                <option value="">Select Report Type</option>
-                                                <option value="DAILY">Daily Report</option>
-                                                <option value="SHIFT">Shift Report</option>
-                                                <option value="MONTHLY">Monthly Report</option>
-                                                <option value="YEARLY">Yearly Report</option>
+                                                <option value="">Изберете тип</option>
+                                                <option value="DAILY">Дневен отчет</option>
+                                                <option value="SHIFT">Сменен отчет</option>
+                                                <option value="MONTHLY">Месечен отчет</option>
+                                                <option value="YEARLY">Годишен отчет</option>
                                             </select>
                                         </div>
                                         <div className="col-md-6 mb-3">
-                                            <label className="form-label">Report Date *</label>
+                                            <label className="form-label">Дата на отчет *</label>
                                             <input
                                                 type="date"
                                                 className="form-control"
@@ -210,7 +210,7 @@ const FiscalReports = () => {
                                     
                                     <div className="row">
                                         <div className="col-md-6 mb-3">
-                                            <label className="form-label">Cashier Name</label>
+                                            <label className="form-label">Касиер</label>
                                             <input
                                                 type="text"
                                                 className="form-control"
@@ -220,14 +220,14 @@ const FiscalReports = () => {
                                             />
                                         </div>
                                         <div className="col-md-6 mb-3">
-                                            <label className="form-label">Fiscal Device</label>
+                                            <label className="form-label">Фискално устройство</label>
                                             <select
                                                 className="form-select"
                                                 name="deviceSerialNumber"
                                                 value={formData.deviceSerialNumber}
                                                 onChange={handleInputChange}
                                             >
-                                                <option value="">Select Device</option>
+                                                <option value="">Изберете устройство</option>
                                                 {devices.map((device) => (
                                                     <option key={device.id} value={device.serialNumber}>
                                                         {device.serialNumber} - {device.location || device.model}
@@ -238,7 +238,7 @@ const FiscalReports = () => {
                                     </div>
 
                                     <div className="mb-3">
-                                        <label className="form-label">Notes</label>
+                                        <label className="form-label">Бележки</label>
                                         <textarea
                                             className="form-control"
                                             name="notes"
@@ -250,14 +250,14 @@ const FiscalReports = () => {
 
                                     <div className="d-flex gap-2">
                                         <button type="submit" className="btn btn-primary">
-                                            Generate Report
+                                            Генерирай отчет
                                         </button>
                                         <button 
                                             type="button" 
                                             className="btn btn-secondary"
                                             onClick={resetForm}
                                         >
-                                            Cancel
+                                            Отказ
                                         </button>
                                     </div>
                                 </form>
@@ -267,18 +267,18 @@ const FiscalReports = () => {
 
                     <div className="card">
                         <div className="card-header">
-                            <h5>Generated Reports</h5>
+                            <h5>Генерирани отчети</h5>
                         </div>
                         <div className="card-body">
                             {reports.length === 0 ? (
                                 <div className="text-center py-4">
                                     <i className="bi bi-file-earmark-text display-1 text-muted"></i>
-                                    <p className="mt-3 text-muted">No fiscal reports generated yet.</p>
+                                    <p className="mt-3 text-muted">Няма генерирани фискални отчети.</p>
                                     <button 
                                         className="btn btn-primary"
                                         onClick={() => setShowGenerateForm(true)}
                                     >
-                                        Generate First Report
+                                        Генерирай първи отчет
                                     </button>
                                 </div>
                             ) : (
@@ -286,15 +286,15 @@ const FiscalReports = () => {
                                     <table className="table table-hover">
                                         <thead>
                                             <tr>
-                                                <th>Report Number</th>
-                                                <th>Type</th>
-                                                <th>Date</th>
-                                                <th>Total Receipts</th>
-                                                <th>Total Sales</th>
-                                                <th>Total VAT</th>
-                                                <th>Status</th>
-                                                <th>Generated At</th>
-                                                <th>Actions</th>
+                                                <th>Номер</th>
+                                                <th>Тип</th>
+                                                <th>Дата</th>
+                                                <th>Брой бележки</th>
+                                                <th>Общо продажби</th>
+                                                <th>Общо ДДС</th>
+                                                <th>Статус</th>
+                                                <th>Създаден на</th>
+                                                <th>Действия</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -318,20 +318,20 @@ const FiscalReports = () => {
                                                                 <button
                                                                     className="btn btn-sm btn-outline-success"
                                                                     onClick={() => sendReportToNAF(report.id)}
-                                                                    title="Send to NAF"
+                                                                    title="Изпрати към НАП"
                                                                 >
                                                                     <i className="bi bi-send"></i>
                                                                 </button>
                                                             )}
                                                             <button
                                                                 className="btn btn-sm btn-outline-info"
-                                                                title="View Details"
+                                                                title="Детайли"
                                                             >
                                                                 <i className="bi bi-eye"></i>
                                                             </button>
                                                             <button
                                                                 className="btn btn-sm btn-outline-secondary"
-                                                                title="Download"
+                                                                title="Свали"
                                                             >
                                                                 <i className="bi bi-download"></i>
                                                             </button>

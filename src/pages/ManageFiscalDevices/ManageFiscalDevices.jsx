@@ -29,7 +29,7 @@ const ManageFiscalDevices = () => {
             const data = await FiscalService.getAllDevices();
             setDevices(data);
         } catch (error) {
-            toast.error('Error loading fiscal devices');
+            toast.error('Грешка при зареждане на фискални устройства');
             console.error('Error loading devices:', error);
         } finally {
             setLoading(false);
@@ -65,16 +65,16 @@ const ManageFiscalDevices = () => {
         try {
             if (editingDevice) {
                 await FiscalService.updateDevice(formData);
-                toast.success('Fiscal device updated successfully');
+                toast.success('Фискалното устройство е обновено');
             } else {
                 await FiscalService.registerDevice(formData);
-                toast.success('Fiscal device registered successfully');
+                toast.success('Фискалното устройство е регистрирано');
             }
             
             resetForm();
             loadDevices();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Error saving fiscal device');
+            toast.error(error.response?.data?.message || 'Грешка при запис на фискално устройство');
             console.error('Error saving device:', error);
         }
     };
@@ -95,13 +95,13 @@ const ManageFiscalDevices = () => {
     };
 
     const handleDelete = async (deviceId) => {
-        if (window.confirm('Are you sure you want to delete this fiscal device?')) {
+        if (window.confirm('Сигурни ли сте, че искате да изтриете това фискално устройство?')) {
             try {
                 await FiscalService.deleteDevice(deviceId);
-                toast.success('Fiscal device deleted successfully');
+                toast.success('Фискалното устройство е изтрито');
                 loadDevices();
             } catch (error) {
-                toast.error('Error deleting fiscal device');
+                toast.error('Грешка при изтриване на фискално устройство');
                 console.error('Error deleting device:', error);
             }
         }
@@ -110,9 +110,9 @@ const ManageFiscalDevices = () => {
     const checkDeviceStatus = async (serialNumber) => {
         try {
             const status = await FiscalService.checkDeviceStatus(serialNumber);
-            toast.success(`Device ${serialNumber} is ${status ? 'connected' : 'disconnected'}`);
+            toast.success(`Устройство ${serialNumber}: ${status ? 'свързано' : 'изключено'}`);
         } catch (error) {
-            toast.error('Error checking device status');
+            toast.error('Грешка при проверка на статуса');
         }
     };
 
@@ -149,26 +149,26 @@ const ManageFiscalDevices = () => {
             <div className="row">
                 <div className="col-12">
                     <div className="d-flex justify-content-between align-items-center mb-4">
-                        <h2>🏪 Fiscal Devices Management</h2>
+                        <h2>🏪 Фискални устройства</h2>
                         <button 
                             className="btn btn-primary"
                             onClick={() => setShowForm(true)}
                         >
                             <i className="bi bi-plus-circle me-2"></i>
-                            Add New Device
+                            Добави устройство
                         </button>
                     </div>
 
                     {showForm && (
                         <div className="card mb-4">
                             <div className="card-header">
-                                <h5>{editingDevice ? 'Edit Fiscal Device' : 'Register New Fiscal Device'}</h5>
+                                <h5>{editingDevice ? 'Редакция на фискално устройство' : 'Регистрация на фискално устройство'}</h5>
                             </div>
                             <div className="card-body">
                                 <form onSubmit={handleSubmit}>
                                     <div className="row">
                                         <div className="col-md-6 mb-3">
-                                            <label className="form-label">Serial Number *</label>
+                                            <label className="form-label">Сериен номер *</label>
                                             <input
                                                 type="text"
                                                 className="form-control"
@@ -180,7 +180,7 @@ const ManageFiscalDevices = () => {
                                             />
                                         </div>
                                         <div className="col-md-6 mb-3">
-                                            <label className="form-label">Manufacturer</label>
+                                            <label className="form-label">Производител</label>
                                             <input
                                                 type="text"
                                                 className="form-control"
@@ -193,7 +193,7 @@ const ManageFiscalDevices = () => {
                                     
                                     <div className="row">
                                         <div className="col-md-6 mb-3">
-                                            <label className="form-label">Model</label>
+                                            <label className="form-label">Модел</label>
                                             <input
                                                 type="text"
                                                 className="form-control"
@@ -203,7 +203,7 @@ const ManageFiscalDevices = () => {
                                             />
                                         </div>
                                         <div className="col-md-6 mb-3">
-                                            <label className="form-label">Fiscal Memory Number</label>
+                                            <label className="form-label">Номер на фискална памет</label>
                                             <input
                                                 type="text"
                                                 className="form-control"
@@ -216,7 +216,7 @@ const ManageFiscalDevices = () => {
 
                                     <div className="row">
                                         <div className="col-md-6 mb-3">
-                                            <label className="form-label">API Endpoint</label>
+                                            <label className="form-label">API адрес</label>
                                             <input
                                                 type="url"
                                                 className="form-control"
@@ -226,7 +226,7 @@ const ManageFiscalDevices = () => {
                                             />
                                         </div>
                                         <div className="col-md-6 mb-3">
-                                            <label className="form-label">API Key</label>
+                                            <label className="form-label">API ключ</label>
                                             <input
                                                 type="password"
                                                 className="form-control"
@@ -239,7 +239,7 @@ const ManageFiscalDevices = () => {
 
                                     <div className="row">
                                         <div className="col-md-6 mb-3">
-                                            <label className="form-label">Location</label>
+                                            <label className="form-label">Локация</label>
                                             <input
                                                 type="text"
                                                 className="form-control"
@@ -249,7 +249,7 @@ const ManageFiscalDevices = () => {
                                             />
                                         </div>
                                         <div className="col-md-6 mb-3">
-                                            <label className="form-label">Notes</label>
+                                            <label className="form-label">Бележки</label>
                                             <textarea
                                                 className="form-control"
                                                 name="notes"
@@ -262,14 +262,14 @@ const ManageFiscalDevices = () => {
 
                                     <div className="d-flex gap-2">
                                         <button type="submit" className="btn btn-primary">
-                                            {editingDevice ? 'Update Device' : 'Register Device'}
+                                            {editingDevice ? 'Обнови устройство' : 'Регистрирай устройство'}
                                         </button>
                                         <button 
                                             type="button" 
                                             className="btn btn-secondary"
                                             onClick={resetForm}
                                         >
-                                            Cancel
+                                            Отказ
                                         </button>
                                     </div>
                                 </form>
@@ -279,18 +279,18 @@ const ManageFiscalDevices = () => {
 
                     <div className="card">
                         <div className="card-header">
-                            <h5>Registered Fiscal Devices</h5>
+                            <h5>Регистрирани фискални устройства</h5>
                         </div>
                         <div className="card-body">
                             {devices.length === 0 ? (
                                 <div className="text-center py-4">
                                     <i className="bi bi-printer display-1 text-muted"></i>
-                                    <p className="mt-3 text-muted">No fiscal devices registered yet.</p>
+                                    <p className="mt-3 text-muted">Няма регистрирани фискални устройства.</p>
                                     <button 
                                         className="btn btn-primary"
                                         onClick={() => setShowForm(true)}
                                     >
-                                        Register First Device
+                                        Регистрирай първо устройство
                                     </button>
                                 </div>
                             ) : (
@@ -298,13 +298,13 @@ const ManageFiscalDevices = () => {
                                     <table className="table table-hover">
                                         <thead>
                                             <tr>
-                                                <th>Serial Number</th>
-                                                <th>Manufacturer</th>
-                                                <th>Model</th>
-                                                <th>Location</th>
-                                                <th>Status</th>
-                                                <th>Registration Date</th>
-                                                <th>Actions</th>
+                                                <th>Сериен номер</th>
+                                                <th>Производител</th>
+                                                <th>Модел</th>
+                                                <th>Локация</th>
+                                                <th>Статус</th>
+                                                <th>Дата на регистрация</th>
+                                                <th>Действия</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -325,21 +325,21 @@ const ManageFiscalDevices = () => {
                                                             <button
                                                                 className="btn btn-sm btn-outline-primary"
                                                                 onClick={() => checkDeviceStatus(device.serialNumber)}
-                                                                title="Check Status"
+                                                                title="Провери статус"
                                                             >
                                                                 <i className="bi bi-wifi"></i>
                                                             </button>
                                                             <button
                                                                 className="btn btn-sm btn-outline-secondary"
                                                                 onClick={() => handleEdit(device)}
-                                                                title="Edit"
+                                                                title="Редакция"
                                                             >
                                                                 <i className="bi bi-pencil"></i>
                                                             </button>
                                                             <button
                                                                 className="btn btn-sm btn-outline-danger"
                                                                 onClick={() => handleDelete(device.id)}
-                                                                title="Delete"
+                                                                title="Изтрий"
                                                             >
                                                                 <i className="bi bi-trash"></i>
                                                             </button>
