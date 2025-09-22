@@ -6,6 +6,7 @@ import ManageUsers from "./pages/ManageUsers/ManageUsers.jsx";
 import ManageItems from "./pages/ManageItems/ManageItems.jsx";
 import ManageFiscalDevices from "./pages/ManageFiscalDevices/ManageFiscalDevices.jsx";
 import FiscalReports from "./pages/FiscalReports/FiscalReports.jsx";
+import InventoryManagement from "./pages/InventoryManagement/InventoryManagement.jsx";
 import Explore from "./pages/Explore/Explore.jsx";
 import {Toaster} from "react-hot-toast";
 import Login from "./pages/Login/Login.jsx";
@@ -50,6 +51,7 @@ const App = () => {
                 <Route path="/items" element={<ProtectedRoute element={<ManageItems />} allowedRoles={["ROLE_ADMIN"]} /> } />
                 <Route path="/fiscal-devices" element={<ProtectedRoute element={<ManageFiscalDevices />} allowedRoles={["ROLE_ADMIN"]} />} />
                 <Route path="/fiscal-reports" element={<ProtectedRoute element={<FiscalReports />} allowedRoles={["ROLE_ADMIN"]} />} />
+                <Route path="/inventory" element={<ProtectedRoute element={<InventoryManagement />} allowedRoles={["ROLE_ADMIN"]} />} />
 
                 <Route path="/login" element={<LoginRoute element={<Login />} />} />
                 <Route path="/orders" element={<OrderHistory />} />

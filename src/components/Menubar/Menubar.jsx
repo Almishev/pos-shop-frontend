@@ -50,6 +50,9 @@ const Menubar = () => {
                                 <li className="nav-item">
                                     <Link className={`nav-link ${isActive('/users') ? 'fw-bold text-warning': ''}`} to="/users">Manage Users</Link>
                                 </li>
+                                <li className="nav-item">
+                                    <Link className={`nav-link ${isActive('/inventory') ? 'fw-bold text-warning': ''}`} to="/inventory">📦 Inventory</Link>
+                                </li>
                             </>
                         )
                     }
@@ -93,12 +96,16 @@ const Menubar = () => {
                                 <a href="#!" className="dropdown-item">
                                     Settings
                                 </a>
+                            </li>
+                            <li>
                                 <a href="#!" className="dropdown-item">
                                     Activity log
                                 </a>
-                                <li>
-                                    <hr className="dropdown-divider" />
-                                </li>
+                            </li>
+                            <li>
+                                <hr className="dropdown-divider" />
+                            </li>
+                            <li>
                                 <a href="#!" className="dropdown-item" onClick={logout}>
                                     Logout
                                 </a>

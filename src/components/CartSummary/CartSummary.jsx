@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import {createRazorpayOrder, verifyPayment} from "../../Service/PaymentService.js";
 import {AppConstants} from "../../util/constants.js";
 import FiscalService from "../../Service/FiscalService.js";
+import InventoryService from "../../Service/InventoryService.js";
 
 const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerName}) => {
     const {cartItems, clearCart} = useContext(AppContext);
@@ -85,6 +86,9 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                 toast.error('Warning: Fiscal receipt not sent');
             }
             
+            // Inventory is now updated server-side inside OrderServiceImpl#createOrder.
+            // We skip the client-side inventory call to avoid duplicate updates and 403s.
+            
             if (response.status === 201 && paymentMode === "cash") {
                 toast.success("Cash received");
                 setOrderDetails(savedData);
@@ -154,7 +158,7 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                 vatAmount: orderData.tax,
                 grandTotal: orderData.grandTotal,
                 cashierName: "Cashier", // You can get this from context
-                items: orderData.cartItems.map(item => ({
+                items: (orderData.items || orderData.cartItems || []).map(item => ({
                     itemName: item.name,
                     barcode: item.barcode || '',
                     unitPrice: item.price,
@@ -170,6 +174,26 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
             
         } catch (error) {
             console.error('Error sending to fiscal device:', error);
+            throw error;
+        }
+    };
+
+    const updateInventory = async (orderData) => {
+        try {
+            // Process each item in the order to update inventory
+            const items = orderData.items || orderData.cartItems || [];
+            for (const item of items) {
+                await InventoryService.processSaleTransaction(
+                    item.itemId,
+                    item.quantity,
+                    orderData.orderId
+                );
+            }
+            console.log('Inventory updated successfully');
+            toast.success('Inventory updated successfully');
+            
+        } catch (error) {
+            console.error('Error updating inventory:', error);
             throw error;
         }
     };
