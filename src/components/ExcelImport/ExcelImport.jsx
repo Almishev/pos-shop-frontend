@@ -11,12 +11,18 @@ const ExcelImport = ({ onImportComplete }) => {
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
         if (selectedFile) {
-            if (selectedFile.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-                selectedFile.name.toLowerCase().endsWith('.xlsx')) {
+            const fileName = selectedFile.name.toLowerCase();
+            const fileType = selectedFile.type;
+            
+            if (fileType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                fileType === 'text/csv' ||
+                fileType === 'application/csv' ||
+                fileName.endsWith('.xlsx') ||
+                fileName.endsWith('.csv')) {
                 setFile(selectedFile);
                 setImportResult(null);
             } else {
-                toast.error('Моля изберете Excel файл (.xlsx)');
+                toast.error('Моля изберете Excel (.xlsx) или CSV файл');
                 setFile(null);
             }
         }
@@ -52,19 +58,24 @@ const ExcelImport = ({ onImportComplete }) => {
     };
 
     const downloadTemplate = () => {
-        // Create a simple CSV template for download
+        // Create a simple CSV template for download with proper encoding
         const templateData = [
             ['Име на категория', 'Описание на категория', 'Име на продукт', 'Описание на продукт', 'Баркод', 'ДДС ставка', 'Цена', 'Количество'],
             ['Млечни продукти', 'Млечни продукти и яйца', 'Мляко 1л', 'Пълномаслено мляко', '1234567890123', '0.20', '2.50', '100'],
             ['Хлебни изделия', 'Хляб и хлебни изделия', 'Хляб бял', 'Свеж бял хляб', '2345678901234', '0.20', '1.20', '50']
         ];
 
-        const csvContent = templateData.map(row => row.join(',')).join('\n');
+        // Add BOM (Byte Order Mark) for UTF-8 to ensure proper encoding in Excel
+        const BOM = '\uFEFF';
+        const csvContent = BOM + templateData.map(row => 
+            row.map(cell => `"${cell}"`).join(',')
+        ).join('\n');
+        
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', 'template_products.xlsx');
+        link.setAttribute('download', 'template_products.csv');
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
@@ -80,13 +91,13 @@ const ExcelImport = ({ onImportComplete }) => {
                 <div className="card-body">
                     <div className="mb-3">
                         <label htmlFor="excelFile" className="form-label">
-                            Изберете Excel файл (.xlsx)
+                            Изберете Excel (.xlsx) или CSV файл
                         </label>
                         <input
                             type="file"
                             className="form-control"
                             id="excelFile"
-                            accept=".xlsx"
+                            accept=".xlsx,.csv"
                             onChange={handleFileChange}
                         />
                         {file && (
@@ -110,7 +121,7 @@ const ExcelImport = ({ onImportComplete }) => {
                             className="btn btn-outline-secondary"
                             onClick={downloadTemplate}
                         >
-                            📥 Изтегли шаблон
+                            📥 Изтегли CSV шаблон
                         </button>
                     </div>
 
@@ -172,9 +183,9 @@ const ExcelImport = ({ onImportComplete }) => {
                     )}
 
                     <div className="mt-4">
-                        <h6>Инструкции за Excel файла:</h6>
+                        <h6>Инструкции за Excel/CSV файла:</h6>
                         <div className="instructions">
-                            <p>Excel файлът трябва да съдържа следните колони (в този ред):</p>
+                            <p>Excel (.xlsx) или CSV файлът трябва да съдържа следните колони (в този ред):</p>
                             <ol>
                                 <li><strong>Име на категория</strong> - Име на категорията (задължително)</li>
                                 <li><strong>Описание на категория</strong> - Описание на категорията (опционално)</li>
@@ -186,6 +197,22 @@ const ExcelImport = ({ onImportComplete }) => {
                                 <li><strong>Количество</strong> - Начално количество в склада (опционално, по подразбиране 0)</li>
                             </ol>
                             <p><strong>Забележка:</strong> Първият ред трябва да съдържа заглавията на колоните.</p>
+                            <div className="alert alert-info mt-3">
+                                <h6>📋 Инструкции за отваряне на CSV файла в Excel:</h6>
+                                <ol>
+                                    <li><strong>Отворете Excel</strong></li>
+                                    <li><strong>Файл → Отвори</strong> (File → Open)</li>
+                                    <li><strong>Изберете CSV файла</strong></li>
+                                    <li><strong>В прозореца "Текстов импорт"</strong> изберете:
+                                        <ul>
+                                            <li>Кодиране: <strong>UTF-8</strong></li>
+                                            <li>Разделител: <strong>Запетая (,)</strong></li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>Натиснете "Готово"</strong></li>
+                                </ol>
+                                <p><strong>Алтернативно:</strong> Можете да отворите CSV файла директно в Excel, но ако видите странни символи, използвайте горните стъпки.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
