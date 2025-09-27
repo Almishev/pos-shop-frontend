@@ -1,0 +1,124 @@
+.loyalty-management-page {
+    padding: 20px;
+    margin-bottom: 50px;
+}
+
+.loyalty-management-page .card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block;
+}
+
+.loyalty-management-page .card .card-header,
+.loyalty-management-page .card .card-body,
+.loyalty-management-page .card .table-responsive,
+.loyalty-management-page .card .table {
+    width: 100% !important;
+}
+
+.loyalty-management-page .table-responsive {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.loyalty-management-page .badge {
+    font-size: 0.75em;
+}
+
+.loyalty-management-page .btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.loyalty-management-page .modal {
+    z-index: 1055;
+}
+
+.loyalty-management-page .modal-dialog {
+    margin: 1.75rem auto;
+}
+
+.loyalty-management-page .form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.loyalty-management-page .form-control:focus,
+.loyalty-management-page .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.loyalty-management-page .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+.loyalty-management-page .table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+.loyalty-management-page .table td {
+    vertical-align: middle;
+}
+
+.loyalty-management-page .btn-group .btn {
+    margin-right: 0.25rem;
+}
+
+.loyalty-management-page .btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .loyalty-management-page {
+        padding: 10px;
+    }
+    
+    .loyalty-management-page .d-flex.justify-content-between {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+    
+    .loyalty-management-page .d-flex.justify-content-between > * {
+        margin-bottom: 10px;
+    }
+    
+    .loyalty-management-page .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .loyalty-management-page .btn-group-sm .btn {
+        padding: 0.125rem 0.25rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Custom badge colors */
+.loyalty-management-page .badge.bg-success {
+    background-color: #198754 !important;
+}
+
+.loyalty-management-page .badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #000;
+}
+
+.loyalty-management-page .badge.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+.loyalty-management-page .badge.bg-info {
+    background-color: #0dcaf0 !important;
+    color: #000;
+}
+
+.loyalty-management-page .badge.bg-secondary {
+    background-color: #6c757d !important;
+}

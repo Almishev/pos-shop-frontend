@@ -24,14 +24,12 @@ const CategoryForm = () => {
     const onSubmitHandler = async (e) => {
         e.preventDefault();
 
-        if (!image) {
-            toast.error("Изберете изображение за категорията");
-            return;
-        }
         setLoading(true);
         const formData = new FormData();
         formData.append("category", JSON.stringify(data));
-        formData.append("file", image);
+        if (image) {
+            formData.append("file", image);
+        }
         try {
             const response = await addCategory(formData);
             if (response.status === 201) {

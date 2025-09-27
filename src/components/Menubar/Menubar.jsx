@@ -57,6 +57,9 @@ const Menubar = () => {
                         )
                     }
                     <li className="nav-item">
+                        <Link className={`nav-link ${isActive('/loyalty') ? 'fw-bold text-warning': ''}`} to="/loyalty">🎯 Лоялност</Link>
+                    </li>
+                    <li className="nav-item">
                         <Link className={`nav-link ${isActive('/orders') ? 'fw-bold text-warning': ''}`} to="/orders">Поръчки</Link>
                     </li>
                     {

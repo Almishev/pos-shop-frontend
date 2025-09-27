@@ -1,5 +1,5 @@
 import './CartSummary.css';
-import {useContext, useState} from "react";
+import {useContext, useState, useEffect} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
 import ReceiptPopup from "../ReceiptPopup/ReceiptPopup.jsx";
 import {createOrder, deleteOrder} from "../../Service/OrderService.js";
@@ -8,13 +8,15 @@ import {createRazorpayOrder, verifyPayment} from "../../Service/PaymentService.j
 import {AppConstants} from "../../util/constants.js";
 import FiscalService from "../../Service/FiscalService.js";
 import InventoryService from "../../Service/InventoryService.js";
+import LoyaltyService from "../../Service/LoyaltyService.js";
 
-const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerName}) => {
+const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerName, loyaltyCustomer}) => {
     const {cartItems, clearCart} = useContext(AppContext);
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [orderDetails, setOrderDetails] = useState(null);
     const [showPopup, setShowPopup] = useState(false);
+    const [loyaltyDiscounts, setLoyaltyDiscounts] = useState(null);
 
     const formatBGN = (amount) => new Intl.NumberFormat('bg-BG', { style: 'currency', currency: 'BGN' }).format(amount || 0);
 
@@ -22,7 +24,43 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
 
     const subtotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
     const tax = cartItems.reduce((total, item) => total + (item.price * item.quantity) * getItemVatRate(item), 0);
-    const grandTotal = subtotal + tax;
+    const loyaltyDiscountAmount = loyaltyDiscounts?.totalDiscount || 0;
+    const grandTotal = subtotal + tax - loyaltyDiscountAmount;
+
+    // Calculate loyalty discounts when cart items or loyalty customer changes
+    useEffect(() => {
+        const calculateLoyaltyDiscounts = async () => {
+            if (cartItems.length > 0 && loyaltyCustomer) {
+                try {
+                    const discountRequest = {
+                        customerId: loyaltyCustomer.customerId,
+                        loyaltyCardBarcode: loyaltyCustomer.loyaltyCardBarcode,
+                        phoneNumber: loyaltyCustomer.phoneNumber,
+                        cartItems: cartItems.map(item => ({
+                            itemId: item.itemId,
+                            itemName: item.name,
+                            categoryId: item.category?.categoryId,
+                            barcode: item.barcode,
+                            price: item.price,
+                            quantity: item.quantity,
+                            vatRate: getItemVatRate(item)
+                        })),
+                        subtotal: subtotal
+                    };
+
+                    const response = await LoyaltyService.calculateDiscounts(discountRequest);
+                    setLoyaltyDiscounts(response.data);
+                } catch (error) {
+                    console.error('Error calculating loyalty discounts:', error);
+                    setLoyaltyDiscounts(null);
+                }
+            } else {
+                setLoyaltyDiscounts(null);
+            }
+        };
+
+        calculateLoyaltyDiscounts();
+    }, [cartItems, loyaltyCustomer, subtotal]);
 
     const clearAll = () => {
         setCustomerName("");
@@ -241,6 +279,12 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                     <span className="text-light">ДДС (20%):</span>
                     <span className="text-light">{formatBGN(tax)}</span>
                 </div>
+                {loyaltyDiscounts && loyaltyDiscountAmount > 0 && (
+                    <div className="d-flex justify-content-between mb-2">
+                        <span className="text-success">🎯 Лоялна отстъпка:</span>
+                        <span className="text-success">-{formatBGN(loyaltyDiscountAmount)}</span>
+                    </div>
+                )}
                 <div className="d-flex justify-content-between mb-4">
                     <span className="text-light">Общо:</span>
                     <span className="text-light">{formatBGN(grandTotal)}</span>

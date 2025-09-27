@@ -7,19 +7,59 @@ import CustomerForm from "../../components/CustomerForm/CustomerForm.jsx";
 import CartItems from "../../components/CartItems/CartItems.jsx";
 import CartSummary from "../../components/CartSummary/CartSummary.jsx";
 import BarcodeScanner from "../../components/BarcodeScanner/BarcodeScanner.jsx";
+import LoyaltyService from "../../Service/LoyaltyService.js";
+import toast from "react-hot-toast";
 
 const Explore = () => {
-    const {categories, addToCart} = useContext(AppContext);
+    const {categories, addToCart, cartItems} = useContext(AppContext);
     const [selectedCategory, setSelectedCategory] = useState("");
     const [customerName, setCustomerName] = useState("");
     const [mobileNumber, setMobileNumber] = useState("");
     const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+    const [loyaltyCustomer, setLoyaltyCustomer] = useState(null);
+    const [loyaltyCardBarcode, setLoyaltyCardBarcode] = useState("");
+    const [showLoyaltyScanner, setShowLoyaltyScanner] = useState(false);
 
     const handleItemFound = (item) => {
         if (addToCart) {
             addToCart(item);
         }
         setShowBarcodeScanner(false);
+    };
+
+    const handleLoyaltyCardFound = async (barcode) => {
+        try {
+            const response = await LoyaltyService.getCustomerByLoyaltyCard(barcode);
+            setLoyaltyCustomer(response.data);
+            setLoyaltyCardBarcode(barcode);
+            toast.success(`Лоялна карта разпозната: ${response.data.firstName} ${response.data.lastName}`);
+        } catch (error) {
+            toast.error('Лоялна карта не е намерена');
+            console.error('Error finding loyalty customer:', error);
+        }
+        setShowLoyaltyScanner(false);
+    };
+
+    const handlePhoneNumberChange = async (phone) => {
+        setMobileNumber(phone);
+        if (phone && phone.length >= 10) {
+            try {
+                const response = await LoyaltyService.getCustomerByPhone(phone);
+                setLoyaltyCustomer(response.data);
+                toast.success(`Клиент намерен: ${response.data.firstName} ${response.data.lastName}`);
+            } catch (error) {
+                // Phone not found, that's okay
+                setLoyaltyCustomer(null);
+            }
+        } else {
+            setLoyaltyCustomer(null);
+        }
+    };
+
+    const clearLoyaltyCustomer = () => {
+        setLoyaltyCustomer(null);
+        setLoyaltyCardBarcode("");
+        setMobileNumber("");
     };
 
     return (
@@ -59,8 +99,12 @@ const Explore = () => {
                     <CustomerForm
                         customerName={customerName}
                         mobileNumber={mobileNumber}
-                        setMobileNumber={setMobileNumber}
+                        setMobileNumber={handlePhoneNumberChange}
                         setCustomerName={setCustomerName}
+                        loyaltyCustomer={loyaltyCustomer}
+                        loyaltyCardBarcode={loyaltyCardBarcode}
+                        onLoyaltyCardScan={() => setShowLoyaltyScanner(true)}
+                        onClearLoyaltyCustomer={clearLoyaltyCustomer}
                     />
                 </div>
                 <hr className="my-3 text-light" />
@@ -73,6 +117,7 @@ const Explore = () => {
                         mobileNumber={mobileNumber}
                         setMobileNumber={setMobileNumber}
                         setCustomerName={setCustomerName}
+                        loyaltyCustomer={loyaltyCustomer}
                     />
                 </div>
             </div>
@@ -81,6 +126,14 @@ const Explore = () => {
                 <BarcodeScanner
                     onItemFound={handleItemFound}
                     onClose={() => setShowBarcodeScanner(false)}
+                />
+            )}
+
+            {showLoyaltyScanner && (
+                <BarcodeScanner
+                    onItemFound={handleLoyaltyCardFound}
+                    onClose={() => setShowLoyaltyScanner(false)}
+                    title="Сканирай лоялна карта"
                 />
             )}
         </div>

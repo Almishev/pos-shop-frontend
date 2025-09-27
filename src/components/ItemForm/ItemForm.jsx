@@ -81,12 +81,10 @@ const ItemForm = () => {
         setLoading(true);
         const formData = new FormData();
         formData.append("item", JSON.stringify(data));
-        formData.append("file", image);
+        if (image) {
+            formData.append("file", image);
+        }
         try {
-            if (!image) {
-                toast.error("Изберете изображение");
-                return;
-            }
 
             const response = await addItem(formData);
             if (response.status === 201) {
@@ -122,7 +120,7 @@ const ItemForm = () => {
                             <form onSubmit={onSubmitHandler}>
                                 <div className="mb-3">
                                     <label htmlFor="image" className="form-label">
-                                        <img src={image ? URL.createObjectURL(image) : assets.upload} alt="" width={48}/>
+                                        <img src={image ? URL.createObjectURL(image) : assets.supermarket} alt="" width={48}/>
                                     </label>
                                     <input type="file" name="image" id="image" className='form-control' hidden onChange={(e) => setImage(e.target.files[0])} />
                                 </div>
