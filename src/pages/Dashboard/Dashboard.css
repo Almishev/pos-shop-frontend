@@ -16,6 +16,17 @@ body, html {
     color: #e9ecef;
 }
 
+/* Ensure dark theme for all cards in dashboard */
+.dashboard-container .stat-card {
+    background: #343a40 !important;
+    border: 1px solid #495057 !important;
+}
+
+.dashboard-container .recent-orders-card {
+    background: #343a40 !important;
+    border: 1px solid #495057 !important;
+}
+
 .dashboard-title {
     color: #f8f9fa;
     margin-bottom: 30px;
@@ -32,7 +43,7 @@ body, html {
 }
 
 .stat-card {
-    background: #343a40;
+    background: #343a40 !important;
     border-radius: 10px;
     padding: 20px;
     display: flex;
@@ -72,7 +83,7 @@ body, html {
 }
 
 .recent-orders-card {
-    background: #343a40;
+    background: #343a40 !important;
     border-radius: 10px;
     padding: 20px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);

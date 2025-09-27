@@ -53,6 +53,9 @@ const Menubar = () => {
                                 <li className="nav-item">
                                     <Link className={`nav-link ${isActive('/inventory') ? 'fw-bold text-warning': ''}`} to="/inventory">📦 Склад</Link>
                                 </li>
+                                <li className="nav-item">
+                                    <Link className={`nav-link ${isActive('/excel-import') ? 'fw-bold text-warning': ''}`} to="/excel-import">Excel</Link>
+                                </li>
                             </>
                         )
                     }

@@ -1,0 +1,50 @@
+.excel-import-page {
+    background-color: #212529;
+    min-height: 100vh;
+    color: #e9ecef;
+    padding: 20px;
+    width: 100%;
+    max-width: 100%;
+}
+
+.excel-import-page .container-fluid {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+}
+
+.excel-import-page .col-12 {
+    width: 100%;
+    max-width: 100%;
+}
+
+.page-header {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.page-header h2 {
+    color: #f8f9fa;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.page-header p {
+    color: #adb5bd;
+    font-size: 1.1rem;
+}
+
+/* Ensure full width for all elements */
+.excel-import-page * {
+    box-sizing: border-box;
+}
+
+.excel-import-page .card {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.excel-import-page .card-body {
+    width: 100% !important;
+    max-width: 100% !important;
+}
