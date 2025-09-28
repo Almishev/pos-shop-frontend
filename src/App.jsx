@@ -1,5 +1,6 @@
+import React from "react";
 import Menubar from "./components/Menubar/Menubar.jsx";
-import {Navigate, Route, Routes, useLocation} from "react-router-dom";
+import {Navigate, Route, Routes, useLocation, useParams} from "react-router-dom";
 import Dashboard from "./pages/Dashboard/Dashboard.jsx";
 import ManageCategory from "./pages/ManageCategory/ManageCategory.jsx";
 import ManageUsers from "./pages/ManageUsers/ManageUsers.jsx";
@@ -7,6 +8,7 @@ import ManageItems from "./pages/ManageItems/ManageItems.jsx";
 import ManageFiscalDevices from "./pages/ManageFiscalDevices/ManageFiscalDevices.jsx";
 import FiscalReports from "./pages/FiscalReports/FiscalReports.jsx";
 import InventoryManagement from "./pages/InventoryManagement/InventoryManagement.jsx";
+import ItemEditPage from "./pages/ItemEdit/ItemEditPage.jsx";
 import LoyaltyManagement from "./pages/LoyaltyManagement/LoyaltyManagement.jsx";
 import ExcelImportPage from "./pages/ExcelImport/ExcelImportPage.jsx";
 import Explore from "./pages/Explore/Explore.jsx";
@@ -29,6 +31,8 @@ const App = () => {
     }
 
     const ProtectedRoute = ({element, allowedRoles}) => {
+        const params = useParams();
+        
         if (!auth.token) {
             return <Navigate to="/login" replace />;
         }
@@ -37,7 +41,7 @@ const App = () => {
             return <Navigate to="/dashboard" replace />;
         }
 
-        return element;
+        return React.cloneElement(element, params);
     }
 
     return (
@@ -54,6 +58,7 @@ const App = () => {
                 <Route path="/fiscal-devices" element={<ProtectedRoute element={<ManageFiscalDevices />} allowedRoles={["ROLE_ADMIN"]} />} />
                 <Route path="/fiscal-reports" element={<ProtectedRoute element={<FiscalReports />} allowedRoles={["ROLE_ADMIN"]} />} />
                 <Route path="/inventory" element={<ProtectedRoute element={<InventoryManagement />} allowedRoles={["ROLE_ADMIN"]} />} />
+                <Route path="/inventory/:id" element={<ProtectedRoute element={<ItemEditPage />} allowedRoles={["ROLE_ADMIN"]} />} />
                 <Route path="/loyalty" element={<ProtectedRoute element={<LoyaltyManagement />} allowedRoles={["ROLE_USER", "ROLE_ADMIN"]} />} />
                 <Route path="/excel-import" element={<ProtectedRoute element={<ExcelImportPage />} allowedRoles={["ROLE_ADMIN"]} />} />
 

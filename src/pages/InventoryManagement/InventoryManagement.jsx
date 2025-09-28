@@ -1,9 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
+import { AppContext } from '../../context/AppContext';
 import InventoryService from '../../Service/InventoryService';
 import './InventoryManagement.css';
 
 const InventoryManagement = () => {
+    console.log('=== InventoryManagement COMPONENT LOADED ===');
+    console.log('DEBUG: This is the updated version with debug info');
+    const navigate = useNavigate();
+    const { itemsData } = useContext(AppContext);
+    console.log('AppContext itemsData:', itemsData);
     const [summary, setSummary] = useState(null);
     const [lowStockItems, setLowStockItems] = useState([]);
     const [outOfStockItems, setOutOfStockItems] = useState([]);
@@ -31,9 +38,20 @@ const InventoryManagement = () => {
     const [sortOrder, setSortOrder] = useState('asc');
     const [showAllItems, setShowAllItems] = useState(false);
 
+    // Initial load
     useEffect(() => {
-        loadInventoryData();
+        console.log('=== useEffect for initial load triggered ===');
+        console.error('ERROR TEST - useEffect triggered');
+        console.warn('WARNING TEST - useEffect triggered');
+        loadInventoryDataDirectly();
     }, []);
+
+    // Reload when itemsData changes
+    useEffect(() => {
+        if (itemsData && itemsData.length > 0) {
+            loadInventoryData();
+        }
+    }, [itemsData]); // Reload when itemsData changes
 
     // Filter and sort items when dependencies change
     useEffect(() => {
@@ -43,6 +61,36 @@ const InventoryManagement = () => {
     const loadInventoryData = async () => {
         try {
             setLoading(true);
+            
+            const [summaryData, lowStockData, outOfStockData, transactionsData, alertsData] = await Promise.all([
+                InventoryService.getInventorySummary(),
+                InventoryService.getLowStockItems(),
+                InventoryService.getOutOfStockItems(),
+                InventoryService.getRecentTransactions(),
+                InventoryService.getActiveAlerts()
+            ]);
+            
+            setSummary(summaryData);
+            setLowStockItems(lowStockData);
+            setOutOfStockItems(outOfStockItems);
+            setAllItems(itemsData); // Use itemsData from AppContext
+            setRecentTransactions(transactionsData);
+            setActiveAlerts(alertsData);
+        } catch (error) {
+            console.error('Error loading inventory data:', error);
+            console.error('Error details:', error.response?.data);
+            console.error('Error status:', error.response?.status);
+            toast.error('Грешка при зареждане на складовите данни');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadInventoryDataDirectly = async () => {
+        try {
+            setLoading(true);
+            console.log('=== STARTING INVENTORY DATA LOAD ===');
+            
             const [summaryData, lowStockData, outOfStockData, allItemsData, transactionsData, alertsData] = await Promise.all([
                 InventoryService.getInventorySummary(),
                 InventoryService.getLowStockItems(),
@@ -52,21 +100,43 @@ const InventoryManagement = () => {
                 InventoryService.getActiveAlerts()
             ]);
             
+            console.log('=== INVENTORY DATA LOADED ===');
+            console.log('All items data:', allItemsData);
+            console.log('Number of items:', allItemsData?.length);
+            console.log('First item structure:', allItemsData?.[0]);
+            console.log('Items with missing itemId:', allItemsData?.filter(item => !item.itemId || item.itemId === 'undefined' || item.itemId === 'null'));
+            
+            // Check each item's structure
+            allItemsData?.forEach((item, index) => {
+                console.log(`Item ${index}:`, {
+                    id: item.id,
+                    itemId: item.itemId,
+                    name: item.name,
+                    hasItemId: !!item.itemId,
+                    itemIdType: typeof item.itemId
+                });
+            });
+            
             setSummary(summaryData);
             setLowStockItems(lowStockData);
             setOutOfStockItems(outOfStockData);
-            setAllItems(allItemsData);
+            setAllItems(allItemsData); // Use data from API
             setRecentTransactions(transactionsData);
             setActiveAlerts(alertsData);
         } catch (error) {
+            console.error('Error loading inventory data directly:', error);
+            console.error('Error details:', error.response?.data);
+            console.error('Error status:', error.response?.status);
             toast.error('Грешка при зареждане на складовите данни');
-            console.error('Error loading inventory data:', error);
         } finally {
             setLoading(false);
         }
     };
 
     const filterAndSortItems = () => {
+        console.log('=== filterAndSortItems called ===');
+        console.log('allItems length:', allItems.length);
+        console.log('allItems:', allItems);
         let filtered = [...allItems];
 
         // Apply search filter
@@ -84,7 +154,7 @@ const InventoryManagement = () => {
         // Apply category filter
         if (categoryFilter) {
             filtered = filtered.filter(item => 
-                item.category?.name === categoryFilter
+                item.categoryName === categoryFilter
             );
         }
 
@@ -113,8 +183,8 @@ const InventoryManagement = () => {
                     bValue = b.price || 0;
                     break;
                 case 'category':
-                    aValue = a.category?.name || '';
-                    bValue = b.category?.name || '';
+                    aValue = a.categoryName || '';
+                    bValue = b.categoryName || '';
                     break;
                 default:
                     aValue = a.name || '';
@@ -133,7 +203,7 @@ const InventoryManagement = () => {
 
     const getUniqueCategories = () => {
         const categories = allItems
-            .map(item => item.category?.name)
+            .map(item => item.categoryName)
             .filter(Boolean)
             .filter((value, index, self) => self.indexOf(value) === index);
         return categories.sort();
@@ -267,13 +337,71 @@ const InventoryManagement = () => {
                     <div className="col-12">
                         <div className="d-flex justify-content-between align-items-center mb-4">
                             <h2>📦 Склад</h2>
-                            <button 
-                                className="btn btn-primary"
-                                onClick={() => setShowStockForm(true)}
-                            >
-                                <i className="bi bi-plus-circle me-2"></i>
-                                Складова операция
-                            </button>
+                            <div className="d-flex gap-2">
+                                <button 
+                                    className="btn btn-info"
+                                    onClick={async () => {
+                                        try {
+                                            const response = await fetch('http://localhost:8087/api/v1.0/items/debug/all', {
+                                                headers: {
+                                                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                                    'Content-Type': 'application/json'
+                                                }
+                                            });
+                                            if (response.ok) {
+                                                const data = await response.json();
+                                                console.log('=== DEBUG ITEMS DATA ===');
+                                                console.log('Debug items:', data);
+                                                console.error('ERROR TEST - This should be visible');
+                                                console.warn('WARNING TEST - This should be visible');
+                                                alert('Debug данните са заредени! Проверете конзолата (F12)');
+                                                toast.success('Debug данните са заредени в конзолата');
+                                            } else {
+                                                toast.error('Грешка при зареждане на debug данните');
+                                            }
+                                        } catch (error) {
+                                            console.error('Error getting debug data:', error);
+                                            toast.error('Грешка при зареждане на debug данните');
+                                        }
+                                    }}
+                                >
+                                    <i className="bi bi-bug me-2"></i>
+                                    Debug данни
+                                </button>
+                                <button 
+                                    className="btn btn-warning"
+                                    onClick={async () => {
+                                        try {
+                                            const response = await fetch('http://localhost:8087/api/v1.0/admin/items/generate-missing-ids', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                                    'Content-Type': 'application/json'
+                                                }
+                                            });
+                                            if (response.ok) {
+                                                toast.success('Липсващите ID-та са генерирани успешно');
+                                                loadInventoryDataDirectly();
+                                            } else {
+                                                toast.error('Грешка при генериране на ID-та');
+                                            }
+                                        } catch (error) {
+                                            console.error('Error generating missing IDs:', error);
+                                            toast.error('Грешка при генериране на ID-та');
+                                        }
+                                    }}
+                                >
+                                    <i className="bi bi-tools me-2"></i>
+                                    Генерирай липсващи ID-та
+                                </button>
+                                <button 
+                                    className="btn btn-primary"
+                                    onClick={() => setShowStockForm(true)}
+                                >
+                                    <i className="bi bi-plus-circle me-2"></i>
+                                    Складова операция
+                                </button>
+                            </div>
                         </div>
 
                         {/* Summary Cards */}
@@ -451,16 +579,17 @@ const InventoryManagement = () => {
                                                 </thead>
                                                 <tbody>
                                                     {filteredItems.map((item) => {
+                                                        console.log('Rendering item in table:', item);
                                                         const stock = item.stockQuantity || 0;
                                                         const reorderPoint = item.reorderPoint || 0;
                                                         return (
-                                                            <tr key={item.itemId}>
+                                                            <tr key={item.itemId || item.id}>
                                                                 <td>
                                                                     <strong>{item.name}</strong>
                                                                 </td>
                                                                 <td>
                                                                     <span className="badge bg-secondary">
-                                                                        {item.category?.name || 'Без категория'}
+                                                                        {item.categoryName || 'Без категория'}
                                                                     </span>
                                                                 </td>
                                                                 <td>
@@ -493,10 +622,39 @@ const InventoryManagement = () => {
                                                                             <i className="bi bi-gear"></i>
                                                                         </button>
                                                                         <button
+                                                                            className="btn btn-sm btn-outline-success"
+                                                                            onClick={() => {
+                                                                                console.log('Edit button clicked for item:', item);
+                                                                                console.log('Item ID:', item.itemId);
+                                                                                console.log('Item ID type:', typeof item.itemId);
+                                                                                console.log('Item numeric ID:', item.id);
+                                                                                
+                                                                                // Try to use itemId first, fallback to numeric id
+                                                                                let itemIdToUse = item.itemId;
+                                                                                
+                                                                                if (!itemIdToUse || itemIdToUse === 'undefined' || itemIdToUse === 'null' || itemIdToUse.trim() === '') {
+                                                                                    if (item.id) {
+                                                                                        itemIdToUse = item.id.toString();
+                                                                                        console.log('Using numeric ID as fallback:', itemIdToUse);
+                                                                                    } else {
+                                                                                        toast.error('Артикулът няма валиден ID. Моля, опитайте отново или се свържете с администратора.');
+                                                                                        console.error('Invalid item ID:', item.itemId, 'and numeric ID:', item.id);
+                                                                                        return;
+                                                                                    }
+                                                                                }
+                                                                                
+                                                                                console.log('Navigating to edit page with ID:', itemIdToUse);
+                                                                                navigate(`/inventory/${itemIdToUse}`);
+                                                                            }}
+                                                                            title="Редактиране на артикула"
+                                                                        >
+                                                                            <i className="bi bi-pencil"></i>
+                                                                        </button>
+                                                                        <button
                                                                             className="btn btn-sm btn-outline-info"
                                                                             onClick={() => {
                                                                                 // TODO: Show item details modal
-                                                                                toast.info('Детайли за артикула');
+                                                                                toast.success('Детайли за артикула');
                                                                             }}
                                                                             title="Детайли"
                                                                         >
