@@ -5,6 +5,15 @@
     background-color: #2c3335;
 }
 
+.filters-bar {
+    width: 100%;
+    background: #1f2426;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
 .orders-history-container h2 {
     color: #343a40;
     font-weight: 600;

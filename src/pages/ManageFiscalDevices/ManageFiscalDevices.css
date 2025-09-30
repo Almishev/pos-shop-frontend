@@ -1,3 +1,23 @@
+.fiscal-devices-page {
+    padding: 20px;
+    margin-bottom: 50px;
+}
+
+.fiscal-devices-page .card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block;
+}
+
+.fiscal-devices-page .card .card-header,
+.fiscal-devices-page .card .card-body,
+.fiscal-devices-page .card .table-responsive,
+.fiscal-devices-page .card .table {
+    width: 100% !important;
+}
+
 .badge-success {
     background-color: #28a745;
     color: white;

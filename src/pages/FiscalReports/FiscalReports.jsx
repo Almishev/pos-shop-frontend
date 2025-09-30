@@ -158,9 +158,10 @@ const FiscalReports = () => {
     }
 
     return (
-        <div className="container mt-4">
-            <div className="row">
-                <div className="col-12">
+        <div className="fiscal-reports-page">
+            <div className="container-fluid">
+                <div className="row">
+                    <div className="col-12">
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <h2>📊 Фискални отчети</h2>
                         <button 
@@ -173,14 +174,14 @@ const FiscalReports = () => {
                     </div>
 
                     {showGenerateForm && (
-                        <div className="card mb-4">
+                        <div className="card mb-4 w-100">
                             <div className="card-header">
                                 <h5>Генерирай нов фискален отчет</h5>
                             </div>
                             <div className="card-body">
                                 <form onSubmit={generateReport}>
                                     <div className="row">
-                                        <div className="col-md-6 mb-3">
+                                        <div className="col-md-3 mb-3">
                                             <label className="form-label">Тип отчет *</label>
                                             <select
                                                 className="form-select"
@@ -195,7 +196,7 @@ const FiscalReports = () => {
                                                 <option value="YEARLY">Годишен отчет</option>
                                             </select>
                                         </div>
-                                        <div className="col-md-6 mb-3">
+                                        <div className="col-md-3 mb-3">
                                             <label className="form-label">Дата на отчет *</label>
                                             <input
                                                 type="date"
@@ -206,10 +207,7 @@ const FiscalReports = () => {
                                                 required
                                             />
                                         </div>
-                                    </div>
-                                    
-                                    <div className="row">
-                                        <div className="col-md-6 mb-3">
+                                        <div className="col-md-3 mb-3">
                                             <label className="form-label">Касиер</label>
                                             <input
                                                 type="text"
@@ -219,7 +217,7 @@ const FiscalReports = () => {
                                                 onChange={handleInputChange}
                                             />
                                         </div>
-                                        <div className="col-md-6 mb-3">
+                                        <div className="col-md-3 mb-3">
                                             <label className="form-label">Фискално устройство</label>
                                             <select
                                                 className="form-select"
@@ -265,7 +263,7 @@ const FiscalReports = () => {
                         </div>
                     )}
 
-                    <div className="card">
+                    <div className="card w-100">
                         <div className="card-header">
                             <h5>Генерирани отчети</h5>
                         </div>
@@ -344,6 +342,7 @@ const FiscalReports = () => {
                                 </div>
                             )}
                         </div>
+                    </div>
                     </div>
                 </div>
             </div>

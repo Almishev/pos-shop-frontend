@@ -60,7 +60,7 @@ const Menubar = () => {
                         )
                     }
                     <li className="nav-item">
-                        <Link className={`nav-link ${isActive('/loyalty') ? 'fw-bold text-warning': ''}`} to="/loyalty">🎯 Лоялност</Link>
+                        <Link className={`nav-link ${isActive('/loyalty') ? 'fw-bold text-warning': ''}`} to="/loyalty">Лоялност</Link>
                     </li>
                     <li className="nav-item">
                         <Link className={`nav-link ${isActive('/orders') ? 'fw-bold text-warning': ''}`} to="/orders">Поръчки</Link>
@@ -68,9 +68,12 @@ const Menubar = () => {
                     {
                         isAdmin && (
                             <>
+                                <li className="nav-item">
+                                    <Link className={`nav-link ${isActive('/reports') ? 'fw-bold text-warning': ''}`} to="/reports">📊 Отчети</Link>
+                                </li>
                                 <li className="nav-item dropdown">
                                     <a className="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        🏪 Фискална система
+                                        🏪 Фискални
                                     </a>
                                     <ul className="dropdown-menu">
                                         <li>

@@ -1,0 +1,38 @@
+.reports-container {
+    padding: 20px;
+    height: calc(100vh - 5rem);
+    box-sizing: border-box;
+    background-color: #2c3335;
+}
+
+.filters-bar {
+    width: 100%;
+    background: #1f2426;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.reports-container .card {
+    background: #1f2426 !important;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.reports-container .card-title {
+    color: #fff;
+    font-weight: 600;
+}
+
+.reports-container .list-unstyled li {
+    margin-bottom: 0.5rem;
+    color: #e9ecef;
+}
+
+.reports-container code {
+    background: rgba(255,255,255,0.1);
+    color: #ffc107;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}

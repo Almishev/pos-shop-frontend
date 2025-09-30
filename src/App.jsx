@@ -15,6 +15,7 @@ import Explore from "./pages/Explore/Explore.jsx";
 import {Toaster} from "react-hot-toast";
 import Login from "./pages/Login/Login.jsx";
 import OrderHistory from "./pages/OrderHistory/OrderHistory.jsx";
+import Reports from "./pages/Reports/Reports.jsx";
 import {useContext} from "react";
 import {AppContext} from "./context/AppContext.jsx";
 import NotFound from "./pages/NotFound/NotFound.jsx";
@@ -64,6 +65,7 @@ const App = () => {
 
                 <Route path="/login" element={<LoginRoute element={<Login />} />} />
                 <Route path="/orders" element={<OrderHistory />} />
+                <Route path="/reports" element={<ProtectedRoute element={<Reports />} allowedRoles={["ROLE_ADMIN"]} />} />
                 <Route path="/" element={<Login />} />
                 <Route path="*" element={<NotFound />} />
 

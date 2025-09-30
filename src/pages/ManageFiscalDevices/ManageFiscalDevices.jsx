@@ -134,10 +134,12 @@ const ManageFiscalDevices = () => {
 
     if (loading) {
         return (
-            <div className="container mt-4">
-                <div className="d-flex justify-content-center">
-                    <div className="spinner-border" role="status">
-                        <span className="visually-hidden">Loading...</span>
+            <div className="fiscal-devices-page">
+                <div className="container-fluid">
+                    <div className="d-flex justify-content-center">
+                        <div className="spinner-border" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -145,9 +147,10 @@ const ManageFiscalDevices = () => {
     }
 
     return (
-        <div className="container mt-4">
-            <div className="row">
-                <div className="col-12">
+        <div className="fiscal-devices-page">
+            <div className="container-fluid">
+                <div className="row">
+                    <div className="col-12">
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <h2>🏪 Фискални устройства</h2>
                         <button 
@@ -352,6 +355,7 @@ const ManageFiscalDevices = () => {
                                 </div>
                             )}
                         </div>
+                    </div>
                     </div>
                 </div>
             </div>
