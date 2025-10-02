@@ -27,7 +27,9 @@ const Item = ({itemName, itemPrice, itemImage, itemId, itemBarcode, itemVatRate}
                         <i className="bi bi-upc-scan"></i> {itemBarcode}
                     </small>
                 )}
-                                        <p className="mb-0 fw-bold text-light">€{itemPrice}</p>
+                <p className="mb-0 fw-bold text-light">
+                    {(new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'})).format(itemPrice)}
+                </p>
             </div>
 
             <div className="d-flex flex-column justify-content-between align-items-center ms-3"

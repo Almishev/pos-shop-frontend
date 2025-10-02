@@ -22,10 +22,19 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
 
     const getItemVatRate = (item) => (item.vatRate ?? 0.20);
 
+    // Bulgarian VAT (ДДС) handling with prices that are VAT-inclusive (gross)
     const subtotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-    const tax = cartItems.reduce((total, item) => total + (item.price * item.quantity) * getItemVatRate(item), 0);
+    const tax = cartItems.reduce((total, item) => {
+        const rate = getItemVatRate(item) || 0;
+        const lineTotal = (item.price || 0) * (item.quantity || 0);
+        if (rate <= 0) return total; // no VAT
+        const base = lineTotal / (1 + rate);
+        const vatAmount = lineTotal - base;
+        return total + vatAmount;
+    }, 0);
     const loyaltyDiscountAmount = loyaltyDiscounts?.totalDiscount || 0;
-    const grandTotal = subtotal + tax - loyaltyDiscountAmount;
+    // Grand total must NOT add VAT again because subtotal already includes VAT
+    const grandTotal = subtotal - loyaltyDiscountAmount;
 
     // Calculate loyalty discounts when cart items or loyalty customer changes
     useEffect(() => {
@@ -272,11 +281,11 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
         <div className="mt-2">
             <div className="cart-summary-details">
                 <div className="d-flex justify-content-between mb-2">
-                    <span className="text-light">Междинна сума:</span>
+                    <span className="text-light">Междинна сума (с ДДС):</span>
                     <span className="text-light">{formatBGN(subtotal)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-2">
-                    <span className="text-light">ДДС (20%):</span>
+                    <span className="text-light">ДДС (информативно):</span>
                     <span className="text-light">{formatBGN(tax)}</span>
                 </div>
                 {loyaltyDiscounts && loyaltyDiscountAmount > 0 && (
@@ -286,7 +295,7 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                     </div>
                 )}
                 <div className="d-flex justify-content-between mb-4">
-                    <span className="text-light">Общо:</span>
+                    <span className="text-light">Крайна сума за плащане:</span>
                     <span className="text-light">{formatBGN(grandTotal)}</span>
                 </div>
             </div>

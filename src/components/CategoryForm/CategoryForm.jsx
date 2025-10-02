@@ -57,10 +57,20 @@ const CategoryForm = () => {
                     <div className="card-body">
                         <form onSubmit={onSubmitHandler}>
                             <div className="mb-3">
-                                <label htmlFor="image" className="form-label">
+                                <label htmlFor="categoryImage" className="form-label d-block">
                                     <img src={image ? URL.createObjectURL(image) : assets.upload} alt="" width={48}/>
                                 </label>
-                                <input type="file" name="image" id="image" className='form-control' hidden onChange={(e) => setImage(e.target.files[0])} />
+                                <input
+                                    type="file"
+                                    name="image"
+                                    id="categoryImage"
+                                    accept="image/*"
+                                    className='form-control'
+                                    onChange={(e) => setImage(e.target.files[0])}
+                                />
+                                {image && (
+                                    <small className="text-light">Избрано: {image.name}</small>
+                                )}
                             </div>
                             <div className="mb-3">
                                 <label htmlFor="name" className="form-label">Име</label>
