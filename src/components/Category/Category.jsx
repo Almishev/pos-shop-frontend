@@ -1,4 +1,5 @@
 import './Category.css';
+import {assets} from '../../assets/assets.js';
 
 const Category = ({categoryName, imgUrl, numberOfItems, bgColor, isSelected, onClick}) => {
     return (
@@ -7,7 +8,7 @@ const Category = ({categoryName, imgUrl, numberOfItems, bgColor, isSelected, onC
              onClick={onClick}
         >
             <div style={{position: 'relative', marginRight: '15px'}}>
-                <img src={imgUrl} alt={categoryName} className="category-image"/>
+                <img src={imgUrl || assets.upload} alt={categoryName} className="category-image"/>
             </div>
             <div>
                 <h6 className="text-white mb-0">{categoryName}</h6>

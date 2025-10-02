@@ -99,7 +99,7 @@ const ItemList = () => {
                         <div className="card p-3 bg-dark item-card">
                             <div className="d-flex align-items-center">
                                 <div style={{marginRight: '15px'}}>
-                                    <img src={item.imgUrl} alt={item.name} className="item-image" />
+                                    <img src={item.imgUrl || assets.supermarket} alt={item.name} className="item-image" />
                                 </div>
                                 <div className="flex-grow-1">
                                     <h6 className="mb-1 text-white">{item.name}</h6>

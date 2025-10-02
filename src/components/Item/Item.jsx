@@ -1,6 +1,7 @@
 import './Item.css';
 import {useContext} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
+import {assets} from "../../assets/assets.js";
 
 const Item = ({itemName, itemPrice, itemImage, itemId, itemBarcode, itemVatRate}) => {
     const {addToCart} = useContext(AppContext);
@@ -17,7 +18,7 @@ const Item = ({itemName, itemPrice, itemImage, itemId, itemBarcode, itemVatRate}
     return (
         <div className="p-3 bg-dark rounded shadow-sm h-100 d-flex align-items-center item-card">
             <div style={{position: "relative", marginRight: "15px"}}>
-                <img src={itemImage} alt={itemName} className="item-image" />
+                <img src={itemImage || assets.supermarket} alt={itemName} className="item-image" />
             </div>
 
             <div className="flex-grow-1 ms-2">

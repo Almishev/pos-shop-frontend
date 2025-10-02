@@ -51,7 +51,7 @@ const CategoryList = () => {
                         <div className="card p-3 category-card" style={{backgroundColor: category.bgColor}}>
                             <div className="d-flex align-items-center">
                                 <div style={{marginRight: '15px'}}>
-                                    <img src={category.imgUrl} alt={category.name} className="category-image" />
+                                    <img src={category.imgUrl || assets.upload} alt={category.name} className="category-image" />
                                 </div>
                                 <div className="flex-grow-1">
                                     <h5 className="mb-1 text-white">{category.name}</h5>
