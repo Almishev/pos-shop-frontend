@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { toast } from 'react-hot-toast';
 import FiscalService from '../../Service/FiscalService';
 import './FiscalReports.css';
+import { AppContext } from '../../context/AppContext.jsx';
 
 const FiscalReports = () => {
+    const { auth } = useContext(AppContext);
     const [reports, setReports] = useState([]);
     const [devices, setDevices] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -23,10 +25,13 @@ const FiscalReports = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [reportsData, devicesData] = await Promise.all([
-                FiscalService.getAllReports(),
-                FiscalService.getAllDevices()
-            ]);
+            const promises = [FiscalService.getAllDevices()];
+            if (auth.role === 'ROLE_ADMIN') {
+                promises.unshift(FiscalService.getAllReports());
+            } else {
+                promises.unshift(Promise.resolve([]));
+            }
+            const [reportsData, devicesData] = await Promise.all(promises);
             setReports(reportsData);
             setDevices(devicesData);
         } catch (error) {
@@ -66,22 +71,32 @@ const FiscalReports = () => {
 
         try {
             let result;
-            switch (selectedReportType) {
-                case 'DAILY':
-                    result = await FiscalService.generateDailyReport(formData);
-                    break;
-                case 'SHIFT':
-                    result = await FiscalService.generateShiftReport(formData);
-                    break;
-                case 'MONTHLY':
-                    result = await FiscalService.generateMonthlyReport(formData);
-                    break;
-                case 'YEARLY':
-                    result = await FiscalService.generateYearlyReport(formData);
-                    break;
-                default:
-                    toast.error('Невалиден тип отчет');
+            if (auth.role !== 'ROLE_ADMIN') {
+                // Касиерките могат само SHIFT и касиер се взима от токена на бекенда
+                if (selectedReportType !== 'SHIFT') {
+                    toast.error('Само сменен отчет е разрешен за касиер');
                     return;
+                }
+                const payload = { ...formData, cashierName: undefined };
+                result = await FiscalService.generateShiftReport(payload);
+            } else {
+                switch (selectedReportType) {
+                    case 'DAILY':
+                        result = await FiscalService.generateDailyReport(formData);
+                        break;
+                    case 'SHIFT':
+                        result = await FiscalService.generateShiftReport(formData);
+                        break;
+                    case 'MONTHLY':
+                        result = await FiscalService.generateMonthlyReport(formData);
+                        break;
+                    case 'YEARLY':
+                        result = await FiscalService.generateYearlyReport(formData);
+                        break;
+                    default:
+                        toast.error('Невалиден тип отчет');
+                        return;
+                }
             }
             
             toast.success('Отчетът е генериран успешно');
@@ -190,10 +205,10 @@ const FiscalReports = () => {
                                                 required
                                             >
                                                 <option value="">Изберете тип</option>
-                                                <option value="DAILY">Дневен отчет</option>
+                                                {auth.role === 'ROLE_ADMIN' && <option value="DAILY">Дневен отчет</option>}
                                                 <option value="SHIFT">Сменен отчет</option>
-                                                <option value="MONTHLY">Месечен отчет</option>
-                                                <option value="YEARLY">Годишен отчет</option>
+                                                {auth.role === 'ROLE_ADMIN' && <option value="MONTHLY">Месечен отчет</option>}
+                                                {auth.role === 'ROLE_ADMIN' && <option value="YEARLY">Годишен отчет</option>}
                                             </select>
                                         </div>
                                         <div className="col-md-3 mb-3">
@@ -207,16 +222,18 @@ const FiscalReports = () => {
                                                 required
                                             />
                                         </div>
-                                        <div className="col-md-3 mb-3">
-                                            <label className="form-label">Касиер</label>
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                name="cashierName"
-                                                value={formData.cashierName}
-                                                onChange={handleInputChange}
-                                            />
-                                        </div>
+                                        {auth.role === 'ROLE_ADMIN' && (
+                                            <div className="col-md-3 mb-3">
+                                                <label className="form-label">Касиер</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    name="cashierName"
+                                                    value={formData.cashierName}
+                                                    onChange={handleInputChange}
+                                                />
+                                            </div>
+                                        )}
                                         <div className="col-md-3 mb-3">
                                             <label className="form-label">Фискално устройство</label>
                                             <select

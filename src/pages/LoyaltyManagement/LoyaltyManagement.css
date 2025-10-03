@@ -1,11 +1,16 @@
 .loyalty-management-page {
     padding: 20px;
     margin-bottom: 50px;
+    background-color: #2c3335;
+    min-height: calc(100vh - 5rem);
+    color: #fff;
 }
 
 .loyalty-management-page .card {
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    border: 1px solid rgba(0, 0, 0, 0.125);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: #1f2426;
+    color: #fff;
     width: 100% !important;
     max-width: 100% !important;
     display: block;
@@ -57,14 +62,17 @@
 }
 
 .loyalty-management-page .table th {
-    background-color: #f8f9fa;
+    background-color: #1f2426;
     border-top: none;
     font-weight: 600;
-    color: #495057;
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 .loyalty-management-page .table td {
     vertical-align: middle;
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 .loyalty-management-page .btn-group .btn {
@@ -121,4 +129,48 @@
 
 .loyalty-management-page .badge.bg-secondary {
     background-color: #6c757d !important;
+}
+
+/* Dark theme form elements */
+.loyalty-management-page .form-control,
+.loyalty-management-page .form-select {
+    background-color: #2c3335;
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+.loyalty-management-page .form-control::placeholder {
+    color: #adb5bd;
+}
+
+.loyalty-management-page .form-label {
+    color: #fff;
+}
+
+.loyalty-management-page .card-header {
+    background-color: #1f2426;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.loyalty-management-page .card-body {
+    background-color: #1f2426;
+    color: #fff;
+}
+
+.loyalty-management-page .table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.loyalty-management-page .modal-content {
+    background-color: #1f2426;
+    color: #fff;
+}
+
+.loyalty-management-page .modal-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.loyalty-management-page .modal-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }

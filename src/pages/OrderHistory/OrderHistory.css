@@ -15,7 +15,7 @@
 }
 
 .orders-history-container h2 {
-    color: #343a40;
+    color: #fff;
     font-weight: 600;
 }
 
@@ -43,7 +43,7 @@
 .item-detail {
     margin-bottom: 0.5rem;
     padding: 0.25rem 0;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .item-detail:last-child {
@@ -53,12 +53,12 @@
 
 .item-detail span {
     font-weight: 500;
-    color: #333;
+    color: #fff;
 }
 
 .item-detail small {
     font-size: 0.75rem;
-    color: #666;
+    color: #adb5bd;
 }
 
 @media (max-width: 768px) {

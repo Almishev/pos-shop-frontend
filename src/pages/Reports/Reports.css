@@ -36,3 +36,145 @@
     border-radius: 4px;
     font-size: 0.9em;
 }
+
+/* Tab styling for better readability */
+.reports-container .nav-tabs .nav-link {
+    color: #e9ecef;
+    border-color: rgba(255,255,255,0.1);
+}
+
+.reports-container .nav-tabs .nav-link:hover {
+    color: #fff;
+    border-color: rgba(255,255,255,0.2);
+}
+
+.reports-container .nav-tabs .nav-link.active {
+    color: #000 !important;
+    background-color: #fff;
+    border-color: #fff;
+    font-weight: 600;
+}
+
+/* Make fiscal reports heading white */
+.reports-container h5 {
+    color: #fff !important;
+}
+
+/* Dark theme for all form elements */
+.reports-container .form-label {
+    color: #fff !important;
+}
+
+.reports-container .form-control {
+    background-color: #2c3335 !important;
+    border-color: rgba(255,255,255,0.2) !important;
+    color: #fff !important;
+}
+
+.reports-container .form-control:focus {
+    background-color: #2c3335 !important;
+    border-color: #ffc107 !important;
+    color: #fff !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25) !important;
+}
+
+.reports-container .form-select {
+    background-color: #2c3335 !important;
+    border-color: rgba(255,255,255,0.2) !important;
+    color: #fff !important;
+}
+
+.reports-container .form-select:focus {
+    background-color: #2c3335 !important;
+    border-color: #ffc107 !important;
+    color: #fff !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25) !important;
+}
+
+/* Dark theme for buttons */
+.reports-container .btn-outline-light {
+    color: #fff !important;
+    border-color: rgba(255,255,255,0.3) !important;
+}
+
+.reports-container .btn-outline-light:hover {
+    background-color: rgba(255,255,255,0.1) !important;
+    border-color: #fff !important;
+    color: #fff !important;
+}
+
+.reports-container .btn-primary {
+    background-color: #ffc107 !important;
+    border-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.reports-container .btn-primary:hover {
+    background-color: #e0a800 !important;
+    border-color: #d39e00 !important;
+    color: #000 !important;
+}
+
+/* Dark theme for tables */
+.reports-container .table {
+    color: #fff !important;
+}
+
+.reports-container .table th {
+    background-color: rgba(255,255,255,0.1) !important;
+    border-color: rgba(255,255,255,0.2) !important;
+    color: #fff !important;
+}
+
+.reports-container .table td {
+    border-color: rgba(255,255,255,0.1) !important;
+    color: #fff !important;
+}
+
+/* Dark theme for card headers and bodies */
+.reports-container .card-header {
+    background-color: rgba(255,255,255,0.05) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+    color: #fff !important;
+}
+
+.reports-container .card-body {
+    background-color: #1f2426 !important;
+    color: #fff !important;
+}
+
+/* Dark theme for modals */
+.reports-container .modal-content {
+    background-color: #1f2426 !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+}
+
+.reports-container .modal-header {
+    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+}
+
+.reports-container .modal-footer {
+    border-top: 1px solid rgba(255,255,255,0.1) !important;
+}
+
+/* Dark theme for text elements */
+.reports-container h1, .reports-container h2, .reports-container h3, .reports-container h4, .reports-container h6 {
+    color: #fff !important;
+}
+
+.reports-container p, .reports-container span, .reports-container div {
+    color: #e9ecef !important;
+}
+
+/* Dark theme for badges */
+.reports-container .badge {
+    background-color: rgba(255,255,255,0.2) !important;
+    color: #fff !important;
+}
+
+/* Dark theme for alerts */
+.reports-container .alert {
+    background-color: rgba(255,255,255,0.1) !important;
+    border-color: rgba(255,255,255,0.2) !important;
+    color: #fff !important;
+}

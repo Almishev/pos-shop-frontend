@@ -8,7 +8,7 @@ export const AppContextProvider = (props) => {
 
     const [categories, setCategories] = useState([]);
     const [itemsData, setItemsData] = useState([]);
-    const [auth, setAuth] = useState({token: null, role: null});
+    const [auth, setAuth] = useState({token: null, role: null, email: null, name: null});
     const [cartItems, setCartItems] = useState([]);
 
     const addToCart = (item) => {
@@ -33,7 +33,9 @@ export const AppContextProvider = (props) => {
             if (localStorage.getItem("token") && localStorage.getItem("role")) {
                 setAuthData(
                     localStorage.getItem("token"),
-                    localStorage.getItem("role")
+                    localStorage.getItem("role"),
+                    localStorage.getItem("email"),
+                    localStorage.getItem("name")
                 );
             }
             const response = await fetchCategories();
@@ -46,8 +48,8 @@ export const AppContextProvider = (props) => {
         loadData();
     }, []);
 
-    const setAuthData = (token, role) => {
-        setAuth({token, role});
+    const setAuthData = (token, role, email, name) => {
+        setAuth({token, role, email, name});
     }
 
     const clearCart = () => {

@@ -65,32 +65,14 @@ const Menubar = () => {
                     <li className="nav-item">
                         <Link className={`nav-link ${isActive('/orders') ? 'fw-bold text-warning': ''}`} to="/orders">Поръчки</Link>
                     </li>
+                    <li className="nav-item">
+                        <Link className={`nav-link ${isActive('/reports') ? 'fw-bold text-warning': ''}`} to="/reports">📊 Отчети</Link>
+                    </li>
                     {
                         isAdmin && (
-                            <>
-                                <li className="nav-item">
-                                    <Link className={`nav-link ${isActive('/reports') ? 'fw-bold text-warning': ''}`} to="/reports">📊 Отчети</Link>
-                                </li>
-                                <li className="nav-item dropdown">
-                                    <a className="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        🏪 Фискални
-                                    </a>
-                                    <ul className="dropdown-menu">
-                                        <li>
-                                            <Link className="dropdown-item" to="/fiscal-devices">
-                                                <i className="bi bi-printer me-2"></i>
-                                                Фискални устройства
-                                            </Link>
-                                        </li>
-                                        <li>
-                                            <Link className="dropdown-item" to="/fiscal-reports">
-                                                <i className="bi bi-file-earmark-text me-2"></i>
-                                                Фискални отчети
-                                            </Link>
-                                        </li>
-                                    </ul>
-                                </li>
-                            </>
+                            <li className="nav-item">
+                                <Link className={`nav-link ${isActive('/fiscal-devices') ? 'fw-bold text-warning': ''}`} to="/fiscal-devices">Фискални у-ва</Link>
+                            </li>
                         )
                     }
                 </ul>
