@@ -22,9 +22,27 @@ const createAuthInstance = () => {
 const FiscalService = {
     // Fiscal Devices
     getAllDevices: async () => {
+        console.log('=== FiscalService.getAllDevices called ===');
+        const token = getAuthToken();
+        console.log('Token exists:', !!token);
+        console.log('Token preview:', token ? token.substring(0, 20) + '...' : 'null');
+
         const instance = createAuthInstance();
-        const response = await instance.get('/fiscal/devices');
-        return response.data;
+        console.log('Making request to:', API_BASE_URL + '/admin/fiscal-devices');
+
+        try {
+            const response = await instance.get('/admin/fiscal-devices');
+            console.log('Response received:', response);
+            console.log('Response status:', response.status);
+            console.log('Response data:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error in getAllDevices:', error);
+            console.error('Error response:', error.response);
+            console.error('Error status:', error.response?.status);
+            console.error('Error data:', error.response?.data);
+            throw error;
+        }
     },
 
     getDeviceBySerialNumber: async (serialNumber) => {

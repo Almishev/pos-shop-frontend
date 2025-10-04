@@ -56,17 +56,94 @@
 }
 
 .fiscal-devices-page .table th {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: #1a1a1a;
     border-top: none;
     font-weight: 600;
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border-color: #333333;
+    padding: 12px 8px;
 }
 
 .fiscal-devices-page .table td {
     vertical-align: middle;
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border-color: #333333;
+    background-color: #2d2d2d;
+    padding: 12px 8px;
+}
+
+.fiscal-devices-page .table tbody tr:hover td {
+    background-color: #3a3a3a;
+    color: #ffffff;
+}
+
+.fiscal-devices-page .table tbody tr:nth-child(even) td {
+    background-color: #252525;
+}
+
+.fiscal-devices-page .table tbody tr:nth-child(odd) td {
+    background-color: #2d2d2d;
+}
+
+/* Enhanced text styling for better readability */
+.fiscal-devices-page .table td strong {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.fiscal-devices-page .table td {
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.fiscal-devices-page .table th {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Better button styling in table */
+.fiscal-devices-page .table .btn-group .btn {
+    border-radius: 4px;
+    margin: 0 1px;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.fiscal-devices-page .table .btn-group .btn i {
+    font-size: 12px;
+}
+
+/* Date formatting */
+.fiscal-devices-page .table td {
+    white-space: nowrap;
+}
+
+/* Status badge improvements */
+.fiscal-devices-page .badge {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Responsive table improvements */
+@media (max-width: 768px) {
+    .fiscal-devices-page .table {
+        font-size: 12px;
+    }
+    
+    .fiscal-devices-page .table th,
+    .fiscal-devices-page .table td {
+        padding: 8px 4px;
+    }
+    
+    .fiscal-devices-page .btn-group .btn {
+        padding: 2px 4px;
+        font-size: 10px;
+    }
 }
 
 .fiscal-devices-page .card-header {

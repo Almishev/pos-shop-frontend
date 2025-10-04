@@ -24,15 +24,26 @@ const ManageFiscalDevices = () => {
     }, []);
 
     const loadDevices = async () => {
+        console.log('=== ManageFiscalDevices.loadDevices called ===');
         try {
             setLoading(true);
+            console.log('Calling FiscalService.getAllDevices...');
             const data = await FiscalService.getAllDevices();
+            console.log('Devices loaded successfully:', data);
             setDevices(data);
+            console.log('Devices state updated');
         } catch (error) {
-            toast.error('Грешка при зареждане на фискални устройства');
             console.error('Error loading devices:', error);
+            console.error('Error details:', {
+                message: error.message,
+                status: error.response?.status,
+                data: error.response?.data,
+                config: error.config
+            });
+            toast.error('Грешка при зареждане на фискални устройства');
         } finally {
             setLoading(false);
+            console.log('Loading finished');
         }
     };
 
