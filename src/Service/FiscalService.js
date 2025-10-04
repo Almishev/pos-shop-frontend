@@ -52,20 +52,56 @@ const FiscalService = {
     },
 
     registerDevice: async (deviceData) => {
+        console.log('=== FiscalService.registerDevice called ===');
+        console.log('Device data:', deviceData);
+        
         const instance = createAuthInstance();
-        const response = await instance.post('/fiscal/devices', deviceData);
-        return response.data;
+        console.log('Making POST request to:', API_BASE_URL + '/admin/fiscal-devices');
+        
+        try {
+            const response = await instance.post('/admin/fiscal-devices', deviceData);
+            console.log('Device registered successfully:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error in registerDevice:', error);
+            console.error('Error response:', error.response);
+            throw error;
+        }
     },
 
     updateDevice: async (deviceData) => {
+        console.log('=== FiscalService.updateDevice called ===');
+        console.log('Device data:', deviceData);
+        
         const instance = createAuthInstance();
-        const response = await instance.put('/fiscal/devices', deviceData);
-        return response.data;
+        console.log('Making PUT request to:', API_BASE_URL + '/admin/fiscal-devices');
+        
+        try {
+            const response = await instance.put('/admin/fiscal-devices', deviceData);
+            console.log('Device updated successfully:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error in updateDevice:', error);
+            console.error('Error response:', error.response);
+            throw error;
+        }
     },
 
     deleteDevice: async (deviceId) => {
+        console.log('=== FiscalService.deleteDevice called ===');
+        console.log('Device ID:', deviceId);
+        
         const instance = createAuthInstance();
-        await instance.delete(`/fiscal/devices/${deviceId}`);
+        console.log('Making DELETE request to:', API_BASE_URL + '/admin/fiscal-devices/' + deviceId);
+        
+        try {
+            await instance.delete(`/admin/fiscal-devices/${deviceId}`);
+            console.log('Device deleted successfully');
+        } catch (error) {
+            console.error('Error in deleteDevice:', error);
+            console.error('Error response:', error.response);
+            throw error;
+        }
     },
 
     checkDeviceStatus: async (serialNumber) => {

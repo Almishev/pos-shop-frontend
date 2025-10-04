@@ -72,12 +72,17 @@ const ManageFiscalDevices = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log('=== ManageFiscalDevices.handleSubmit called ===');
+        console.log('Form data:', formData);
+        console.log('Editing device:', editingDevice);
         
         try {
             if (editingDevice) {
+                console.log('Updating existing device...');
                 await FiscalService.updateDevice(formData);
                 toast.success('Фискалното устройство е обновено');
             } else {
+                console.log('Registering new device...');
                 await FiscalService.registerDevice(formData);
                 toast.success('Фискалното устройство е регистрирано');
             }
@@ -85,8 +90,13 @@ const ManageFiscalDevices = () => {
             resetForm();
             loadDevices();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Грешка при запис на фискално устройство');
             console.error('Error saving device:', error);
+            console.error('Error details:', {
+                message: error.message,
+                status: error.response?.status,
+                data: error.response?.data
+            });
+            toast.error(error.response?.data?.message || 'Грешка при запис на фискално устройство');
         }
     };
 
