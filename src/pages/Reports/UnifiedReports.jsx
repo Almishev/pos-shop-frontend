@@ -60,9 +60,11 @@ const UnifiedReports = () => {
         try {
             setLoading(true);
             
-            // Load devices first
-            const devicesData = await FiscalService.getAllDevices();
-            setDevices(devicesData);
+            // Load devices first - filter only ACTIVE devices
+            const allDevices = await FiscalService.getAllDevices();
+            const activeDevices = allDevices.filter(device => device.status === 'ACTIVE');
+            setDevices(activeDevices);
+            console.log('Loaded active devices for reports:', activeDevices);
             
             if (auth.role === 'ROLE_ADMIN') {
                 // Load reports

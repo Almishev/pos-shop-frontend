@@ -47,7 +47,7 @@ const FiscalService = {
 
     getDeviceBySerialNumber: async (serialNumber) => {
         const instance = createAuthInstance();
-        const response = await instance.get(`/fiscal/devices/${serialNumber}`);
+        const response = await instance.get(`/admin/devices/${serialNumber}`);
         return response.data;
     },
 
@@ -106,13 +106,13 @@ const FiscalService = {
 
     checkDeviceStatus: async (serialNumber) => {
         const instance = createAuthInstance();
-        const response = await instance.get(`/fiscal/devices/${serialNumber}/status`);
+        const response = await instance.get(`/admin/devices/${serialNumber}/status`);
         return response.data;
     },
 
     checkDeviceReady: async (serialNumber) => {
         const instance = createAuthInstance();
-        const response = await instance.get(`/fiscal/devices/${serialNumber}/ready`);
+        const response = await instance.get(`/admin/devices/${serialNumber}/ready`);
         return response.data;
     },
 
@@ -206,13 +206,13 @@ const FiscalService = {
     // X and Z Reports
     generateXReport: async (deviceSerialNumber) => {
         const instance = createAuthInstance();
-        const response = await instance.post(`/fiscal/devices/${deviceSerialNumber}/x-report`);
+        const response = await instance.post(`/admin/devices/${deviceSerialNumber}/x-report`);
         return response.data;
     },
 
     generateZReport: async (deviceSerialNumber) => {
         const instance = createAuthInstance();
-        const response = await instance.post(`/fiscal/devices/${deviceSerialNumber}/z-report`);
+        const response = await instance.post(`/admin/devices/${deviceSerialNumber}/z-report`);
         return response.data;
     }
 };

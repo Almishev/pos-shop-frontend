@@ -128,12 +128,25 @@ const ManageFiscalDevices = () => {
         }
     };
 
-    const checkDeviceStatus = async (serialNumber) => {
+    const checkDeviceStatus = async (device) => {
         try {
-            const status = await FiscalService.checkDeviceStatus(serialNumber);
-            toast.success(`Устройство ${serialNumber}: ${status ? 'свързано' : 'изключено'}`);
+            // Toggle status locally and persist
+            const nextStatus = device.status === 'ACTIVE' ? 'DISCONNECTED' : 'ACTIVE';
+
+            setDevices(prev => prev.map(d =>
+                d.serialNumber === device.serialNumber ? { ...d, status: nextStatus } : d
+            ));
+
+            const payload = { ...device, status: nextStatus };
+            await FiscalService.updateDevice(payload);
+            toast.success(`Устройство ${device.serialNumber}: ${nextStatus === 'ACTIVE' ? 'включено' : 'изключено'}`);
+            // Refresh from backend to ensure DB state reflected
+            await loadDevices();
         } catch (error) {
-            toast.error('Грешка при проверка на статуса');
+            toast.error('Грешка при промяна на статуса');
+            console.error('Error toggling status:', error);
+            // Re-sync UI with backend state
+            await loadDevices();
         }
     };
 
@@ -348,7 +361,7 @@ const ManageFiscalDevices = () => {
                                                         <div className="btn-group" role="group">
                                                             <button
                                                                 className="btn btn-sm btn-outline-primary"
-                                                                onClick={() => checkDeviceStatus(device.serialNumber)}
+                                                                onClick={() => checkDeviceStatus(device)}
                                                                 title="Провери статус"
                                                             >
                                                                 <i className="bi bi-wifi"></i>

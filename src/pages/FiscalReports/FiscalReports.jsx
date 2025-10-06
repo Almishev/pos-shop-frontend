@@ -31,9 +31,13 @@ const FiscalReports = () => {
             } else {
                 promises.unshift(Promise.resolve([]));
             }
-            const [reportsData, devicesData] = await Promise.all(promises);
+            const [reportsData, allDevices] = await Promise.all(promises);
             setReports(reportsData);
-            setDevices(devicesData);
+            
+            // Filter only ACTIVE devices for reports
+            const activeDevices = allDevices.filter(device => device.status === 'ACTIVE');
+            setDevices(activeDevices);
+            console.log('Loaded active devices for fiscal reports:', activeDevices);
         } catch (error) {
             toast.error('Грешка при зареждане на данни');
             console.error('Error loading data:', error);
