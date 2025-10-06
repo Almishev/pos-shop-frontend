@@ -3,6 +3,29 @@ import './Print.css';
 
 const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
     const formatBGN = (amount) => new Intl.NumberFormat('bg-BG', { style: 'currency', currency: 'BGN' }).format(amount || 0);
+    const getPaymentMethodLabel = (method) => {
+        const key = (method || '').toString().toUpperCase();
+        switch (key) {
+            case 'CASH':
+            case 'CASH_PAYMENT':
+                return 'В БРОЙ';
+            case 'CARD':
+            case 'CREDIT_CARD':
+            case 'DEBIT_CARD':
+                return 'КАРТА';
+            case 'UPI':
+            case 'ONLINE':
+            case 'RAZORPAY':
+                return 'ОНЛАЙН ПЛАЩАНЕ';
+            case 'BANK_TRANSFER':
+            case 'BANK':
+                return 'БАНКОВ ПРЕВОД';
+            case 'VOUCHER':
+                return 'ВАУЧЕР';
+            default:
+                return method || '-';
+        }
+    };
     const groupByVat = (items = []) => {
         const groups = {};
         items.forEach(i => {
@@ -75,7 +98,7 @@ const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
                     <span>{formatBGN(orderDetails.grandTotal)}</span>
                 </div>
                 <p>
-                    <strong>Метод на плащане: </strong> {orderDetails.paymentMethod}
+                    <strong>Метод на плащане: </strong> {getPaymentMethodLabel(orderDetails.paymentMethod)}
                 </p>
                 {
                     orderDetails.paymentMethod === "UPI" && (

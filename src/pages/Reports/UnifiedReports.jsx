@@ -395,8 +395,8 @@ const UnifiedReports = () => {
                                             </tr>
                                         ))}
                                         {cashierRows.length === 0 && (
-                                            <tr>
-                                                <td colSpan="3" className="text-center">Няма данни за избрания период</td>
+                                            <tr className="empty-state-row">
+                                                <td colSpan="3" className="text-center empty-state">Няма данни за избрания период</td>
                                             </tr>
                                         )}
                                     </tbody>

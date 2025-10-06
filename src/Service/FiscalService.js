@@ -132,74 +132,74 @@ const FiscalService = {
     // Fiscal Reports
     generateDailyReport: async (reportData) => {
         const instance = createAuthInstance();
-        const response = await instance.post('/fiscal/reports/daily', reportData);
+        const response = await instance.post('/admin/fiscal-reports/daily', reportData);
         return response.data;
     },
 
     generateShiftReport: async (reportData) => {
         const instance = createAuthInstance();
-        const response = await instance.post('/fiscal/reports/shift', reportData);
+        const response = await instance.post('/admin/fiscal-reports/shift', reportData);
         return response.data;
     },
 
     generateMonthlyReport: async (reportData) => {
         const instance = createAuthInstance();
-        const response = await instance.post('/fiscal/reports/monthly', reportData);
+        const response = await instance.post('/admin/fiscal-reports/monthly', reportData);
         return response.data;
     },
 
     generateYearlyReport: async (reportData) => {
         const instance = createAuthInstance();
-        const response = await instance.post('/fiscal/reports/yearly', reportData);
+        const response = await instance.post('/admin/fiscal-reports/yearly', reportData);
         return response.data;
     },
 
     getAllReports: async () => {
         const instance = createAuthInstance();
-        const response = await instance.get('/fiscal/reports');
+        const response = await instance.get('/admin/fiscal-reports');
         return response.data;
     },
 
     getReportById: async (reportId) => {
         const instance = createAuthInstance();
-        const response = await instance.get(`/fiscal/reports/${reportId}`);
+        const response = await instance.get(`/admin/fiscal-reports/${reportId}`);
         return response.data;
     },
 
     getReportsByType: async (reportType) => {
         const instance = createAuthInstance();
-        const response = await instance.get(`/fiscal/reports/type/${reportType}`);
+        const response = await instance.get(`/admin/fiscal-reports/type/${reportType}`);
         return response.data;
     },
 
     getReportsByDateRange: async (startDate, endDate) => {
         const instance = createAuthInstance();
-        const response = await instance.get(`/fiscal/reports/date-range?startDate=${startDate}&endDate=${endDate}`);
+        const response = await instance.get(`/admin/fiscal-reports/date-range?startDate=${startDate}&endDate=${endDate}`);
         return response.data;
     },
 
     sendReportToNAF: async (reportId) => {
         const instance = createAuthInstance();
-        const response = await instance.post(`/fiscal/reports/${reportId}/send-to-naf`);
+        const response = await instance.post(`/admin/fiscal-reports/${reportId}/send-to-naf`);
         return response.data;
     },
 
     // Statistics
     getSalesForDate: async (date) => {
         const instance = createAuthInstance();
-        const response = await instance.get(`/fiscal/reports/stats/sales/${date}`);
+        const response = await instance.get(`/admin/fiscal-reports/stats/sales/${date}`);
         return response.data;
     },
 
     getVATForDate: async (date) => {
         const instance = createAuthInstance();
-        const response = await instance.get(`/fiscal/reports/stats/vat/${date}`);
+        const response = await instance.get(`/admin/fiscal-reports/stats/vat/${date}`);
         return response.data;
     },
 
     getReceiptsForDate: async (date) => {
         const instance = createAuthInstance();
-        const response = await instance.get(`/fiscal/reports/stats/receipts/${date}`);
+        const response = await instance.get(`/admin/fiscal-reports/stats/receipts/${date}`);
         return response.data;
     },
 
