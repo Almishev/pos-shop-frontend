@@ -415,6 +415,19 @@
     transform: translateY(-2px);
 }
 
+/* White button variant used for "Запази промоцията" */
+.label-btn-white {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #cccccc !important;
+    font-weight: bold;
+}
+
+.label-btn-white:hover {
+    background: #f2f2f2 !important;
+    color: #000000 !important;
+}
+
 .label-btn-success {
     background: #28a745;
     color: #fff !important;

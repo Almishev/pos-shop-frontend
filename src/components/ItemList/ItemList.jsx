@@ -126,9 +126,20 @@ const ItemList = () => {
                                             <i className="bi bi-upc-scan"></i> Баркод: {item.barcode}
                                         </p>
                                     )}
-                                    <span className="mb-0 text-block badge rounded-pill text-bg-warning">
-                                        {(new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'})).format(item.price)}
-                                    </span>
+                                    {!item.isPromo ? (
+                                        <span className="mb-0 text-block badge rounded-pill text-bg-warning">
+                                            {(new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'})).format(item.price)}
+                                        </span>
+                                    ) : (
+                                        <div className="d-flex align-items-center gap-2">
+                                            <span className="text-muted text-decoration-line-through small">
+                                                {(new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'})).format(item.price)}
+                                            </span>
+                                            <span className="badge rounded-pill text-bg-danger">
+                                                {(new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'})).format(item.effectivePrice)}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="d-flex gap-2">
                                     <button 

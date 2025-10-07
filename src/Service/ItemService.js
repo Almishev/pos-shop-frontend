@@ -43,6 +43,20 @@ export const getItemById = async (itemId) => {
     }
 }
 
+export const getDbIdByItemId = async (itemId) => {
+    const token = localStorage.getItem('token');
+    const url = `http://localhost:8087/api/v1.0/items/${itemId}`;
+    const response = await axios.get(url, {headers: {'Authorization': `Bearer ${token}`}});
+    return response.data?.id;
+}
+
+export const getEffectivePrices = async (itemDbIds) => {
+    const token = localStorage.getItem('token');
+    const url = `http://localhost:8087/api/v1.0/items/effective`;
+    const response = await axios.post(url, { itemDbIds }, {headers: {'Authorization': `Bearer ${token}`}});
+    return response.data;
+}
+
 export const updateItem = async (itemId, itemData) => {
     return await axios.put(`http://localhost:8087/api/v1.0/admin/items/${itemId}`, itemData, {
         headers: {

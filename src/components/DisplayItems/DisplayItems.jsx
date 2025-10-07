@@ -29,7 +29,7 @@ const DisplayItems = ({selectedCategory}) => {
                     <div key={index} className="col-md-4 col-sm-6">
                         <Item
                             itemName={item.name}
-                            itemPrice={item.price}
+                            itemPrice={item.isPromo ? item.effectivePrice : item.price}
                             itemImage={item.imgUrl}
                             itemId={item.itemId}
                             itemBarcode={item.barcode}

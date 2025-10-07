@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { toast } from 'react-hot-toast';
 import LabelService from '../../Service/LabelService';
+import { getDbIdByItemId } from '../../Service/ItemService.js';
+import PromotionService from '../../Service/PromotionService';
 import { AppContext } from '../../context/AppContext';
 import './LabelTemplates.css';
 
@@ -18,6 +20,7 @@ const LabelManagement = () => {
     const [previewHTML, setPreviewHTML] = useState('');
     const [loading, setLoading] = useState(false);
     const [templates, setTemplates] = useState([]);
+    const [activePromotions, setActivePromotions] = useState([]);
 
     // Промо етикет форма
     const [promoForm, setPromoForm] = useState({
@@ -30,6 +33,7 @@ const LabelManagement = () => {
 
     useEffect(() => {
         loadTemplates();
+        loadActivePromotions();
     }, []);
 
     const loadTemplates = async () => {
@@ -38,6 +42,15 @@ const LabelManagement = () => {
             setTemplates(templatesData);
         } catch (error) {
             console.error('Error loading templates:', error);
+        }
+    };
+
+    const loadActivePromotions = async () => {
+        try {
+            const promos = await PromotionService.getActivePromotions();
+            setActivePromotions(promos || []);
+        } catch (e) {
+            console.warn('Failed to load promotions', e);
         }
     };
 
@@ -209,8 +222,14 @@ const LabelManagement = () => {
                         toast.error('Моля, добавете поне един промо продукт');
                         return;
                     }
-                    result = await LabelService.printPromoLabels(promoItems);
-                    break;
+                    {
+                        const htmlContent = promoItems.map(item => 
+                            LabelService.generatePromoLabelHTML(item)
+                        ).join('');
+                        LabelService.printLabels(htmlContent, 'promo');
+                        toast.success('Етикетите са готови за печат');
+                        return;
+                    }
 
                 default:
                     toast.error('Невалиден тип етикет');
@@ -426,6 +445,7 @@ const LabelManagement = () => {
                             />
                         </div>
                     </div>
+                <div className="d-flex gap-2">
                     <button 
                         className="btn label-btn-success"
                         onClick={addPromoItem}
@@ -433,6 +453,42 @@ const LabelManagement = () => {
                         <i className="bi bi-plus me-2"></i>
                         Добави промо продукт
                     </button>
+                    <button
+                        className="btn label-btn-white"
+                        onClick={async () => {
+                            try {
+                                if (!promoForm.itemId || !promoForm.newPrice || !promoForm.promoStart || !promoForm.promoEnd) {
+                                    toast.error('Попълни продукт, нова цена и период');
+                                    return;
+                                }
+                                const selected = itemsData.find(i => i.itemId == promoForm.itemId);
+                                if (!selected) { toast.error('Продуктът не е намерен'); return; }
+                                let itemDbId = selected.id;
+                                if (!itemDbId) {
+                                    try {
+                                        itemDbId = await getDbIdByItemId(selected.itemId);
+                                    } catch (e) {
+                                        console.warn('Failed to resolve DB id by itemId', e);
+                                    }
+                                }
+                                await PromotionService.createPromotion({
+                                    itemDbId,
+                                    itemId: selected.itemId,
+                                    promoPrice: promoForm.newPrice,
+                                    startDate: promoForm.promoStart,
+                                    endDate: promoForm.promoEnd
+                                });
+                                toast.success('Промоцията е записана');
+                            } catch (e) {
+                                console.error(e);
+                                toast.error('Грешка при запис на промоция');
+                            }
+                        }}
+                    >
+                        <i className="bi bi-save me-2"></i>
+                        Запази промоцията
+                    </button>
+                </div>
 
                     {/* Promo Items List */}
                     {promoItems.length > 0 && (
@@ -456,6 +512,54 @@ const LabelManagement = () => {
                             ))}
                         </div>
                     )}
+
+                    <div className="mt-4">
+                        <h5 className="text-light mb-2">Активни промоции</h5>
+                        <div className="table-responsive">
+                            <table className="table table-dark table-striped align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Артикул</th>
+                                        <th>Нова цена</th>
+                                        <th>От</th>
+                                        <th>До</th>
+                                        <th className="text-end">Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {activePromotions.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="4" className="text-center text-muted">Няма активни промоции</td>
+                                        </tr>
+                                    ) : activePromotions.map(p => (
+                                        <tr key={p.id}>
+                                            <td>{p.name}</td>
+                                            <td>{LabelService.formatPrice(p.promoPrice)}</td>
+                                            <td>{new Date(p.startAt).toLocaleString('bg-BG')}</td>
+                                            <td>{new Date(p.endAt).toLocaleString('bg-BG')}</td>
+                                            <td className="text-end">
+                                                <button
+                                                    className="btn btn-sm btn-danger"
+                                                    title="Изтриване на промоцията"
+                                                    onClick={async () => {
+                                                        try {
+                                                            await PromotionService.deletePromotion(p.id);
+                                                            toast.success('Промоцията е изтрита');
+                                                            loadActivePromotions();
+                                                        } catch (e) {
+                                                            toast.error('Грешка при изтриване');
+                                                        }
+                                                    }}
+                                                >
+                                                    <i className="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             )}
 
