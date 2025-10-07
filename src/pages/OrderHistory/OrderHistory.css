@@ -23,6 +23,32 @@
     margin-top: 20px;
 }
 
+/* Dark table theme */
+.table,
+.table th,
+.table td {
+    background-color: #1f2426 !important;
+    color: #e9ecef !important;
+}
+
+.table thead.table-dark th {
+    background-color: #15191b !important;
+    color: #fff !important;
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+.table tbody tr {
+    border-color: rgba(255,255,255,0.08) !important;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    --bs-table-accent-bg: rgba(255,255,255,0.02);
+}
+
+.table-hover > tbody > tr:hover > * {
+    --bs-table-accent-bg: rgba(255,255,255,0.05);
+}
+
 .table th {
     font-weight: 600;
 }
@@ -59,6 +85,31 @@
 .item-detail small {
     font-size: 0.75rem;
     color: #adb5bd;
+}
+
+/* Ensure dark theme readability for utility classes used in table */
+.orders-history-container .text-dark {
+    color: #e9ecef !important;
+}
+
+.orders-history-container td small,
+.orders-history-container .text-muted {
+    color: #bfc6cc !important;
+}
+
+.orders-history-container .bi {
+    color: #9aa1a7;
+}
+
+/* Custom badge colors for dark theme */
+.orders-history-container .badge.bg-warning {
+    background-color: #6c5b00 !important;
+    color: #fff !important;
+}
+
+.orders-history-container .badge.bg-warning.text-dark {
+    background-color: #6c5b00 !important;
+    color: #fff !important;
 }
 
 @media (max-width: 768px) {

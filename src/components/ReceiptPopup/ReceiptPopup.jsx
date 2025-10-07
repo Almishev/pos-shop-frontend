@@ -125,6 +125,11 @@ const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
                         </>
                     )
                 }
+                {orderDetails.originalOrderId && (
+                    <p>
+                        <strong>Сторно към:</strong> {orderDetails.originalOrderId}
+                    </p>
+                )}
                 {
                     (orderDetails.paymentMethod === 'CARD' || orderDetails.paymentMethod === 'CREDIT_CARD' || orderDetails.paymentMethod === 'DEBIT_CARD') && (
                         <>

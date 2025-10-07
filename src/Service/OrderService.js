@@ -22,3 +22,9 @@ export const getOrders = async ({ page = 0, size = 20, sort = 'createdAt,desc', 
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     });
 }
+
+export const refundOrder = async (orderId, payload) => {
+    return await axios.post(`http://localhost:8087/api/v1.0/orders/${orderId}/refund`, payload, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+}

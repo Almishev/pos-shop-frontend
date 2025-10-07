@@ -1,6 +1,6 @@
 import './OrderHistory.css';
 import {useEffect, useState} from "react";
-import {getOrders} from "../../Service/OrderService.js";
+import {getOrders, refundOrder} from "../../Service/OrderService.js";
 
 const OrderHistory = () => {
     const [orders, setOrders] = useState([]);
@@ -111,6 +111,7 @@ const OrderHistory = () => {
                         <th>Общо</th>
                         <th>Плащане</th>
                         <th>Статус</th>
+                        <th></th>
                         <th>Дата</th>
                     </tr>
                     </thead>
@@ -139,9 +140,43 @@ const OrderHistory = () => {
                             <td>{new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'}).format(order.grandTotal)}</td>
                             <td>{order.paymentMethod}</td>
                             <td>
-                                <span className={`badge ${order.paymentDetails?.status === "COMPLETED"? "bg-success" : "bg-warning text-dark"}`}>
-                                    {order.paymentDetails?.status === 'COMPLETED' ? 'ЗАВЪРШЕНО' : (order.paymentDetails?.status || 'ИЗЧАКВАНЕ')}
-                                </span>
+                                {order.orderStatus === 'REFUNDED' && (
+                                    <span className="badge bg-danger">ВЪРНАТО</span>
+                                )}
+                                {order.orderStatus === 'VOIDED' && (
+                                    <span className="badge bg-secondary">АНУЛИРАНО</span>
+                                )}
+                                {!order.orderStatus && (
+                                    <span className={`badge ${order.paymentDetails?.status === "COMPLETED"? "bg-success" : "bg-warning text-dark"}`}>
+                                        {order.paymentDetails?.status === 'COMPLETED' ? 'ЗАВЪРШЕНО' : (order.paymentDetails?.status || 'ИЗЧАКВАНЕ')}
+                                    </span>
+                                )}
+                            </td>
+                            <td>
+                                {(!order.orderStatus || (order.orderStatus !== 'REFUNDED' && order.orderStatus !== 'VOIDED')) && (
+                                <button className="btn btn-sm btn-outline-warning" onClick={async ()=>{
+                                    const reason = window.prompt('Причина за връщане:', 'Връщане от клиент');
+                                    if (reason === null) return;
+                                    const methodChoice = window.prompt('Изберете метод: 1=Карта, 2=В брой, 3=Изход', '1');
+                                    if (methodChoice === null || methodChoice === '3') return; // Изход
+                                    let method = 'CASH';
+                                    if (methodChoice === '1') method = 'CARD';
+                                    if (methodChoice === '2') method = 'CASH';
+                                    const amountStr = window.prompt('Сума за възстановяване (празно = цялата):', '');
+                                    const payload = {
+                                        reason,
+                                        refundMethod: method,
+                                        refundAmount: amountStr ? parseFloat(amountStr) : undefined
+                                    };
+                                    try {
+                                        await refundOrder(order.orderId, payload);
+                                        alert('Връщането е регистрирано');
+                                    } catch (e) {
+                                        console.error(e);
+                                        alert('Грешка при връщане');
+                                    }
+                                }}>Връщане</button>
+                                )}
                             </td>
                             <td>{formatDate(order.createdAt)}</td>
                         </tr>
