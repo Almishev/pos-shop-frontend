@@ -101,6 +101,31 @@ const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
                     <strong>Метод на плащане: </strong> {getPaymentMethodLabel(orderDetails.paymentMethod)}
                 </p>
                 {
+                    orderDetails.paymentMethod === 'SPLIT' && (
+                        <>
+                            <p>
+                                <strong>В брой: </strong> {formatBGN(orderDetails.paymentDetails?.cashAmount || 0)}
+                            </p>
+                            <p>
+                                <strong>С карта: </strong> {formatBGN(orderDetails.paymentDetails?.cardAmount || 0)}
+                            </p>
+                            <p>
+                                <small>Сбор: {formatBGN((orderDetails.paymentDetails?.cashAmount || 0) + (orderDetails.paymentDetails?.cardAmount || 0))}</small>
+                            </p>
+                            {(orderDetails.paymentDetails?.posTransactionId || orderDetails.paymentDetails?.authCode || orderDetails.paymentDetails?.posAuthCode) && (
+                                <>
+                                    <p>
+                                        <strong>Auth code: </strong> {orderDetails.paymentDetails?.authCode || orderDetails.paymentDetails?.posAuthCode || '-'}
+                                    </p>
+                                    <p>
+                                        <strong>Txn ID: </strong> {orderDetails.paymentDetails?.posTransactionId || '-'}
+                                    </p>
+                                </>
+                            )}
+                        </>
+                    )
+                }
+                {
                     (orderDetails.paymentMethod === 'CARD' || orderDetails.paymentMethod === 'CREDIT_CARD' || orderDetails.paymentMethod === 'DEBIT_CARD') && (
                         <>
                             <p>

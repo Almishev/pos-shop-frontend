@@ -123,6 +123,32 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
             grandTotal,
             paymentMethod: paymentMode.toUpperCase()
         }
+        let splitCashAmount = 0;
+        let splitCardAmount = 0;
+        if (paymentMode === "split") {
+            const cashInput = window.prompt("Въведете сума в брой:", String(grandTotal.toFixed(2)));
+            const cashAmount = parseFloat(cashInput || '0');
+            const cardAmount = parseFloat((grandTotal - (isNaN(cashAmount) ? 0 : cashAmount)).toFixed(2));
+            if (isNaN(cashAmount) || cashAmount < 0) {
+                toast.error("Невалидна сума в брой");
+                return;
+            }
+            if (cardAmount < 0) {
+                toast.error("Сумата с карта не може да е отрицателна");
+                return;
+            }
+            const totalCheck = parseFloat((cashAmount + cardAmount).toFixed(2));
+            const grandCheck = parseFloat(grandTotal.toFixed(2));
+            if (totalCheck !== grandCheck) {
+                toast.error("Сборът на суми не съвпада с крайната сума");
+                return;
+            }
+            orderData.paymentMethod = "SPLIT";
+            orderData.cashAmount = cashAmount;
+            orderData.cardAmount = cardAmount;
+            splitCashAmount = cashAmount;
+            splitCardAmount = cardAmount;
+        }
         setIsProcessing(true);
         try {
 
@@ -210,6 +236,46 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                     await deleteOrderOnFailure(savedData.orderId);
                     console.error(err);
                     toast.error("Грешка при картово плащане");
+                }
+            } else if (response.status === 201 && paymentMode === "split") {
+                try {
+                    // приемаме кеш частта на място
+                    if (splitCashAmount > 0) {
+                        toast.success(`Прието в брой: ${formatBGN(splitCashAmount)}`);
+                    }
+                    if (splitCardAmount > 0) {
+                        const initResp = await initiatePosPayment({
+                            orderId: savedData.orderId,
+                            amount: splitCardAmount,
+                            currency: 'BGN'
+                        });
+                        const result = initResp.data;
+                        if (result.status === 'APPROVED') {
+                            toast.success("Картова част: одобрена");
+                            setOrderDetails({
+                                ...savedData,
+                                paymentDetails: {
+                                    ...savedData.paymentDetails,
+                                    posTransactionId: result.transactionId,
+                                    authCode: result.authCode,
+                                    status: result.status,
+                                    cashAmount: splitCashAmount,
+                                    cardAmount: splitCardAmount
+                                },
+                                paymentMethod: 'SPLIT'
+                            });
+                        } else {
+                            await deleteOrderOnFailure(savedData.orderId);
+                            toast.error("Картова част: отказана");
+                        }
+                    } else {
+                        // изцяло кеш
+                        setOrderDetails({ ...savedData, paymentMethod: 'SPLIT' });
+                    }
+                } catch (err) {
+                    await deleteOrderOnFailure(savedData.orderId);
+                    console.error(err);
+                    toast.error("Грешка при картовата част");
                 }
             }
         }catch(error) {
@@ -334,17 +400,25 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                 >
                     {isProcessing ? "Обработка...": "В брой"}
                 </button>
+                {/*}
                 <button className="btn btn-primary flex-grow-1"
                         onClick={() => completePayment("upi")}
                         disabled={isProcessing}
                 >
                     {isProcessing ? "Обработка...": "UPI"}
                 </button>
+                */}
                 <button className="btn btn-info flex-grow-1"
                         onClick={() => completePayment("card")}
                         disabled={isProcessing}
                 >
                     {isProcessing ? "Обработка...": "Карта"}
+                </button>
+                <button className="btn btn-secondary flex-grow-1"
+                        onClick={() => completePayment("split")}
+                        disabled={isProcessing}
+                >
+                    {isProcessing ? "Обработка...": "Съвместно"}
                 </button>
             </div>
             <div className="d-flex gap-3 mt-3">
