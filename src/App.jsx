@@ -16,6 +16,7 @@ import {Toaster} from "react-hot-toast";
 import Login from "./pages/Login/Login.jsx";
 import OrderHistory from "./pages/OrderHistory/OrderHistory.jsx";
 import UnifiedReports from "./pages/Reports/UnifiedReports.jsx";
+import LabelManagement from "./components/Labels/LabelManagement.jsx";
 import {useContext} from "react";
 import {AppContext} from "./context/AppContext.jsx";
 import NotFound from "./pages/NotFound/NotFound.jsx";
@@ -62,6 +63,7 @@ const App = () => {
                 <Route path="/inventory/:id" element={<ProtectedRoute element={<ItemEditPage />} allowedRoles={["ROLE_ADMIN"]} />} />
                 <Route path="/loyalty" element={<ProtectedRoute element={<LoyaltyManagement />} allowedRoles={["ROLE_USER", "ROLE_ADMIN"]} />} />
                 <Route path="/excel-import" element={<ProtectedRoute element={<ExcelImportPage />} allowedRoles={["ROLE_ADMIN"]} />} />
+                <Route path="/labels" element={<ProtectedRoute element={<LabelManagement />} allowedRoles={["ROLE_ADMIN"]} />} />
 
                 <Route path="/login" element={<LoginRoute element={<Login />} />} />
                 <Route path="/orders" element={<OrderHistory />} />

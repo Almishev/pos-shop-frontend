@@ -1,6 +1,7 @@
 import {useContext, useState} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
 import {deleteItem, searchItems} from "../../Service/ItemService.js";
+import LabelService from "../../Service/LabelService.js";
 import toast from "react-hot-toast";
 import './ItemList.css';
 
@@ -50,6 +51,20 @@ const ItemList = () => {
     }
 
     const displayItems = searchResults || filteredItems;
+
+    const printItemLabel = async (item) => {
+        try {
+            const result = await LabelService.printPriceLabels([item]);
+            if (result.success) {
+                toast.success('Етикетът е готов за печат');
+                const htmlContent = LabelService.generatePriceLabelHTML(item);
+                LabelService.printLabels(htmlContent, 'ценови етикет');
+            }
+        } catch (error) {
+            console.error('Error printing item label:', error);
+            toast.error('Грешка при печат на етикет');
+        }
+    };
 
     return (
         <div className="category-list-container" style={{height:'100vh', overflowY: 'auto', overflowX: 'hidden'}}>
@@ -115,7 +130,14 @@ const ItemList = () => {
                                         {(new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'})).format(item.price)}
                                     </span>
                                 </div>
-                                <div>
+                                <div className="d-flex gap-2">
+                                    <button 
+                                        className="btn btn-warning btn-sm" 
+                                        onClick={() => printItemLabel(item)}
+                                        title="Печат на етикет"
+                                    >
+                                        <i className="bi bi-tag"></i>
+                                    </button>
                                     <button className="btn btn-danger btn-sm" onClick={() => removeItem(item.itemId)}>
                                         <i className="bi bi-trash"></i>
                                     </button>

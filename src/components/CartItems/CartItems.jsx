@@ -1,9 +1,38 @@
 import './CartItems.css';
-import {useContext} from "react";
+import {useContext, useState} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
 
 const CartItems = () => {
     const {cartItems, removeFromCart, updateQuantity} = useContext(AppContext);
+
+    const [showQtyModal, setShowQtyModal] = useState(false);
+    const [activeItem, setActiveItem] = useState(null);
+    const [tempQty, setTempQty] = useState('1');
+
+    const openQtyModal = (item) => {
+        setActiveItem(item);
+        setTempQty(String(item.quantity ?? 1));
+        setShowQtyModal(true);
+    };
+
+    const closeQtyModal = () => {
+        setShowQtyModal(false);
+        setActiveItem(null);
+        setTempQty('1');
+    };
+
+    const saveQty = () => {
+        const normalized = (tempQty || '').toString().replace(',', '.').trim();
+        if (!/^\d*(?:\.\d{0,2})?$/.test(normalized) || normalized === '') {
+            return alert('Невалидно количество. Пример: 1, 2.5, 0.25');
+        }
+        const value = parseFloat(normalized);
+        if (isNaN(value) || value <= 0) {
+            return alert('Количеството трябва да е по-голямо от 0');
+        }
+        updateQuantity(activeItem.itemId, value);
+        closeQtyModal();
+    };
     return (
         <div className="p-3 h-100 overflow-y-auto">
             {cartItems.length === 0 ? (
@@ -38,6 +67,9 @@ const CartItems = () => {
                                     <button className="btn btn-primary btn-sm" onClick={() => updateQuantity(item.itemId, item.quantity + 1)}>
                                         <i className="bi bi-plus"></i>
                                     </button>
+                                    <button className="btn btn-outline-light btn-sm" title="Задай количество" onClick={() => openQtyModal(item)}>
+                                        <i className="bi bi-keyboard"></i>
+                                    </button>
                                 </div>
                                 <button className="btn btn-danger btn-sm" style={{width: "auto"}} onClick={() => removeFromCart(item.itemId)}>
                                     <i className="bi bi-trash"></i>
@@ -45,6 +77,36 @@ const CartItems = () => {
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+            {/* Quantity Modal */}
+            {showQtyModal && (
+                <div className="modal d-block" tabIndex="-1" style={{background: 'rgba(0,0,0,0.6)'}}>
+                    <div className="modal-dialog modal-sm modal-dialog-centered">
+                        <div className="modal-content bg-dark text-light">
+                            <div className="modal-header border-secondary">
+                                <h6 className="modal-title">Задаване на количество</h6>
+                                <button type="button" className="btn-close btn-close-white" onClick={closeQtyModal}></button>
+                            </div>
+                            <div className="modal-body">
+                                <label className="modal-title text-light d-block">Количество (до 2 десетични знака)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0.01"
+                                    className="form-control"
+                                    value={tempQty}
+                                    onChange={(e)=>setTempQty(e.target.value)}
+                                    onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); saveQty(); } }}
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="modal-footer border-secondary">
+                                <button type="button" className="btn btn-secondary" onClick={closeQtyModal}>Отказ</button>
+                                <button type="button" className="btn btn-primary" onClick={saveQty}>Запази</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

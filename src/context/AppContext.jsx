@@ -25,7 +25,15 @@ export const AppContextProvider = (props) => {
     }
 
     const updateQuantity = (itemId, newQuantity) => {
-        setCartItems(cartItems.map(item => item.itemId === itemId ? {...item, quantity: newQuantity} : item));
+        const numericQty = typeof newQuantity === 'number' ? newQuantity : parseFloat(newQuantity);
+        if (isNaN(numericQty) || numericQty <= 0) {
+            // Remove the item if quantity is zero or negative
+            setCartItems(cartItems.filter(item => item.itemId !== itemId));
+            return;
+        }
+        // Clamp to 2 decimals
+        const clamped = Math.round(numericQty * 100) / 100;
+        setCartItems(cartItems.map(item => item.itemId === itemId ? {...item, quantity: clamped} : item));
     }
 
     useEffect(() => {
@@ -38,11 +46,18 @@ export const AppContextProvider = (props) => {
                     localStorage.getItem("name")
                 );
             }
-            const response = await fetchCategories();
-            const itemResponse = await fetchItems();
-            console.log('item response', itemResponse);
-            setCategories(response.data);
-            setItemsData(itemResponse.data);
+            try {
+                const response = await fetchCategories();
+                const itemResponse = await fetchItems();
+                console.log('AppContext - Categories response:', response);
+                console.log('AppContext - Items response:', itemResponse);
+                setCategories(response.data || []);
+                setItemsData(itemResponse.data || []);
+            } catch (error) {
+                console.error('AppContext - Error loading data:', error);
+                setCategories([]);
+                setItemsData([]);
+            }
 
         }
         loadData();

@@ -1,0 +1,446 @@
+/* Label Templates CSS */
+
+/* Print styles for labels */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    .label-print-area, .label-print-area * {
+        visibility: visible;
+    }
+    .label-print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+    .no-print {
+        display: none !important;
+    }
+}
+
+/* Price Label Templates */
+.price-label {
+    width: 30mm;
+    height: 20mm;
+    border: 1px solid #000;
+    padding: 2mm;
+    font-family: Arial, sans-serif;
+    background: white;
+    display: inline-block;
+    margin: 1mm;
+    box-sizing: border-box;
+    page-break-inside: avoid;
+}
+
+.price-label .item-name {
+    font-size: 8pt;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 1mm;
+    line-height: 1.1;
+    word-wrap: break-word;
+}
+
+.price-label .item-price {
+    font-size: 10pt;
+    font-weight: bold;
+    text-align: center;
+    color: #d32f2f;
+    margin-bottom: 1mm;
+}
+
+.price-label .item-barcode {
+    font-size: 6pt;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    color: #000000;
+    background: #ffffff;
+    padding: 1px 2px;
+    border-radius: 2px;
+}
+
+/* Large Price Label */
+.price-label-large {
+    width: 50mm;
+    height: 30mm;
+    border: 2px solid #1976d2;
+    padding: 3mm;
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    display: inline-block;
+    margin: 1mm;
+    box-sizing: border-box;
+    page-break-inside: avoid;
+}
+
+.price-label-large .item-name {
+    font-size: 10pt;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 2mm;
+    line-height: 1.1;
+}
+
+.price-label-large .item-price {
+    font-size: 14pt;
+    font-weight: bold;
+    text-align: center;
+    color: #d32f2f;
+    margin-bottom: 2mm;
+}
+
+.price-label-large .item-barcode {
+    font-size: 8pt;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 1mm;
+    color: #000000;
+    background: #ffffff;
+    padding: 1px 2px;
+    border-radius: 2px;
+}
+
+.price-label-large .promo-text {
+    font-size: 7pt;
+    text-align: center;
+    color: #d32f2f;
+    font-weight: bold;
+}
+
+/* Shelf Label Templates */
+.shelf-label {
+    width: 100mm;
+    height: 50mm;
+    border: 2px solid #1976d2;
+    padding: 3mm;
+    font-family: Arial, sans-serif;
+    background: #e3f2fd;
+    display: inline-flex; /* center content */
+    flex-direction: column;
+    justify-content: center; /* vertical center */
+    align-items: center;     /* horizontal center */
+    margin: 1mm;
+    box-sizing: border-box;
+    page-break-inside: avoid;
+}
+
+.shelf-label .category-name {
+    font-size: 16pt;
+    font-weight: bold;
+    text-align: center;
+    color: #1976d2;
+    margin-bottom: 2mm;
+    line-height: 1.1;
+    width: 100%;
+}
+
+.shelf-label .promotion-text {
+    font-size: 12pt;
+    text-align: center;
+    color: #d32f2f;
+    font-weight: bold;
+    margin-bottom: 1mm;
+}
+
+.shelf-label .promotion-dates {
+    font-size: 8pt;
+    text-align: center;
+    color: #666;
+}
+
+/* Promo Label Templates */
+.promo-label {
+    width: 40mm;
+    height: 25mm;
+    border: 2px solid #b71c1c;           /* тъмно червена рамка */
+    padding: 2mm;
+    font-family: Arial, sans-serif;
+    background: #d32f2f;                 /* наситено червено за промо */
+    color: #ffffff;                       /* бял текст върху червено */
+    display: inline-block;
+    margin: 1mm;
+    box-sizing: border-box;
+    page-break-inside: avoid;
+}
+
+.promo-label .item-name {
+    font-size: 8pt;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 1mm;
+    line-height: 1.1;
+    word-wrap: break-word;
+    color: #ffffff;                      /* бяло име */
+}
+
+.promo-label .old-price {
+    font-size: 8pt;
+    text-align: center;
+    text-decoration: line-through;
+    color: rgba(255,255,255,0.8);        /* по-светло бяло за стара цена */
+    margin-bottom: 1mm;
+}
+
+.promo-label .new-price {
+    font-size: 12pt;                      /* по-голям акцент */
+    font-weight: 800;
+    text-align: center;
+    color: #ffffff;                       /* бяла нова цена */
+    margin-bottom: 1mm;
+}
+
+.promo-label .promo-badge {
+    font-size: 7pt;
+    text-align: center;
+    color: #b71c1c;                       /* текст в баджа */
+    font-weight: 900;
+    background: #ffeb3b;                  /* жълт бадж за контраст */
+    padding: 1mm 2mm;
+    border-radius: 2mm;
+}
+
+/* Label Preview Container */
+.label-preview-container {
+    background: #f0f0f0;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    min-height: 100px;
+}
+
+.label-preview-container .price-label,
+.label-preview-container .price-label-large,
+.label-preview-container .shelf-label {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #000000 !important;
+}
+
+/* Оставяме промо етикетите червени и в предварителния преглед */
+.label-preview-container .promo-label {
+    background: #d32f2f !important;
+    color: #ffffff !important;
+    border: 2px solid #b71c1c !important;
+}
+
+.label-preview-container .item-name,
+.label-preview-container .category-name {
+    color: #000000 !important;
+}
+
+.label-preview-container .item-price {
+    color: #d32f2f !important;
+}
+
+/* Запазваме новата промо цена в бяло и в прегледа */
+.label-preview-container .new-price {
+    color: #ffffff !important;
+}
+
+.label-preview-container .item-barcode {
+    color: #000000 !important;
+    background: #ffffff !important;
+}
+
+/* Label Management UI */
+.label-management {
+    background: #1f2426;
+    color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.label-management h2,
+.label-management h4,
+.label-management h5,
+.label-management h6 {
+    color: #ffffff !important;
+}
+
+.label-management .text-light {
+    color: #ffffff !important;
+}
+
+.label-management .text-muted {
+    color: #cccccc !important;
+}
+
+.label-type-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.label-type-btn {
+    padding: 10px 20px;
+    border: 2px solid #ffc107;
+    background: transparent;
+    color: #ffc107;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.label-type-btn:hover {
+    background: #ffc107;
+    color: #000;
+}
+
+.label-type-btn.active {
+    background: #ffc107;
+    color: #000;
+}
+
+.label-form {
+    background: #2c3335;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.label-form .form-label {
+    color: #fff;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.label-form .form-control {
+    background: #1a1a1a;
+    border: 1px solid #444;
+    color: #fff;
+    border-radius: 5px;
+    padding: 8px 12px;
+}
+
+.label-form .form-control:focus {
+    background: #1a1a1a;
+    border-color: #ffc107;
+    color: #fff;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+.label-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    background: #2c3335;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.label-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-shadow: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    color: #fff !important;
+}
+
+.label-btn-primary {
+    background: #ffc107;
+    color: #000 !important;
+    font-weight: bold;
+}
+
+.label-btn-primary:hover {
+    background: #e0a800;
+    color: #000 !important;
+    transform: translateY(-2px);
+}
+
+/* Specific override for all label buttons to ensure white text */
+.label-actions .label-btn {
+    color: #ffffff !important;
+    background: #6c757d !important;
+}
+
+.label-actions .label-btn:hover {
+    color: #ffffff !important;
+    background: #5a6268 !important;
+}
+
+.label-actions .label-btn-primary {
+    color: #ffffff !important;
+    background: #6c757d !important;
+}
+
+.label-actions .label-btn-primary:hover {
+    color: #ffffff !important;
+    background: #5a6268 !important;
+}
+
+.label-actions .label-btn-secondary {
+    color: #ffffff !important;
+    background: #6c757d !important;
+}
+
+.label-actions .label-btn-secondary:hover {
+    color: #ffffff !important;
+    background: #5a6268 !important;
+}
+
+.label-actions .label-btn-success {
+    color: #ffffff !important;
+    background: #6c757d !important;
+}
+
+.label-actions .label-btn-success:hover {
+    color: #ffffff !important;
+    background: #5a6268 !important;
+}
+
+.label-btn-secondary {
+    background: #6c757d;
+    color: #fff !important;
+    font-weight: bold;
+}
+
+.label-btn-secondary:hover {
+    background: #5a6268;
+    color: #fff !important;
+    transform: translateY(-2px);
+}
+
+.label-btn-success {
+    background: #28a745;
+    color: #fff !important;
+    font-weight: bold;
+}
+
+.label-btn-success:hover {
+    background: #218838;
+    color: #fff !important;
+    transform: translateY(-2px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .price-label, .price-label-large, .shelf-label, .promo-label {
+        width: 100%;
+        height: auto;
+        min-height: 20mm;
+        margin: 5px 0;
+    }
+    
+    .label-type-selector {
+        flex-direction: column;
+    }
+    
+    .label-actions {
+        flex-direction: column;
+    }
+}
