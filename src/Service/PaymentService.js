@@ -7,3 +7,11 @@ export const createRazorpayOrder = async (data) => {
 export const verifyPayment = async (paymentData) => {
     return await axios.post('http://localhost:8087/api/v1.0/payments/verify', paymentData, {headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}});
 }
+
+export const initiatePosPayment = async (data) => {
+    return await axios.post('http://localhost:8087/api/v1.0/api/pos-payments/initiate', data, {headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}});
+}
+
+export const refundPosPayment = async (data) => {
+    return await axios.post('http://localhost:8087/api/v1.0/api/pos-payments/refund', data, {headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}});
+}

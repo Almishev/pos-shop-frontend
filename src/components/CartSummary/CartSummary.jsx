@@ -4,7 +4,7 @@ import {AppContext} from "../../context/AppContext.jsx";
 import ReceiptPopup from "../ReceiptPopup/ReceiptPopup.jsx";
 import {createOrder, deleteOrder} from "../../Service/OrderService.js";
 import toast from "react-hot-toast";
-import {createRazorpayOrder, verifyPayment} from "../../Service/PaymentService.js";
+import {createRazorpayOrder, verifyPayment, initiatePosPayment} from "../../Service/PaymentService.js";
 import {AppConstants} from "../../util/constants.js";
 import FiscalService from "../../Service/FiscalService.js";
 import InventoryService from "../../Service/InventoryService.js";
@@ -184,6 +184,33 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                     console.error(response.error.description);
                 });
                 rzp.open();
+            } else if (response.status === 201 && paymentMode === "card") {
+                try {
+                    const initResp = await initiatePosPayment({
+                        orderId: savedData.orderId,
+                        amount: grandTotal,
+                        currency: 'BGN'
+                    });
+                    const result = initResp.data;
+                    if (result.status === 'APPROVED') {
+                        toast.success("Картово плащане одобрено");
+                        setOrderDetails({
+                            ...savedData,
+                            paymentDetails: {
+                                posTransactionId: result.transactionId,
+                                authCode: result.authCode,
+                                status: result.status
+                            }
+                        });
+                    } else {
+                        await deleteOrderOnFailure(savedData.orderId);
+                        toast.error("Картово плащане отказано");
+                    }
+                } catch (err) {
+                    await deleteOrderOnFailure(savedData.orderId);
+                    console.error(err);
+                    toast.error("Грешка при картово плащане");
+                }
             }
         }catch(error) {
             console.error(error);
@@ -312,6 +339,12 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                         disabled={isProcessing}
                 >
                     {isProcessing ? "Обработка...": "UPI"}
+                </button>
+                <button className="btn btn-info flex-grow-1"
+                        onClick={() => completePayment("card")}
+                        disabled={isProcessing}
+                >
+                    {isProcessing ? "Обработка...": "Карта"}
                 </button>
             </div>
             <div className="d-flex gap-3 mt-3">

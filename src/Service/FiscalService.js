@@ -119,13 +119,13 @@ const FiscalService = {
     // Fiscal Receipts
     sendReceipt: async (receiptData) => {
         const instance = createAuthInstance();
-        const response = await instance.post('/fiscal/receipts', receiptData);
+        const response = await instance.post('/admin/receipts', receiptData);
         return response.data;
     },
 
     getReceiptStatus: async (fiscalNumber) => {
         const instance = createAuthInstance();
-        const response = await instance.get(`/fiscal/receipts/${fiscalNumber}`);
+        const response = await instance.get(`/admin/receipts/${fiscalNumber}`);
         return response.data;
     },
 

@@ -101,6 +101,18 @@ const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
                     <strong>Метод на плащане: </strong> {getPaymentMethodLabel(orderDetails.paymentMethod)}
                 </p>
                 {
+                    (orderDetails.paymentMethod === 'CARD' || orderDetails.paymentMethod === 'CREDIT_CARD' || orderDetails.paymentMethod === 'DEBIT_CARD') && (
+                        <>
+                            <p>
+                                <strong>Auth code: </strong> {orderDetails.paymentDetails?.authCode || orderDetails.paymentDetails?.posAuthCode || '-'}
+                            </p>
+                            <p>
+                                <strong>Txn ID: </strong> {orderDetails.paymentDetails?.posTransactionId || '-'}
+                            </p>
+                        </>
+                    )
+                }
+                {
                     orderDetails.paymentMethod === "UPI" && (
                         <>
                             <p>
