@@ -162,8 +162,8 @@ const Dashboard = () => {
                                         </span>
                                     </td>
                                     <td>
-                                        <span className={`status-badge ${order.paymentDetails.status.toLowerCase()}`}>
-                                            {order.paymentDetails.status === 'COMPLETED' ? 'ЗАВЪРШЕНО' : (order.paymentDetails.status || 'ИЗЧАКВАНЕ')}
+                                        <span className={`status-badge ${order.paymentDetails?.status?.toLowerCase() || 'pending'}`}>
+                                            {order.paymentDetails?.status === 'COMPLETED' ? 'ЗАВЪРШЕНО' : (order.paymentDetails?.status || 'ИЗЧАКВАНЕ')}
                                         </span>
                                     </td>
                                     <td>

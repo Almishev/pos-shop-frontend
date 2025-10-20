@@ -1,0 +1,151 @@
+.cash-drawer-control {
+    margin-bottom: 20px;
+}
+
+.cash-drawer-control .card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.cash-drawer-control .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 15px 20px;
+}
+
+.cash-drawer-control .card-body {
+    padding: 20px;
+}
+
+.active-session .info-item {
+    margin-bottom: 15px;
+}
+
+.active-session .info-item label {
+    font-weight: 600;
+    color: #495057;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.active-session .info-item span {
+    color: #212529;
+}
+
+.active-session .info-item .amount {
+    font-size: 1.2em;
+    font-weight: 700;
+    color: #28a745;
+}
+
+.no-session .alert {
+    margin-bottom: 20px;
+}
+
+.modal {
+    z-index: 1055;
+}
+
+.modal-dialog {
+    margin: 1.75rem auto;
+}
+
+.modal-content {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    border-bottom: 1px solid #dee2e6;
+    padding: 15px 20px;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+    padding: 15px 20px;
+}
+
+.form-text {
+    font-size: 0.875em;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+.btn {
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #212529;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+    border-color: #d39e00;
+    color: #212529;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+}
+
+.alert {
+    border-radius: 6px;
+    border: none;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.spinner-border {
+    width: 2rem;
+    height: 2rem;
+    border-width: 0.2em;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .cash-drawer-control .card-body {
+        padding: 15px;
+    }
+    
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+    
+    .active-session .row {
+        margin-bottom: 10px;
+    }
+}

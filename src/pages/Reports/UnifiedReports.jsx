@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { toast } from 'react-hot-toast';
 import { exportOrdersReport, getCashierSummaries } from "../../Service/ReportService.js";
 import FiscalService from '../../Service/FiscalService';
+import CashDrawerService from '../../Service/CashDrawerService';
 import { fetchUsers } from '../../Service/UserService.js';
 import { AppContext } from '../../context/AppContext.jsx';
 import './Reports.css';
@@ -26,12 +27,15 @@ const UnifiedReports = () => {
     const [loading, setLoading] = useState(true);
     const [showGenerateForm, setShowGenerateForm] = useState(false);
     const [selectedReportType, setSelectedReportType] = useState('');
+    const [showReportDetails, setShowReportDetails] = useState(false);
+    const [selectedReport, setSelectedReport] = useState(null);
     const [formData, setFormData] = useState({
         reportDate: new Date().toISOString().split('T')[0],
         cashierName: '',
         deviceSerialNumber: '',
         notes: ''
     });
+    const [activeSession, setActiveSession] = useState(null);
 
     // When role is USER, prefill cashierName with logged-in email
     useEffect(() => {
@@ -47,6 +51,8 @@ const UnifiedReports = () => {
             console.log('Current loading state:', loading);
             loadFiscalData();
             loadUsers(); // Load users separately
+            // Prefill device from active cashier session
+            preloadActiveSession();
         }
     }, [activeTab]);
 
@@ -58,6 +64,7 @@ const UnifiedReports = () => {
 
     const loadFiscalData = async () => {
         try {
+            console.log('=== UnifiedReports.loadFiscalData called ===');
             setLoading(true);
             
             // Load devices first - filter only ACTIVE devices
@@ -66,18 +73,27 @@ const UnifiedReports = () => {
             setDevices(activeDevices);
             console.log('Loaded active devices for reports:', activeDevices);
             
-            if (auth.role === 'ROLE_ADMIN') {
-                // Load reports
-                const reportsData = await FiscalService.getAllReports();
-                setReports(reportsData);
-            } else {
-                setReports([]);
-            }
+            // Allow both ADMIN and USER to see reports (USER can see their own shift reports)
+            console.log('=== UnifiedReports.loadFiscalData - calling getAllReports ===');
+            const reportsData = await FiscalService.getAllReports();
+            console.log('UnifiedReports - Loaded reports:', reportsData);
+            console.log('UnifiedReports - Reports data type:', typeof reportsData);
+            console.log('UnifiedReports - Reports data length:', reportsData?.length);
+            // Sort newest first by generatedAt (fallback by id)
+            const sorted = (reportsData || []).slice().sort((a, b) => {
+                const da = a.generatedAt ? new Date(a.generatedAt).getTime() : 0;
+                const db = b.generatedAt ? new Date(b.generatedAt).getTime() : 0;
+                if (db !== da) return db - da;
+                return (b.id || 0) - (a.id || 0);
+            });
+            setReports(sorted);
+            console.log('UnifiedReports - Reports state updated');
         } catch (error) {
             toast.error('Грешка при зареждане на данни');
             console.error('Error loading data:', error);
         } finally {
             setLoading(false);
+            console.log('UnifiedReports - Loading finished');
         }
     };
 
@@ -105,6 +121,23 @@ const UnifiedReports = () => {
             }
         } else {
             setUsers([]);
+        }
+    };
+
+    const preloadActiveSession = async () => {
+        try {
+            const session = await CashDrawerService.getActiveSession();
+            setActiveSession(session);
+            if (session?.deviceSerialNumber) {
+                setFormData(prev => ({
+                    ...prev,
+                    deviceSerialNumber: session.deviceSerialNumber,
+                    cashierName: auth.role === 'ROLE_USER' ? (auth.name || prev.cashierName) : prev.cashierName
+                }));
+            }
+        } catch (e) {
+            // No active session – leave device empty
+            setActiveSession(null);
         }
     };
 
@@ -183,6 +216,9 @@ const UnifiedReports = () => {
                 result = await FiscalService.generateShiftReport(payload);
             } else {
                 switch (selectedReportType) {
+                    case 'STORE_DAILY':
+                        result = await FiscalService.generateStoreDailyReport(formData);
+                        break;
                     case 'DAILY':
                         result = await FiscalService.generateDailyReport(formData);
                         break;
@@ -201,9 +237,12 @@ const UnifiedReports = () => {
                 }
             }
             
+            console.log('UnifiedReports - Generated report result:', result);
             toast.success('Отчетът е генериран успешно');
             resetForm();
-            loadFiscalData();
+            console.log('UnifiedReports - About to reload fiscal data...');
+            await loadFiscalData();
+            console.log('UnifiedReports - Fiscal data reloaded after generation');
         } catch (error) {
             toast.error(error.response?.data?.message || 'Грешка при генериране на отчет');
             console.error('Error generating report:', error);
@@ -223,9 +262,206 @@ const UnifiedReports = () => {
         }
     };
 
+    const showReportDetailsModal = (report) => {
+        setSelectedReport(report);
+        setShowReportDetails(true);
+    };
+
+    const downloadReport = async (report) => {
+        try {
+            // Create a simple text report for download
+            const reportContent = `
+ФИСКАЛЕН ОТЧЕТ
+================
+Номер на отчет: ${report.reportNumber}
+Тип: ${report.reportType}
+Дата: ${new Date(report.reportDate).toLocaleDateString('bg-BG')}
+Касиер: ${report.cashierName || 'Неизвестен'}
+Устройство: ${report.deviceSerialNumber || 'Неизвестно'}
+
+СТАТИСТИКА
+==========
+Общо поръчки: ${report.totalReceipts || 0}
+Общо продажби: ${formatCurrency(report.totalSales)}
+ДДС: ${formatCurrency(report.totalVAT)}
+Нето продажби: ${formatCurrency(report.totalNetSales)}
+
+КОНТРОЛ НА КАСАТА
+=================
+Начална сума: ${formatCurrency(report.cashDrawerStartAmount)}
+Крайна сума: ${formatCurrency(report.cashDrawerEndAmount)}
+
+СТАТУС: ${report.status}
+Генериран на: ${new Date(report.generatedAt).toLocaleString('bg-BG')}
+Бележки: ${report.notes || 'Няма'}
+            `.trim();
+
+            // Create and download file
+            const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `fiscal-report-${report.reportNumber}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            toast.success('Отчетът е изтеглен успешно');
+        } catch (error) {
+            toast.error('Грешка при изтегляне на отчета');
+            console.error('Error downloading report:', error);
+        }
+    };
+
+    const printReport = (report) => {
+        try {
+            // Create print-friendly HTML content
+            const printContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Фискален отчет - ${report.reportNumber}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+                        .section { margin-bottom: 15px; }
+                        .section h3 { background-color: #f0f0f0; padding: 5px; margin: 0 0 10px 0; }
+                        table { width: 100%; border-collapse: collapse; }
+                        td { padding: 5px; border-bottom: 1px solid #ddd; }
+                        .label { font-weight: bold; width: 50%; }
+                        .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
+                        @media print { body { margin: 0; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>ФИСКАЛЕН ОТЧЕТ</h1>
+                        <h2>${report.reportNumber}</h2>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Основна информация</h3>
+                        <table>
+                            <tr><td class="label">Тип отчет:</td><td>${report.reportType}</td></tr>
+                            <tr><td class="label">Дата:</td><td>${new Date(report.reportDate).toLocaleDateString('bg-BG')}</td></tr>
+                            <tr><td class="label">Касиер:</td><td>${report.reportType === 'STORE_DAILY' ? 'Всички касиери' : (report.cashierName || 'Неизвестен')}</td></tr>
+                            <tr><td class="label">Устройство:</td><td>${report.reportType === 'STORE_DAILY' ? (report.deviceSerialNumber || 'Главно устройство') : (report.deviceSerialNumber || 'Неизвестно')}</td></tr>
+                            <tr><td class="label">Статус:</td><td>${report.status}</td></tr>
+                        </table>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Финансова статистика</h3>
+                        <table>
+                            <tr><td class="label">Общо поръчки:</td><td>${report.totalReceipts || 0}</td></tr>
+                            <tr><td class="label">Общо продажби:</td><td>${formatCurrency(report.totalSales)}</td></tr>
+                            <tr><td class="label">ДДС:</td><td>${formatCurrency(report.totalVAT)}</td></tr>
+                            <tr><td class="label">Нето продажби:</td><td>${formatCurrency(report.totalNetSales)}</td></tr>
+                            <tr><td class="label">Плащане в брой:</td><td>${formatCurrency(report.cashSales)}</td></tr>
+                            <tr><td class="label">Плащане с карта:</td><td>${formatCurrency(report.cardSales)}</td></tr>
+                            <tr><td class="label">Смесено плащане:</td><td>${formatCurrency(report.splitSales)}</td></tr>
+                        </table>
+                    </div>
+                    
+                    ${(report.reportType !== 'STORE_DAILY' && (report.cashDrawerStartAmount || report.cashDrawerEndAmount)) ? `
+                    <div class="section">
+                        <h3>Контрол на касата</h3>
+                        <table>
+                            <tr><td class="label">Начална сума:</td><td>${formatCurrency(report.cashDrawerStartAmount)}</td></tr>
+                            <tr><td class="label">Крайна сума:</td><td>${formatCurrency(report.cashDrawerEndAmount)}</td></tr>
+                            <tr><td class="label">Разлика (крайна - начална):</td><td>${formatCurrency((report.cashDrawerEndAmount || 0) - (report.cashDrawerStartAmount || 0))}</td></tr>
+                        </table>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="section">
+                        <h3>Данъчни групи</h3>
+                        <table>
+                            <tr><td class="label">Ставка 20% (А):</td><td>Основа ${formatCurrency((report.totalNetSales) || 0)} | ДДС ${formatCurrency((report.totalVAT) || 0)}</td></tr>
+                            ${report.taxGroupBBase ? `<tr><td class="label">Ставка 9% (Б):</td><td>Основа ${formatCurrency(report.taxGroupBBase)} | ДДС ${formatCurrency(report.taxGroupBVat)}</td></tr>` : ''}
+                        </table>
+                    </div>
+
+                    ${report.reportType === 'STORE_DAILY' && report.cashierBreakdown ? `
+                    <div class="section">
+                        <h3>Разбивка по касиери</h3>
+                        <table>
+                            <tr style="background-color: #f0f0f0; font-weight: bold;">
+                                <td>Касиер</td>
+                                <td>Брой поръчки</td>
+                                <td>Оборот</td>
+                            </tr>
+                            ${JSON.parse(report.cashierBreakdown).map(cashier => `
+                                <tr>
+                                    <td>${cashier.cashier}</td>
+                                    <td>${cashier.ordersCount}</td>
+                                    <td>${formatCurrency(cashier.totalAmount)}</td>
+                                </tr>
+                            `).join('')}
+                        </table>
+                    </div>
+                    ` : ''}
+
+                    <div class="section">
+                        <h3>Сторно / Анулирания</h3>
+                        <table>
+                            <tr><td class="label">Брой сторно:</td><td>${report.refundsCount ?? 0}</td></tr>
+                            <tr><td class="label">Сума сторно:</td><td>${formatCurrency(report.refundsAmount)}</td></tr>
+                            <tr><td class="label">Анулирания:</td><td>${report.voidsCount ?? 0}</td></tr>
+                        </table>
+                    </div>
+
+                    <div class="section">
+                        <h3>Данни за фискално устройство</h3>
+                        <table>
+                            <tr><td class="label">Сериен №:</td><td>${report.deviceSerialNumber || '-'}</td></tr>
+                            <tr><td class="label">Фискална памет №:</td><td>${report.fiscalMemoryNumber || '-'}</td></tr>
+                            <tr><td class="label">Номер на отчет:</td><td>${report.reportNumber}</td></tr>
+                        </table>
+                    </div>
+
+                    <div class="section">
+                        <h3>Допълнителна информация</h3>
+                        <table>
+                            <tr><td class="label">Генериран на:</td><td>${new Date(report.generatedAt).toLocaleString('bg-BG')}</td></tr>
+                            ${report.notes ? `<tr><td class="label">Бележки:</td><td>${report.notes}</td></tr>` : ''}
+                        </table>
+                    </div>
+                    
+                    <div class="footer">
+                        <p>Отчетът е генериран автоматично от POS системата</p>
+                        <p>Касиер: ${report.cashierName || '-'}</p>
+                        <p>Подпис касиер: ______________________</p>
+                        <p>Подпис управител: ____________________</p>
+                        <p>Дата на печат: ${new Date().toLocaleString('bg-BG')}</p>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            // Open print window
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            
+            // Wait for content to load, then print
+            printWindow.onload = () => {
+                printWindow.print();
+                printWindow.close();
+            };
+            
+            toast.success('Отчетът е готов за печат');
+        } catch (error) {
+            toast.error('Грешка при принтиране на отчета');
+            console.error('Error printing report:', error);
+        }
+    };
+
     const getReportTypeBadge = (reportType) => {
         const typeClasses = {
             'DAILY': 'badge-primary',
+            'STORE_DAILY': 'badge-danger',
             'SHIFT': 'badge-info',
             'MONTHLY': 'badge-success',
             'YEARLY': 'badge-warning',
@@ -446,6 +682,7 @@ const UnifiedReports = () => {
                                                         required
                                                     >
                                                         <option value="">Изберете тип</option>
+                                                        {auth.role === 'ROLE_ADMIN' && <option value="STORE_DAILY">🏪 Общ дневен отчет за магазина</option>}
                                                         {auth.role === 'ROLE_ADMIN' && <option value="DAILY">Дневен отчет</option>}
                                                         <option value="SHIFT">Сменен отчет</option>
                                                         {auth.role === 'ROLE_ADMIN' && <option value="MONTHLY">Месечен отчет</option>}
@@ -463,7 +700,7 @@ const UnifiedReports = () => {
                                                         required
                                                     />
                                                 </div>
-                                                {auth.role === 'ROLE_ADMIN' ? (
+                                                {auth.role === 'ROLE_ADMIN' && selectedReportType !== 'STORE_DAILY' ? (
                                                     <div className="col-md-3 mb-3">
                                                         <label className="form-label">Касиер</label>
                                                         <select
@@ -486,7 +723,7 @@ const UnifiedReports = () => {
                                                             )}
                                                         </select>
                                                     </div>
-                                                ) : (
+                                                ) : auth.role !== 'ROLE_ADMIN' ? (
                                                     <div className="col-md-3 mb-3">
                                                         <label className="form-label">Касиер</label>
                                                         <select
@@ -499,24 +736,46 @@ const UnifiedReports = () => {
                                                             <option value={auth.name || ''}>{auth.name || 'Липсва потребител'}</option>
                                                         </select>
                                                     </div>
-                                                )}
-                                                <div className="col-md-3 mb-3">
-                                                    <label className="form-label">Фискално устройство</label>
-                                                    <select
-                                                        className="form-select"
-                                                        name="deviceSerialNumber"
-                                                        value={formData.deviceSerialNumber}
-                                                        onChange={handleInputChange}
-                                                    >
-                                                        <option value="">Изберете устройство</option>
-                                                        {devices.map((device) => (
-                                                            <option key={device.id} value={device.serialNumber}>
-                                                                {device.serialNumber} - {device.location || device.model}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
+                                                ) : null}
+                                                {auth.role === 'ROLE_ADMIN' && selectedReportType !== 'STORE_DAILY' ? (
+                                                    <div className="col-md-3 mb-3">
+                                                        <label className="form-label">Фискално устройство</label>
+                                                        <select
+                                                            className="form-select"
+                                                            name="deviceSerialNumber"
+                                                            value={formData.deviceSerialNumber}
+                                                            onChange={handleInputChange}
+                                                        >
+                                                            <option value="">Изберете устройство</option>
+                                                            {devices.map((device) => (
+                                                                <option key={device.id} value={device.serialNumber}>
+                                                                    {device.serialNumber} - {device.location || device.model}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                ) : auth.role !== 'ROLE_ADMIN' ? (
+                                                    <div className="col-md-3 mb-3">
+                                                        <label className="form-label">Фискално устройство</label>
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            value={activeSession?.deviceSerialNumber || formData.deviceSerialNumber || 'Няма активна каса'}
+                                                            readOnly
+                                                        />
+                                                        {!activeSession?.deviceSerialNumber && (
+                                                            <small className="text-warning">Няма активна каса – първо започнете работен ден</small>
+                                                        )}
+                                                    </div>
+                                                ) : null}
                                             </div>
+
+                                            {selectedReportType === 'STORE_DAILY' && (
+                                                <div className="alert alert-info mb-3">
+                                                    <i className="bi bi-info-circle me-2"></i>
+                                                    <strong>Общ дневен отчет за магазина:</strong> Този отчет включва данни от всички каси и всички фискални устройства в магазина за избраната дата.
+                                                </div>
+                                            )}
 
                                             <div className="mb-3">
                                                 <label className="form-label">Бележки</label>
@@ -595,7 +854,7 @@ const UnifiedReports = () => {
                                                             </td>
                                                             <td>
                                                                 <div className="btn-group" role="group">
-                                                                    {report.status === 'GENERATED' && (
+                                                                    {report.status === 'GENERATED' && auth.role === 'ROLE_ADMIN' && (
                                                                         <button
                                                                             className="btn btn-sm btn-outline-success"
                                                                             onClick={() => sendReportToNAF(report.id)}
@@ -607,12 +866,21 @@ const UnifiedReports = () => {
                                                                     <button
                                                                         className="btn btn-sm btn-outline-info"
                                                                         title="Детайли"
+                                                                        onClick={() => showReportDetailsModal(report)}
                                                                     >
                                                                         <i className="bi bi-eye"></i>
                                                                     </button>
                                                                     <button
+                                                                        className="btn btn-sm btn-outline-success"
+                                                                        title="Принтирай"
+                                                                        onClick={() => printReport(report)}
+                                                                    >
+                                                                        <i className="bi bi-printer"></i>
+                                                                    </button>
+                                                                    <button
                                                                         className="btn btn-sm btn-outline-secondary"
                                                                         title="Свали"
+                                                                        onClick={() => downloadReport(report)}
                                                                     >
                                                                         <i className="bi bi-download"></i>
                                                                     </button>
@@ -628,6 +896,147 @@ const UnifiedReports = () => {
                             </div>
                         </>
                     )}
+                </div>
+            )}
+
+            {/* Report Details Modal */}
+            {showReportDetails && selectedReport && (
+                <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+                    <div className="modal-dialog modal-lg">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">
+                                    <i className="bi bi-file-earmark-text me-2"></i>
+                                    Детайли на фискален отчет
+                                </h5>
+                                <button 
+                                    type="button" 
+                                    className="btn-close" 
+                                    onClick={() => setShowReportDetails(false)}
+                                ></button>
+                            </div>
+                            <div className="modal-body">
+                                <div className="row">
+                                    <div className="col-md-6">
+                                        <h6>Основна информация</h6>
+                                        <table className="table table-sm">
+                                            <tbody>
+                                                <tr>
+                                                    <td><strong>Номер на отчет:</strong></td>
+                                                    <td>{selectedReport.reportNumber}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Тип:</strong></td>
+                                                    <td>{getReportTypeBadge(selectedReport.reportType)}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Дата:</strong></td>
+                                                    <td>{new Date(selectedReport.reportDate).toLocaleDateString('bg-BG')}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Касиер:</strong></td>
+                                                    <td>{selectedReport.cashierName || 'Неизвестен'}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Устройство:</strong></td>
+                                                    <td>{selectedReport.deviceSerialNumber || 'Неизвестно'}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Статус:</strong></td>
+                                                    <td>{getStatusBadge(selectedReport.status)}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <h6>Финансова статистика</h6>
+                                        <table className="table table-sm">
+                                            <tbody>
+                                                <tr>
+                                                    <td><strong>Общо поръчки:</strong></td>
+                                                    <td>{selectedReport.totalReceipts || 0}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Общо продажби:</strong></td>
+                                                    <td>{formatCurrency(selectedReport.totalSales)}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>ДДС:</strong></td>
+                                                    <td>{formatCurrency(selectedReport.totalVAT)}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Нето продажби:</strong></td>
+                                                    <td>{formatCurrency(selectedReport.totalNetSales)}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                {(selectedReport.cashDrawerStartAmount || selectedReport.cashDrawerEndAmount) && (
+                                    <div className="row mt-3">
+                                        <div className="col-12">
+                                            <h6>Контрол на касата</h6>
+                                            <table className="table table-sm">
+                                                <tbody>
+                                                    <tr>
+                                                        <td><strong>Начална сума:</strong></td>
+                                                        <td>{formatCurrency(selectedReport.cashDrawerStartAmount)}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Крайна сума:</strong></td>
+                                                        <td>{formatCurrency(selectedReport.cashDrawerEndAmount)}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Разлика:</strong></td>
+                                                        <td>{formatCurrency((selectedReport.cashDrawerEndAmount || 0) - (selectedReport.cashDrawerStartAmount || 0))}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="row mt-3">
+                                    <div className="col-12">
+                                        <h6>Допълнителна информация</h6>
+                                        <p><strong>Генериран на:</strong> {new Date(selectedReport.generatedAt).toLocaleString('bg-BG')}</p>
+                                        {selectedReport.notes && (
+                                            <p><strong>Бележки:</strong> {selectedReport.notes}</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button 
+                                    type="button" 
+                                    className="btn btn-secondary" 
+                                    onClick={() => setShowReportDetails(false)}
+                                >
+                                    Затвори
+                                </button>
+                                <button 
+                                    type="button" 
+                                    className="btn btn-success"
+                                    onClick={() => printReport(selectedReport)}
+                                >
+                                    <i className="bi bi-printer me-2"></i>
+                                    Принтирай
+                                </button>
+                                <button 
+                                    type="button" 
+                                    className="btn btn-primary"
+                                    onClick={() => {
+                                        downloadReport(selectedReport);
+                                        setShowReportDetails(false);
+                                    }}
+                                >
+                                    <i className="bi bi-download me-2"></i>
+                                    Изтегли отчет
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

@@ -11,11 +11,18 @@ const FiscalReports = () => {
     const [loading, setLoading] = useState(true);
     const [showGenerateForm, setShowGenerateForm] = useState(false);
     const [selectedReportType, setSelectedReportType] = useState('');
+    
+    // Debug: Log when selectedReportType changes
+    useEffect(() => {
+        console.log('Selected report type changed to:', selectedReportType);
+    }, [selectedReportType]);
     const [formData, setFormData] = useState({
         reportDate: new Date().toISOString().split('T')[0],
         cashierName: '',
         deviceSerialNumber: '',
-        notes: ''
+        notes: '',
+        cashDrawerStartAmount: '',
+        cashDrawerEndAmount: ''
     });
 
     useEffect(() => {
@@ -26,12 +33,12 @@ const FiscalReports = () => {
         try {
             setLoading(true);
             const promises = [FiscalService.getAllDevices()];
-            if (auth.role === 'ROLE_ADMIN') {
-                promises.unshift(FiscalService.getAllReports());
-            } else {
-                promises.unshift(Promise.resolve([]));
-            }
+            // Allow both ADMIN and USER to see reports (USER can see their own shift reports)
+            promises.unshift(FiscalService.getAllReports());
             const [reportsData, allDevices] = await Promise.all(promises);
+            console.log('Loaded reports:', reportsData);
+            console.log('Reports data type:', typeof reportsData);
+            console.log('Reports data length:', reportsData?.length);
             setReports(reportsData);
             
             // Filter only ACTIVE devices for reports
@@ -59,7 +66,9 @@ const FiscalReports = () => {
             reportDate: new Date().toISOString().split('T')[0],
             cashierName: '',
             deviceSerialNumber: '',
-            notes: ''
+            notes: '',
+            cashDrawerStartAmount: '',
+            cashDrawerEndAmount: ''
         });
         setSelectedReportType('');
         setShowGenerateForm(false);
@@ -103,9 +112,13 @@ const FiscalReports = () => {
                 }
             }
             
+            console.log('Generated report result:', result);
             toast.success('Отчетът е генериран успешно');
             resetForm();
-            loadData();
+            // Reload reports to show the newly generated one
+            console.log('About to reload data...');
+            await loadData();
+            console.log('Reports reloaded after generation');
         } catch (error) {
             toast.error(error.response?.data?.message || 'Грешка при генериране на отчет');
             console.error('Error generating report:', error);
@@ -256,6 +269,36 @@ const FiscalReports = () => {
                                         </div>
                                     </div>
 
+                                    {/* Cash drawer control fields for Z-report */}
+                                    {selectedReportType === 'SHIFT' && (
+                                        <div className="row">
+                                            <div className="col-md-6 mb-3">
+                                                <label className="form-label">Начална сума в касата (лв.)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    className="form-control"
+                                                    name="cashDrawerStartAmount"
+                                                    value={formData.cashDrawerStartAmount || ''}
+                                                    onChange={handleInputChange}
+                                                    placeholder="0.00"
+                                                />
+                                            </div>
+                                            <div className="col-md-6 mb-3">
+                                                <label className="form-label">Крайна сума в касата (лв.)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    className="form-control"
+                                                    name="cashDrawerEndAmount"
+                                                    value={formData.cashDrawerEndAmount || ''}
+                                                    onChange={handleInputChange}
+                                                    placeholder="0.00"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="mb-3">
                                         <label className="form-label">Бележки</label>
                                         <textarea
@@ -289,6 +332,8 @@ const FiscalReports = () => {
                             <h5>Генерирани отчети</h5>
                         </div>
                         <div className="card-body">
+                            {console.log('Rendering reports table, reports count:', reports.length, 'reports:', reports)}
+                            {console.log('Reports state:', reports)}
                             {reports.length === 0 ? (
                                 <div className="text-center py-4">
                                     <i className="bi bi-file-earmark-text display-1 text-muted"></i>
@@ -317,6 +362,8 @@ const FiscalReports = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
+                                            {console.log('Mapping reports:', reports)}
+                                            {console.log('Reports array:', Array.isArray(reports) ? reports : 'Not an array')}
                                             {reports.map((report) => (
                                                 <tr key={report.id}>
                                                     <td>

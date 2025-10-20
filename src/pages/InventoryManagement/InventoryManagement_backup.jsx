@@ -786,6 +786,7 @@ const InventoryManagement = () => {
                         </div>
                     </div>
                     </div>
+                </div>
             </div>
         </div>
     );

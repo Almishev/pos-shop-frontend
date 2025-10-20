@@ -1,13 +1,15 @@
 import './Menubar.css';
 import {assets} from "../../assets/assets.js";
 import {Link, Links, useLocation, useNavigate} from "react-router-dom";
-import {useContext} from "react";
+import {useContext, useState} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
+import CashDrawerControl from "../CashDrawerControl/CashDrawerControl.jsx";
 
 const Menubar = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const {setAuthData, auth} = useContext(AppContext);
+    const [showCashDrawer, setShowCashDrawer] = useState(false);
     const logout = () => {
         localStorage.removeItem("token");
         localStorage.removeItem("role");
@@ -51,13 +53,13 @@ const Menubar = () => {
                                     <Link className={`nav-link ${isActive('/users') ? 'fw-bold text-warning': ''}`} to="/users">Потребители</Link>
                                 </li>
                                 <li className="nav-item">
-                                    <Link className={`nav-link ${isActive('/inventory') ? 'fw-bold text-warning': ''}`} to="/inventory">📦 Склад</Link>
+                                    <Link className={`nav-link ${isActive('/inventory') ? 'fw-bold text-warning': ''}`} to="/inventory">Склад</Link>
                                 </li>
                                 <li className="nav-item">
                                     <Link className={`nav-link ${isActive('/excel-import') ? 'fw-bold text-warning': ''}`} to="/excel-import">Excel</Link>
                                 </li>
                                 <li className="nav-item">
-                                    <Link className={`nav-link ${isActive('/labels') ? 'fw-bold text-warning': ''}`} to="/labels">🏷️ Етикети</Link>
+                                    <Link className={`nav-link ${isActive('/labels') ? 'fw-bold text-warning': ''}`} to="/labels"> Етикети</Link>
                                 </li>
                             </>
                         )
@@ -69,7 +71,7 @@ const Menubar = () => {
                         <Link className={`nav-link ${isActive('/orders') ? 'fw-bold text-warning': ''}`} to="/orders">Поръчки</Link>
                     </li>
                     <li className="nav-item">
-                        <Link className={`nav-link ${isActive('/reports') ? 'fw-bold text-warning': ''}`} to="/reports">📊 Отчети</Link>
+                        <Link className={`nav-link ${isActive('/reports') ? 'fw-bold text-warning': ''}`} to="/reports">Отчети</Link>
                     </li>
                     {
                         isAdmin && (
@@ -78,6 +80,20 @@ const Menubar = () => {
                             </li>
                         )
                     }
+                </ul>
+                {/* Right actions */}
+                <ul className="navbar-nav me-3">
+                    <li className="nav-item">
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-warning"
+                            onClick={() => setShowCashDrawer(true)}
+                            title="Контрол на касата"
+                        >
+                            <i className="bi bi-cash-coin me-1"></i>
+                            Контрол на касата
+                        </button>
+                    </li>
                 </ul>
                 {/*Add the dropdown for userprofile*/}
                 <ul className="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
@@ -108,6 +124,25 @@ const Menubar = () => {
                     </li>
                 </ul>
             </div>
+            {/* Cash Drawer Modal */}
+            {showCashDrawer && (
+                <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+                    <div className="modal-dialog modal-lg">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title"><i className="bi bi-cash-coin me-2"></i>Контрол на касата</h5>
+                                <button type="button" className="btn-close" onClick={() => setShowCashDrawer(false)}></button>
+                            </div>
+                            <div className="modal-body">
+                                <CashDrawerControl />
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowCashDrawer(false)}>Затвори</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </nav>
     )
 }

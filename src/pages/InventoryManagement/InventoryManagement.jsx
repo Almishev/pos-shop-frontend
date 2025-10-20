@@ -336,7 +336,7 @@ const InventoryManagement = () => {
                 <div className="row">
                     <div className="col-12">
                         <div className="d-flex justify-content-between align-items-center mb-4">
-                            <h2>📦 Склад</h2>
+                            <h2>Склад</h2>
                             <div className="d-flex gap-2">
                                 <button 
                                     className="btn btn-info"
