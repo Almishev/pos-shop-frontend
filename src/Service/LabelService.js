@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8087';
+const API_BASE_URL = '/api';
 
 const createAuthInstance = () => {
     const token = localStorage.getItem('token');
@@ -21,7 +21,7 @@ const LabelService = {
         
         const instance = createAuthInstance();
         try {
-            const response = await instance.post('/api/v1.0/admin/labels/price-labels', items);
+            const response = await instance.post('/admin/labels/price-labels', items);
             console.log('Price labels printed successfully:', response.data);
             return response.data;
         } catch (error) {
@@ -37,7 +37,7 @@ const LabelService = {
         
         const instance = createAuthInstance();
         try {
-            const response = await instance.post('/api/v1.0/admin/labels/shelf-labels', categories);
+            const response = await instance.post('/admin/labels/shelf-labels', categories);
             console.log('Shelf labels printed successfully:', response.data);
             return response.data;
         } catch (error) {
@@ -53,7 +53,7 @@ const LabelService = {
         
         const instance = createAuthInstance();
         try {
-            const response = await instance.post('/api/v1.0/admin/labels/promo-labels', promoItems);
+            const response = await instance.post('/admin/labels/promo-labels', promoItems);
             console.log('Promo labels printed successfully:', response.data);
             return response.data;
         } catch (error) {
@@ -70,8 +70,8 @@ const LabelService = {
         const instance = createAuthInstance();
         try {
             const url = categoryId 
-                ? `/api/v1.0/admin/labels/bulk-print?categoryId=${categoryId}`
-                : '/api/v1.0/admin/labels/bulk-print';
+                ? `/admin/labels/bulk-print?categoryId=${categoryId}`
+                : '/admin/labels/bulk-print';
             const response = await instance.post(url);
             console.log('Bulk print completed successfully:', response.data);
             return response.data;
@@ -88,7 +88,7 @@ const LabelService = {
         
         const instance = createAuthInstance();
         try {
-            const response = await instance.post('/api/v1.0/admin/labels/preview', labelData);
+            const response = await instance.post('/admin/labels/preview', labelData);
             console.log('Label preview generated successfully:', response.data);
             return response.data;
         } catch (error) {
@@ -103,7 +103,7 @@ const LabelService = {
         
         const instance = createAuthInstance();
         try {
-            const response = await instance.get('/api/v1.0/admin/labels/templates');
+            const response = await instance.get('/admin/labels/templates');
             console.log('Label templates loaded successfully:', response.data);
             return response.data;
         } catch (error) {

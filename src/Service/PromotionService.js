@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:8087/api/v1.0';
+const API_BASE = '/api';
 
 const normalizeDate = (dateStr) => {
   if (!dateStr) return null;

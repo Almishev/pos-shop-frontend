@@ -342,7 +342,7 @@ const InventoryManagement = () => {
                                     className="btn btn-info"
                                     onClick={async () => {
                                         try {
-                                            const response = await fetch('http://localhost:8087/api/v1.0/items/debug/all', {
+                                            const response = await fetch('/api/items/debug/all', {
                                                 headers: {
                                                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
                                                     'Content-Type': 'application/json'
@@ -372,7 +372,7 @@ const InventoryManagement = () => {
                                     className="btn btn-warning"
                                     onClick={async () => {
                                         try {
-                                            const response = await fetch('http://localhost:8087/api/v1.0/admin/items/generate-missing-ids', {
+                                            const response = await fetch('/api/admin/items/generate-missing-ids', {
                                                 method: 'POST',
                                                 headers: {
                                                     'Authorization': `Bearer ${localStorage.getItem('token')}`,

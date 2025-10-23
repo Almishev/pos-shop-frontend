@@ -6,7 +6,7 @@ const createAuthInstance = () => {
     console.log('Token exists:', !!token);
     console.log('Token length:', token?.length);
     return axios.create({
-        baseURL: 'http://localhost:8087/api/v1.0',
+        baseURL: '/api',
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
