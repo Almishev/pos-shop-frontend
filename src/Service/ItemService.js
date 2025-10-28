@@ -1,39 +1,27 @@
-import axios from "axios";
+import axios from 'axios';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const instance = axios.create({ baseURL: API_BASE_URL, headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
 
-export const addItem = async (item) => {
-    return await axios.post(`/api/admin/items`, item, {headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}});
-}
+export const addItem = async (item) => instance.post('/admin/items', item);
 
-export const deleteItem = async (itemId) => {
-    return await axios.delete(`/api/admin/items/${itemId}`, {headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}});
-}
+export const deleteItem = async (itemId) => instance.delete(`/admin/items/${itemId}`);
 
-export const fetchItems = async () => {
-    return await axios.get('/api/items', {headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}});
-}
+export const fetchItems = async () => instance.get('/items');
 
-export const findItemByBarcode = async (barcode) => {
-    return await axios.get(`/api/items/barcode/${barcode}`, {headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}});
-}
+export const findItemByBarcode = async (barcode) => instance.get(`/items/barcode/${barcode}`);
 
-export const searchItems = async (searchTerm) => {
-    return await axios.get(`/api/items/search?q=${encodeURIComponent(searchTerm)}`, {headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}});
-}
+export const searchItems = async (searchTerm) => instance.get(`/items/search?q=${encodeURIComponent(searchTerm)}`);
 
-export const generateBarcode = async () => {
-    return await axios.get('/api/items/generate-barcode', {headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}});
-}
+export const generateBarcode = async () => instance.get('/items/generate-barcode');
 
 export const getItemById = async (itemId) => {
     console.log('=== getItemById called ===');
     console.log('Getting item by ID:', itemId);
     console.log('Item ID type:', typeof itemId);
-    const token = localStorage.getItem('token');
-    console.log('Token exists:', !!token);
-    const url = `/api/items/${itemId}`;
+    const url = `/items/${itemId}`;
     console.log('Request URL:', url);
     try {
-        const response = await axios.get(url, {headers: {'Authorization': `Bearer ${token}`}});
+        const response = await instance.get(url);
         console.log('getItemById response:', response);
         return response;
     } catch (error) {
@@ -44,24 +32,15 @@ export const getItemById = async (itemId) => {
 }
 
 export const getDbIdByItemId = async (itemId) => {
-    const token = localStorage.getItem('token');
-    const url = `/api/items/${itemId}`;
-    const response = await axios.get(url, {headers: {'Authorization': `Bearer ${token}`}});
+    const url = `/items/${itemId}`;
+    const response = await instance.get(url);
     return response.data?.id;
 }
 
 export const getEffectivePrices = async (itemDbIds) => {
-    const token = localStorage.getItem('token');
-    const url = `/api/items/effective`;
-    const response = await axios.post(url, { itemDbIds }, {headers: {'Authorization': `Bearer ${token}`}});
+    const url = `/items/effective`;
+    const response = await instance.post(url, { itemDbIds });
     return response.data;
 }
 
-export const updateItem = async (itemId, itemData) => {
-    return await axios.put(`/api/admin/items/${itemId}`, itemData, {
-        headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'multipart/form-data'
-        }
-    });
-}
+export const updateItem = async (itemId, itemData) => instance.put(`/admin/items/${itemId}`, itemData, { headers: { 'Content-Type': 'multipart/form-data' } });

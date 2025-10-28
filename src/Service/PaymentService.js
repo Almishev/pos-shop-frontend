@@ -1,17 +1,11 @@
-import axios from "axios";
+import axios from 'axios';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const instance = axios.create({ baseURL: API_BASE_URL, headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
 
-export const createRazorpayOrder = async (data) => {
-    return await axios.post(`/api/payments/create-order`, data, {headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}});
-}
+export const createRazorpayOrder = async (data) => instance.post('/payments/create-order', data);
 
-export const verifyPayment = async (paymentData) => {
-    return await axios.post('/api/payments/verify', paymentData, {headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}});
-}
+export const verifyPayment = async (paymentData) => instance.post('/payments/verify', paymentData);
 
-export const initiatePosPayment = async (data) => {
-    return await axios.post('/api/pos-payments/initiate', data, {headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}});
-}
+export const initiatePosPayment = async (data) => instance.post('/pos-payments/initiate', data);
 
-export const refundPosPayment = async (data) => {
-    return await axios.post('/api/pos-payments/refund', data, {headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}});
-}
+export const refundPosPayment = async (data) => instance.post('/pos-payments/refund', data);

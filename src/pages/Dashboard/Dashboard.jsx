@@ -16,7 +16,13 @@ const Dashboard = () => {
                     fetchDashboardData(),
                     loadFiscalStats()
                 ]);
-                setData(dashboardResponse.data);
+                const resp = dashboardResponse?.data || {};
+                const safeData = {
+                    todaySales: resp.todaySales || 0,
+                    todayOrderCount: resp.todayOrderCount || 0,
+                    recentOrders: Array.isArray(resp.recentOrders) ? resp.recentOrders : []
+                };
+                setData(safeData);
                 setFiscalStats(fiscalData);
             } catch (error) {
                 console.error(error);
@@ -42,8 +48,8 @@ const Dashboard = () => {
                 todaySales: sales || 0,
                 todayVAT: vat || 0,
                 todayReceipts: receipts || 0,
-                activeDevices: devices.filter(d => d.status === 'ACTIVE').length,
-                totalDevices: devices.length
+                activeDevices: (Array.isArray(devices) ? devices : []).filter(d => d?.status === 'ACTIVE').length,
+                totalDevices: (Array.isArray(devices) ? devices : []).length
             };
         } catch (error) {
             console.error('Error loading fiscal stats:', error);

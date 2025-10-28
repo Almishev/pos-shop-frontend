@@ -9,11 +9,12 @@ import './Reports.css';
 
 const UnifiedReports = () => {
     const { auth } = useContext(AppContext);
+    const isAdmin = (auth?.role || '').toUpperCase() === 'ROLE_ADMIN';
     
     // Common state
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
-    const [activeTab, setActiveTab] = useState('export');
+    const [activeTab, setActiveTab] = useState(isAdmin ? 'export' : 'fiscal');
     
     // Export reports state
     const [exporting, setExporting] = useState(false);
@@ -56,6 +57,13 @@ const UnifiedReports = () => {
         }
     }, [activeTab]);
 
+    // Ensure non-admin users cannot access the export/cashiers tabs if role changes
+    useEffect(() => {
+        if (!isAdmin && (activeTab === 'export' || activeTab === 'cashiers')) {
+            setActiveTab('fiscal');
+        }
+    }, [isAdmin]);
+
     useEffect(() => {
         if (activeTab === 'cashiers') {
             loadCashierSummaries();
@@ -73,14 +81,23 @@ const UnifiedReports = () => {
             setDevices(activeDevices);
             console.log('Loaded active devices for reports:', activeDevices);
             
-            // Allow both ADMIN and USER to see reports (USER can see their own shift reports)
+            // Allow both ADMIN and USER to see reports
             console.log('=== UnifiedReports.loadFiscalData - calling getAllReports ===');
             const reportsData = await FiscalService.getAllReports();
             console.log('UnifiedReports - Loaded reports:', reportsData);
             console.log('UnifiedReports - Reports data type:', typeof reportsData);
             console.log('UnifiedReports - Reports data length:', reportsData?.length);
+            // If not admin, show only today's generated reports
+            const todayStr = new Date().toISOString().split('T')[0];
+            const visible = isAdmin ? (reportsData || []) : (reportsData || []).filter(r => {
+                const baseDate = r.generatedAt || r.reportDate;
+                if (!baseDate) return false;
+                const repStr = new Date(baseDate).toISOString().split('T')[0];
+                return repStr === todayStr;
+            });
+
             // Sort newest first by generatedAt (fallback by id)
-            const sorted = (reportsData || []).slice().sort((a, b) => {
+            const sorted = visible.slice().sort((a, b) => {
                 const da = a.generatedAt ? new Date(a.generatedAt).getTime() : 0;
                 const db = b.generatedAt ? new Date(b.generatedAt).getTime() : 0;
                 if (db !== da) return db - da;
@@ -506,24 +523,28 @@ const UnifiedReports = () => {
 
             {/* Tab Navigation */}
             <ul className="nav nav-tabs mb-4" role="tablist">
-                <li className="nav-item" role="presentation">
-                    <button 
-                        className={`nav-link ${activeTab === 'export' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('export')}
-                        type="button"
-                    >
-                        📋 Експорт данни
-                    </button>
-                </li>
-                <li className="nav-item" role="presentation">
-                    <button 
-                        className={`nav-link ${activeTab === 'cashiers' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('cashiers')}
-                        type="button"
-                    >
-                        👩‍💼 По касиери
-                    </button>
-                </li>
+                {isAdmin && (
+                    <li className="nav-item" role="presentation">
+                        <button 
+                            className={`nav-link ${activeTab === 'export' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('export')}
+                            type="button"
+                        >
+                            📋 Експорт данни
+                        </button>
+                    </li>
+                )}
+                {isAdmin && (
+                    <li className="nav-item" role="presentation">
+                        <button 
+                            className={`nav-link ${activeTab === 'cashiers' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('cashiers')}
+                            type="button"
+                        >
+                            👩‍💼 По касиери
+                        </button>
+                    </li>
+                )}
                 <li className="nav-item" role="presentation">
                     <button 
                         className={`nav-link ${activeTab === 'fiscal' ? 'active' : ''}`}
@@ -572,7 +593,7 @@ const UnifiedReports = () => {
             </div>
 
             {/* Export Tab */}
-            {activeTab === 'export' && (
+            {isAdmin && activeTab === 'export' && (
                 <div className="card bg-dark text-light">
                     <div className="card-body">
                         <h5 className="card-title">📋 Експорт на данни</h5>
@@ -606,7 +627,7 @@ const UnifiedReports = () => {
             )}
 
             {/* Cashiers Tab */}
-            {activeTab === 'cashiers' && (
+            {isAdmin && activeTab === 'cashiers' && (
                 <div className="card bg-dark text-light">
                     <div className="card-body">
                         <h5 className="card-title">👩‍💼 Отчети по касиерки</h5>
