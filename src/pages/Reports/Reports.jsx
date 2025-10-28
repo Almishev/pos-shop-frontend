@@ -1,13 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { exportOrdersReport, getCashierSummaries } from "../../Service/ReportService.js";
 import { toast } from "react-hot-toast";
 import './Reports.css';
+import { AppContext } from "../../context/AppContext.jsx";
 
 const Reports = () => {
+    const { auth } = useContext(AppContext);
+    const isAdmin = auth?.role === 'ADMIN';
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
     const [exporting, setExporting] = useState(false);
-    const [activeTab, setActiveTab] = useState('export');
+    const [activeTab, setActiveTab] = useState(isAdmin ? 'export' : 'cashiers');
     const [cashierLoading, setCashierLoading] = useState(false);
     const [cashierRows, setCashierRows] = useState([]);
 
@@ -81,12 +84,14 @@ const Reports = () => {
                         />
                     </div>
                     <div className="col-md-4 d-flex gap-2">
-                        <button 
-                            className="btn btn-outline-light w-50"
-                            onClick={() => setActiveTab('export')}
-                        >
-                            Експорт
-                        </button>
+                        {isAdmin && (
+                            <button 
+                                className="btn btn-outline-light w-50"
+                                onClick={() => setActiveTab('export')}
+                            >
+                                Експорт
+                            </button>
+                        )}
                         <button 
                             className="btn btn-outline-warning w-50"
                             onClick={() => setActiveTab('cashiers')}
@@ -97,7 +102,7 @@ const Reports = () => {
                 </div>
             </div>
 
-            {activeTab === 'export' && (
+            {isAdmin && activeTab === 'export' && (
             <div className="card bg-dark text-light">
                 <div className="card-body">
                     <h5 className="card-title">📋 Информация за отчетите</h5>
