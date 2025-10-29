@@ -84,7 +84,19 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
 
     const handlePrintReceipt = () => {
         window.print();
+        // След печат започваме нова продажба
+        setShowPopup(false);
+        setOrderDetails(null);
     }
+
+    // Автоматично показване на бележката след успешно плащане
+    useEffect(() => {
+        if (orderDetails) {
+            // Показваме попъпа и чистим количката веднага след setOrderDetails
+            setShowPopup(true);
+            clearAll();
+        }
+    }, [orderDetails]);
 
     const loadRazorpayScript = () => {
         return new Promise((resolve, reject) => {
@@ -148,6 +160,16 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
             orderData.cardAmount = cardAmount;
             splitCashAmount = cashAmount;
             splitCardAmount = cardAmount;
+        }
+
+        // Потвърждение от касиера преди да продължим с плащане
+        const methodLabel = paymentMode === 'cash' ? 'в брой' : paymentMode === 'card' ? 'с карта' : paymentMode === 'split' ? 'съвместно' : paymentMode;
+        let confirmText = `Потвърждавате плащане ${methodLabel} за ${formatBGN(grandTotal)}?`;
+        if (paymentMode === 'split') {
+            confirmText = `Потвърждавате съвместно плащане?\nВ брой: ${formatBGN(splitCashAmount)}\nКарта: ${formatBGN(splitCardAmount)}\nОбщо: ${formatBGN(grandTotal)}`;
+        }
+        if (!window.confirm(confirmText)) {
+            return;
         }
         setIsProcessing(true);
         try {
@@ -378,7 +400,7 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                     <span className="text-light">{formatBGN(subtotal)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-2">
-                    <span className="text-light">ДДС (информативно):</span>
+                    <span className="text-light">ДДС: </span>
                     <span className="text-light">{formatBGN(tax)}</span>
                 </div>
                 {loyaltyDiscounts && loyaltyDiscountAmount > 0 && (
@@ -396,7 +418,7 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
             <div className="d-flex gap-3">
                 <button className="btn btn-success flex-grow-1"
                     onClick={() => completePayment("cash")}
-                        disabled={isProcessing}
+                        disabled={isProcessing || !!orderDetails}
                 >
                     {isProcessing ? "Обработка...": "В брой"}
                 </button>
@@ -410,13 +432,13 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                 */}
                 <button className="btn btn-info flex-grow-1"
                         onClick={() => completePayment("card")}
-                        disabled={isProcessing}
+                        disabled={isProcessing || !!orderDetails}
                 >
                     {isProcessing ? "Обработка...": "Карта"}
                 </button>
                 <button className="btn btn-secondary flex-grow-1"
                         onClick={() => completePayment("split")}
-                        disabled={isProcessing}
+                        disabled={isProcessing || !!orderDetails}
                 >
                     {isProcessing ? "Обработка...": "Съвместно"}
                 </button>
@@ -437,7 +459,7 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                             razorpayOrderId: orderDetails.paymentDetails?.razorpayOrderId,
                             razorpayPaymentId: orderDetails.paymentDetails?.razorpayPaymentId,
                         }}
-                        onClose={() => setShowPopup(false)}
+                        onClose={() => { setShowPopup(false); setOrderDetails(null); }}
                         onPrint={handlePrintReceipt}
                     />
                 )

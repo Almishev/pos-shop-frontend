@@ -78,7 +78,7 @@ const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
                 </div>
                 <div className="d-flex justify-content-between mb-2">
                     <span>
-                        <strong>ДДС (информативно):</strong>
+                        <strong>ДДС :</strong>
                     </span>
                     <span>{formatBGN(orderDetails.tax)}</span>
                 </div>
