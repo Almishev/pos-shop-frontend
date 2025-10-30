@@ -204,9 +204,32 @@ const CashDrawerControl = () => {
                                 <div className="col-md-6">
                                     <div className="info-item">
                                         <label>Касиер:</label>
-                                        <span>{activeSession.cashierUsername}</span>
+                                        <span title={activeSession.cashierUsername}>
+                                            {(auth?.name && auth.name.trim()) ? auth.name : (activeSession.cashierUsername || '')}
+                                        </span>
                                     </div>
                                 </div>
+                            </div>
+                            <div className="row">
+                                <div className="col-md-6">
+                                    <div className="info-item">
+                                        <label>Фискално устройство:</label>
+                                        <span>{(() => {
+                                            try {
+                                                const d = devices.find(x => x.serialNumber === activeSession.deviceSerialNumber);
+                                                return d ? `${d.manufacturer || ''} ${d.model || ''} (${d.serialNumber})`.trim() : (activeSession.deviceSerialNumber || '—');
+                                            } catch (e) { return activeSession.deviceSerialNumber || '—'; }
+                                        })()}</span>
+                                    </div>
+                                </div>
+                                {activeSession.registerId && (
+                                    <div className="col-md-6">
+                                        <div className="info-item">
+                                            <label>Каса:</label>
+                                            <span>{activeSession.registerId}</span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             
                             {activeSession.notes && (
@@ -216,15 +239,7 @@ const CashDrawerControl = () => {
                                 </div>
                             )}
                             
-                            <div className="mt-3">
-                                <button 
-                                    className="btn btn-warning"
-                                    onClick={() => setShowEndForm(true)}
-                                >
-                                    <i className="bi bi-stop-circle me-2"></i>
-                                    Приключи работен ден
-                                </button>
-                            </div>
+                            {/* Бутонът за ръчно приключване е премахнат. При Z-отчет сесията се затваря автоматично. */}
                         </div>
                     ) : (
                         // Няма активна сесия
@@ -290,13 +305,13 @@ const CashDrawerControl = () => {
                                             required
                                         >
                                             <option value="">Изберете устройство</option>
-                                            {devices.map(d => (
+                                            {devices.filter(d => !d.locked).map(d => (
                                                 <option key={d.serialNumber} value={d.serialNumber}>
-                                                    {d.manufacturer} {d.model} ({d.serialNumber}) {d.locked ? '- ЗАЕТО' : '- СВОБОДНО'}
+                                                    {d.manufacturer} {d.model} ({d.serialNumber}) - СВОБОДНО
                                                 </option>
                                             ))}
                                         </select>
-                                        <div className="form-text">Изберете активното устройство за тази каса</div>
+                                        <div className="form-text">Показват се само свободните устройства</div>
                                     </div>
                                     <div className="mb-3">
                                         <label className="form-label">Идентификатор на каса (по избор)</label>
@@ -340,70 +355,7 @@ const CashDrawerControl = () => {
                 </div>
             )}
 
-            {/* Форма за приключване на работен ден */}
-            {showEndForm && (
-                <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
-                    <div className="modal-dialog">
-                        <div className="modal-content">
-                            <div className="modal-header">
-                                <h5 className="modal-title">
-                                    <i className="bi bi-stop-circle me-2"></i>
-                                    Приключи работен ден
-                                </h5>
-                                <button 
-                                    type="button" 
-                                    className="btn-close" 
-                                    onClick={() => setShowEndForm(false)}
-                                ></button>
-                            </div>
-                            <form onSubmit={handleEndWorkDay}>
-                                <div className="modal-body">
-                                    <div className="mb-3">
-                                        <label className="form-label">Крайна сума в касата (лв.) *</label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            className="form-control"
-                                            name="endAmount"
-                                            value={formData.endAmount}
-                                            onChange={handleInputChange}
-                                            placeholder="0.00"
-                                            required
-                                        />
-                                        <div className="form-text">
-                                            Въведете сумата, която остава в касата в края на деня
-                                        </div>
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="form-label">Бележки</label>
-                                        <textarea
-                                            className="form-control"
-                                            name="notes"
-                                            value={formData.notes}
-                                            onChange={handleInputChange}
-                                            rows="3"
-                                            placeholder="Допълнителни бележки..."
-                                        />
-                                    </div>
-                                </div>
-                                <div className="modal-footer">
-                                    <button 
-                                        type="button" 
-                                        className="btn btn-secondary" 
-                                        onClick={() => setShowEndForm(false)}
-                                    >
-                                        Отказ
-                                    </button>
-                                    <button type="submit" className="btn btn-warning">
-                                        <i className="bi bi-stop-circle me-2"></i>
-                                        Приключи деня
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Модалът за ръчно приключване е премахнат. */}
         </div>
     );
 };

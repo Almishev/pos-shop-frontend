@@ -286,12 +286,33 @@ const UnifiedReports = () => {
 
     const downloadReport = async (report) => {
         try {
-            // Create a simple text report for download
+            // Localize labels and create a simple text report for download
+            const typeToBg = {
+                DAILY: 'Дневен отчет',
+                SHIFT: 'Сменен отчет',
+                MONTHLY: 'Месечен отчет',
+                YEARLY: 'Годишен отчет',
+                STORE_DAILY: 'Общ дневен отчет',
+                Z_REPORT: 'Z-отчет',
+                X_REPORT: 'X-отчет'
+            };
+            const statusToBg = {
+                GENERATED: 'ГЕНЕРИРАН',
+                SENT_TO_NAF: 'ИЗПРАТЕН КЪМ НАП',
+                CONFIRMED: 'ПОТВЪРДЕН',
+                ERROR: 'ГРЕШКА'
+            };
+            const typeLabel = typeToBg[report.reportType] || report.reportType;
+            const statusLabel = statusToBg[report.status] || report.status;
+            // Payment breakdown (if present)
+            let pb = null;
+            try { if (report.paymentBreakdown) pb = JSON.parse(report.paymentBreakdown); } catch(e) { pb = null; }
+            const paymentsTxt = pb ? `\n\nПЛАЩАНИЯ\n==========\nВ БРОЙ: ${formatCurrency(pb.CASH?.total)}\nС КАРТА: ${formatCurrency(pb.CARD?.total)}\nСМЕСЕНО: ${formatCurrency(pb.SPLIT?.total)} (в брой ${formatCurrency(pb.SPLIT?.cash)}, карта ${formatCurrency(pb.SPLIT?.card)})\nОБЩО В БРОЙ: ${formatCurrency(((pb.CASH?.total || 0) + (pb.SPLIT?.cash || 0)))}\nОБЩО С КАРТА: ${formatCurrency(((pb.CARD?.total || 0) + (pb.SPLIT?.card || 0)))}\n` : '';
             const reportContent = `
 ФИСКАЛЕН ОТЧЕТ
 ================
 Номер на отчет: ${report.reportNumber}
-Тип: ${report.reportType}
+Тип: ${typeLabel}
 Дата: ${new Date(report.reportDate).toLocaleDateString('bg-BG')}
 Касиер: ${report.cashierName || 'Неизвестен'}
 Устройство: ${report.deviceSerialNumber || 'Неизвестно'}
@@ -302,13 +323,14 @@ const UnifiedReports = () => {
 Общо продажби: ${formatCurrency(report.totalSales)}
 ДДС: ${formatCurrency(report.totalVAT)}
 Нето продажби: ${formatCurrency(report.totalNetSales)}
+${paymentsTxt}
 
 КОНТРОЛ НА КАСАТА
 =================
 Начална сума: ${formatCurrency(report.cashDrawerStartAmount)}
 Крайна сума: ${formatCurrency(report.cashDrawerEndAmount)}
 
-СТАТУС: ${report.status}
+СТАТУС: ${statusLabel}
 Генериран на: ${new Date(report.generatedAt).toLocaleString('bg-BG')}
 Бележки: ${report.notes || 'Няма'}
             `.trim();
@@ -333,6 +355,23 @@ const UnifiedReports = () => {
 
     const printReport = (report) => {
         try {
+            const typeToBg = {
+                DAILY: 'Дневен отчет',
+                SHIFT: 'Сменен отчет',
+                MONTHLY: 'Месечен отчет',
+                YEARLY: 'Годишен отчет',
+                STORE_DAILY: 'Общ дневен отчет',
+                Z_REPORT: 'Z-отчет',
+                X_REPORT: 'X-отчет'
+            };
+            const statusToBg = {
+                GENERATED: 'ГЕНЕРИРАН',
+                SENT_TO_NAF: 'ИЗПРАТЕН КЪМ НАП',
+                CONFIRMED: 'ПОТВЪРДЕН',
+                ERROR: 'ГРЕШКА'
+            };
+            const typeLabel = typeToBg[report.reportType] || report.reportType;
+            const statusLabel = statusToBg[report.status] || report.status;
             // Create print-friendly HTML content
             const printContent = `
                 <!DOCTYPE html>
@@ -360,11 +399,11 @@ const UnifiedReports = () => {
                     <div class="section">
                         <h3>Основна информация</h3>
                         <table>
-                            <tr><td class="label">Тип отчет:</td><td>${report.reportType}</td></tr>
+                            <tr><td class="label">Тип отчет:</td><td>${typeLabel}</td></tr>
                             <tr><td class="label">Дата:</td><td>${new Date(report.reportDate).toLocaleDateString('bg-BG')}</td></tr>
                             <tr><td class="label">Касиер:</td><td>${report.reportType === 'STORE_DAILY' ? 'Всички касиери' : (report.cashierName || 'Неизвестен')}</td></tr>
                             <tr><td class="label">Устройство:</td><td>${report.reportType === 'STORE_DAILY' ? (report.deviceSerialNumber || 'Главно устройство') : (report.deviceSerialNumber || 'Неизвестно')}</td></tr>
-                            <tr><td class="label">Статус:</td><td>${report.status}</td></tr>
+                            <tr><td class="label">Статус:</td><td>${statusLabel}</td></tr>
                         </table>
                     </div>
                     
@@ -375,11 +414,23 @@ const UnifiedReports = () => {
                             <tr><td class="label">Общо продажби:</td><td>${formatCurrency(report.totalSales)}</td></tr>
                             <tr><td class="label">ДДС:</td><td>${formatCurrency(report.totalVAT)}</td></tr>
                             <tr><td class="label">Нето продажби:</td><td>${formatCurrency(report.totalNetSales)}</td></tr>
-                            <tr><td class="label">Плащане в брой:</td><td>${formatCurrency(report.cashSales)}</td></tr>
-                            <tr><td class="label">Плащане с карта:</td><td>${formatCurrency(report.cardSales)}</td></tr>
-                            <tr><td class="label">Смесено плащане:</td><td>${formatCurrency(report.splitSales)}</td></tr>
                         </table>
                     </div>
+                    
+                    ${report.paymentBreakdown ? (() => { try {
+                        const pb = JSON.parse(report.paymentBreakdown);
+                        return `
+                    <div class="section">
+                        <h3>Плащания</h3>
+                        <table>
+                            <tr><td class="label">В брой:</td><td>${formatCurrency(pb.CASH?.total)}</td></tr>
+                            <tr><td class="label">С карта:</td><td>${formatCurrency(pb.CARD?.total)}</td></tr>
+                            <tr><td class="label">Смесено:</td><td>${formatCurrency(pb.SPLIT?.total)} (в брой ${formatCurrency(pb.SPLIT?.cash)}, карта ${formatCurrency(pb.SPLIT?.card)})</td></tr>
+                            <tr><td class="label">Общо в брой:</td><td>${formatCurrency(((pb.CASH?.total || 0) + (pb.SPLIT?.cash || 0)))}</td></tr>
+                            <tr><td class="label">Общо с карта:</td><td>${formatCurrency(((pb.CARD?.total || 0) + (pb.SPLIT?.card || 0)))}</td></tr>
+                        </table>
+                    </div>`;
+                    } catch(e) { return ''; } })() : ''}
                     
                     ${(report.reportType !== 'STORE_DAILY' && (report.cashDrawerStartAmount || report.cashDrawerEndAmount)) ? `
                     <div class="section">
@@ -556,7 +607,8 @@ const UnifiedReports = () => {
                 </li>
             </ul>
 
-            {/* Date Filters - Common for all tabs */}
+            {/* Date Filters - only for ADMIN */}
+            {isAdmin && (
             <div className="filters-bar text-light mb-4">
                 <div className="row g-3 align-items-end m-0">
                     <div className="col-md-4">
@@ -591,6 +643,7 @@ const UnifiedReports = () => {
                     </div>
                 </div>
             </div>
+            )}
 
             {/* Export Tab */}
             {isAdmin && activeTab === 'export' && (
@@ -1027,6 +1080,22 @@ const UnifiedReports = () => {
                                         )}
                                     </div>
                                 </div>
+                                {selectedReport.paymentBreakdown && (() => { let pb=null; try { pb=JSON.parse(selectedReport.paymentBreakdown);} catch(e){} return pb ? (
+                                    <div className="row mt-3">
+                                        <div className="col-12">
+                                            <h6>Плащания</h6>
+                                            <table className="table table-sm">
+                                                <tbody>
+                                                    <tr><td><strong>В брой:</strong></td><td>{formatCurrency(pb.CASH?.total)}</td></tr>
+                                                    <tr><td><strong>С карта:</strong></td><td>{formatCurrency(pb.CARD?.total)}</td></tr>
+                                                    <tr><td><strong>Смесено:</strong></td><td>{formatCurrency(pb.SPLIT?.total)} (в брой {formatCurrency(pb.SPLIT?.cash)}, карта {formatCurrency(pb.SPLIT?.card)})</td></tr>
+                                                    <tr><td><strong>Общо в брой:</strong></td><td>{formatCurrency(((pb.CASH?.total || 0) + (pb.SPLIT?.cash || 0)))}</td></tr>
+                                                    <tr><td><strong>Общо с карта:</strong></td><td>{formatCurrency(((pb.CARD?.total || 0) + (pb.SPLIT?.card || 0)))}</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                ) : null; })()}
                             </div>
                             <div className="modal-footer">
                                 <button 
