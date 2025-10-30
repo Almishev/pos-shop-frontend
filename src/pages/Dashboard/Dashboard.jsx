@@ -1,10 +1,14 @@
 import './Dashboard.css';
-import {useEffect, useState} from "react";
+import {useEffect, useState, useContext} from "react";
 import {fetchDashboardData} from "../../Service/Dashboard.js";
 import toast from "react-hot-toast";
 import FiscalService from "../../Service/FiscalService.js";
+import CashDrawerService from "../../Service/CashDrawerService.js";
+import { AppContext } from "../../context/AppContext.jsx";
 
 const Dashboard = () => {
+    const { auth } = useContext(AppContext);
+    const isAdmin = (auth?.role || '').toUpperCase() === 'ROLE_ADMIN';
     const [data, setData] = useState(null);
     const [fiscalStats, setFiscalStats] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -12,15 +16,34 @@ const Dashboard = () => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [dashboardResponse, fiscalData] = await Promise.all([
+                const [dashboardResponse, fiscalData, activeSession] = await Promise.all([
                     fetchDashboardData(),
-                    loadFiscalStats()
+                    loadFiscalStats(),
+                    (async () => { try { return await CashDrawerService.getActiveSession(); } catch { return null; } })()
                 ]);
                 const resp = dashboardResponse?.data || {};
+                const allRecent = Array.isArray(resp.recentOrders) ? resp.recentOrders : [];
+                // For non-admin: show only today's orders for the logged-in cashier
+                let filteredRecent = allRecent;
+                if (!isAdmin) {
+                    const today = new Date();
+                    const isSameLocalDate = (d) => d && d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+                    const userKeys = [auth?.name, auth?.email, activeSession?.cashierUsername]
+                        .filter(Boolean)
+                        .map(v => String(v).trim().toLowerCase());
+                    filteredRecent = allRecent.filter(o => {
+                        // date filter
+                        const created = o?.createdAt ? new Date(o.createdAt) : null;
+                        if (!created || !isSameLocalDate(created)) return false;
+                        // cashier filter
+                        const cashier = String(o?.cashierUsername || '').trim().toLowerCase();
+                        return userKeys.length > 0 && userKeys.includes(cashier);
+                    });
+                }
                 const safeData = {
                     todaySales: resp.todaySales || 0,
                     todayOrderCount: resp.todayOrderCount || 0,
-                    recentOrders: Array.isArray(resp.recentOrders) ? resp.recentOrders : []
+                    recentOrders: filteredRecent
                 };
                 setData(safeData);
                 setFiscalStats(fiscalData);

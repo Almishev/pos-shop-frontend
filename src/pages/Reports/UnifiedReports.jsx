@@ -87,13 +87,19 @@ const UnifiedReports = () => {
             console.log('UnifiedReports - Loaded reports:', reportsData);
             console.log('UnifiedReports - Reports data type:', typeof reportsData);
             console.log('UnifiedReports - Reports data length:', reportsData?.length);
-            // If not admin, show only today's generated reports
+            // If not admin, show only today's generated reports AND only for the logged-in cashier
             const todayStr = new Date().toISOString().split('T')[0];
+            const userKeys = [auth?.name, auth?.email]
+                .filter(Boolean)
+                .map(v => String(v).trim().toLowerCase());
             const visible = isAdmin ? (reportsData || []) : (reportsData || []).filter(r => {
                 const baseDate = r.generatedAt || r.reportDate;
                 if (!baseDate) return false;
                 const repStr = new Date(baseDate).toISOString().split('T')[0];
-                return repStr === todayStr;
+                if (repStr !== todayStr) return false;
+                const repCashier = String(r.cashierName || '').trim().toLowerCase();
+                // Some historical reports may store email as cashierName; match against both name and email
+                return userKeys.length === 0 ? false : userKeys.includes(repCashier);
             });
 
             // Sort newest first by generatedAt (fallback by id)
