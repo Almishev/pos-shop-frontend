@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import toast from 'react-hot-toast';
 import LoyaltyService from '../../Service/LoyaltyService';
 import { AppContext } from '../../context/AppContext';
@@ -18,6 +18,8 @@ const LoyaltyManagement = () => {
     const [showPromotionForm, setShowPromotionForm] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState(null);
     const [editingPromotion, setEditingPromotion] = useState(null);
+    const [isScanMode, setIsScanMode] = useState(false);
+    const loyaltyCardBarcodeInputRef = useRef(null);
 
     // Customer form state
     const [customerForm, setCustomerForm] = useState({
@@ -141,10 +143,25 @@ const LoyaltyManagement = () => {
         }
     };
 
+    const startScanMode = () => {
+        setIsScanMode(true);
+        setTimeout(() => loyaltyCardBarcodeInputRef.current?.focus(), 0);
+        toast.success("Сканиращ режим: насочете скенера към баркода и натиснете спусъка");
+    };
+
     const activateLoyaltyCard = async (customerId) => {
         try {
-            const response = await LoyaltyService.generateLoyaltyCardBarcode();
-            await LoyaltyService.activateLoyaltyCard(customerId, response.data.barcode);
+            // Намери клиента, за да получим неговия баркод
+            const customerResponse = await LoyaltyService.getCustomerById(customerId);
+            const customer = customerResponse.data;
+            
+            if (!customer.loyaltyCardBarcode || customer.loyaltyCardBarcode.trim() === '') {
+                toast.error('Клиентът няма въведен баркод на лоялна карта. Моля, редактирайте клиента и сканирайте баркода от картата.');
+                return;
+            }
+            
+            // Активирай картата с съществуващия баркод
+            await LoyaltyService.activateLoyaltyCard(customerId, customer.loyaltyCardBarcode);
             toast.success('Лоялната карта е активирана успешно');
             loadData();
         } catch (error) {
@@ -217,6 +234,7 @@ const LoyaltyManagement = () => {
             status: 'ACTIVE',
             notes: ''
         });
+        setIsScanMode(false);
     };
 
     const resetPromotionForm = () => {
@@ -663,16 +681,38 @@ const LoyaltyManagement = () => {
                                                 type="text"
                                                 className="form-control"
                                                 value={customerForm.loyaltyCardBarcode}
-                                                onChange={(e) => setCustomerForm({ ...customerForm, loyaltyCardBarcode: e.target.value })}
+                                                onChange={(e) => {
+                                                    const barcode = e.target.value;
+                                                    setCustomerForm({ ...customerForm, loyaltyCardBarcode: barcode });
+                                                    // Auto-disable scan mode when barcode is entered (usually scanner sends Enter after barcode)
+                                                    if (barcode.trim().length > 0 && isScanMode) {
+                                                        // Small delay to allow Enter key to be processed
+                                                        setTimeout(() => setIsScanMode(false), 100);
+                                                    }
+                                                }}
+                                                onKeyPress={(e) => {
+                                                    // Disable scan mode when Enter is pressed (barcode scanner usually sends Enter)
+                                                    if (e.key === 'Enter' && isScanMode) {
+                                                        e.preventDefault();
+                                                        setIsScanMode(false);
+                                                        toast.success("Баркодът е сканиран");
+                                                    }
+                                                }}
+                                                placeholder={isScanMode ? "Сканирайте баркода..." : "Въведете баркод или сканирайте"}
+                                                ref={loyaltyCardBarcodeInputRef}
                                             />
                                             <button
                                                 type="button"
-                                                className="btn btn-outline-secondary"
-                                                onClick={generateLoyaltyCard}
+                                                className={`btn ${isScanMode ? 'btn-success' : 'btn-outline-success'}`}
+                                                onClick={startScanMode}
+                                                title="Сканирай с баркод пистолет"
                                             >
-                                                Генерирай
+                                                <i className="bi bi-upc-scan"></i> Сканирай
                                             </button>
                                         </div>
+                                        {isScanMode && (
+                                            <small className="form-text text-muted">Сканиращ режим активен - насочете скенера към баркода</small>
+                                        )}
                                     </div>
                                     <div className="row">
                                         <div className="col-md-6">
