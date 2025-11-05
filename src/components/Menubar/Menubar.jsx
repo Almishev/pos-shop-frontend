@@ -11,9 +11,13 @@ const Menubar = () => {
     const {setAuthData, auth} = useContext(AppContext);
     const [showCashDrawer, setShowCashDrawer] = useState(false);
     const logout = () => {
+        // Изчистваме ВСИЧКИ auth данни от localStorage
         localStorage.removeItem("token");
         localStorage.removeItem("role");
-        setAuthData(null, null);
+        localStorage.removeItem("email");
+        localStorage.removeItem("name");
+        // Изчистваме и state-а
+        setAuthData(null, null, null, null);
         navigate("/login");
     }
 

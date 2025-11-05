@@ -9,6 +9,7 @@ import {AppConstants} from "../../util/constants.js";
 import FiscalService from "../../Service/FiscalService.js";
 import InventoryService from "../../Service/InventoryService.js";
 import LoyaltyService from "../../Service/LoyaltyService.js";
+import CashDrawerService from "../../Service/CashDrawerService.js";
 
 const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerName, loyaltyCustomer}) => {
     const {cartItems, clearCart} = useContext(AppContext);
@@ -118,6 +119,23 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
     }
 
     const completePayment = async (paymentMode) => {
+        // НАП изискване: Проверка за активна cash drawer session преди създаване на поръчка
+        try {
+            const activeSession = await CashDrawerService.getActiveSession();
+            if (!activeSession) {
+                toast.error(
+                    "За да създадете поръчка, трябва първо да започнете работен ден (Контрол на касата) с въведена начална сума и избрано фискално устройство. " +
+                    "Това е задължително изискване на НАП.",
+                    { duration: 6000 }
+                );
+                return;
+            }
+        } catch (error) {
+            console.error('Error checking active session:', error);
+            toast.error("Грешка при проверка на активна сесия. Моля, опитайте отново.");
+            return;
+        }
+        
         // Използваме дефаултни стойности ако не са въведени данни
         const finalCustomerName = customerName.trim() || "Случаен клиент";
         const finalMobileNumber = mobileNumber.trim() || "0000000000";

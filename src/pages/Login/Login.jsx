@@ -27,6 +27,12 @@ const Login = () => {
             const response = await login(data);
             if (response.status === 200) {
                 toast.success("Успешен вход");
+                // Първо изчистваме стари данни (ако има такива от предишен потребител)
+                localStorage.removeItem("token");
+                localStorage.removeItem("role");
+                localStorage.removeItem("email");
+                localStorage.removeItem("name");
+                // След това записваме новите данни
                 localStorage.setItem("token", response.data.token);
                 localStorage.setItem("role", response.data.role);
                 localStorage.setItem("email", response.data.email);
