@@ -352,8 +352,7 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                 }))
             };
             
-            const fiscalResponse = await FiscalService.sendReceipt(fiscalReceiptData);
-            console.log('Fiscal receipt sent:', fiscalResponse);
+            await FiscalService.sendReceipt(fiscalReceiptData);
             toast.success('Фискалният бон е изпратен');
             
         } catch (error) {
@@ -373,7 +372,6 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                     orderData.orderId
                 );
             }
-            console.log('Inventory updated successfully');
             toast.success('Складът е обновен');
             
         } catch (error) {

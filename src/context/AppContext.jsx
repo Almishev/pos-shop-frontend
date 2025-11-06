@@ -50,8 +50,6 @@ export const AppContextProvider = (props) => {
             try {
                 const response = await fetchCategories();
                 const itemResponse = await fetchItems();
-                console.log('AppContext - Categories response:', response);
-                console.log('AppContext - Items response:', itemResponse);
                 const items = itemResponse.data || [];
                 setCategories(response.data || []);
                 // Обогати с ефективни цени
@@ -68,10 +66,8 @@ export const AppContextProvider = (props) => {
                     }
                     // 2) Зареди ефективни цени за всички, за които имаме DB id
                     const itemDbIds = items.map(it => it.id).filter(Boolean);
-                    console.log('Effective pricing - DB ids count:', itemDbIds.length);
                     if (itemDbIds.length > 0) {
                         const effective = await getEffectivePrices(itemDbIds);
-                        console.log('Effective pricing - response size:', effective?.length, effective);
                         const map = new Map(effective.map(row => [row.itemDbId, row]));
                         items.forEach(it => {
                             const row = it.id ? map.get(it.id) : null;
@@ -83,8 +79,6 @@ export const AppContextProvider = (props) => {
                                 it.isPromo = false;
                             }
                         });
-                        const bread = items.find(i => i.name === 'Хляб');
-                        if (bread) console.log('Bread after effective:', bread);
                     }
                     // 3) Допълнителен fallback: приложи активни промоции по itemId
                     try {

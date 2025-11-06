@@ -12,10 +12,6 @@ const FiscalReports = () => {
     const [showGenerateForm, setShowGenerateForm] = useState(false);
     const [selectedReportType, setSelectedReportType] = useState('');
     
-    // Debug: Log when selectedReportType changes
-    useEffect(() => {
-        console.log('Selected report type changed to:', selectedReportType);
-    }, [selectedReportType]);
     const [formData, setFormData] = useState({
         reportDate: new Date().toISOString().split('T')[0],
         cashierName: '',
@@ -36,15 +32,11 @@ const FiscalReports = () => {
             // Allow both ADMIN and USER to see reports (USER can see their own shift reports)
             promises.unshift(FiscalService.getAllReports());
             const [reportsData, allDevices] = await Promise.all(promises);
-            console.log('Loaded reports:', reportsData);
-            console.log('Reports data type:', typeof reportsData);
-            console.log('Reports data length:', reportsData?.length);
             setReports(reportsData);
             
             // Filter only ACTIVE devices for reports
             const activeDevices = allDevices.filter(device => device.status === 'ACTIVE');
             setDevices(activeDevices);
-            console.log('Loaded active devices for fiscal reports:', activeDevices);
         } catch (error) {
             toast.error('Грешка при зареждане на данни');
             console.error('Error loading data:', error);
@@ -112,13 +104,10 @@ const FiscalReports = () => {
                 }
             }
             
-            console.log('Generated report result:', result);
             toast.success('Отчетът е генериран успешно');
             resetForm();
             // Reload reports to show the newly generated one
-            console.log('About to reload data...');
             await loadData();
-            console.log('Reports reloaded after generation');
         } catch (error) {
             toast.error(error.response?.data?.message || 'Грешка при генериране на отчет');
             console.error('Error generating report:', error);
@@ -332,8 +321,6 @@ const FiscalReports = () => {
                             <h5>Генерирани отчети</h5>
                         </div>
                         <div className="card-body">
-                            {console.log('Rendering reports table, reports count:', reports.length, 'reports:', reports)}
-                            {console.log('Reports state:', reports)}
                             {reports.length === 0 ? (
                                 <div className="text-center py-4">
                                     <i className="bi bi-file-earmark-text display-1 text-muted"></i>
@@ -362,8 +349,6 @@ const FiscalReports = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {console.log('Mapping reports:', reports)}
-                                            {console.log('Reports array:', Array.isArray(reports) ? reports : 'Not an array')}
                                             {reports.map((report) => (
                                                 <tr key={report.id}>
                                                     <td>

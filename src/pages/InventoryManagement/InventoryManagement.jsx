@@ -6,11 +6,8 @@ import InventoryService from '../../Service/InventoryService';
 import './InventoryManagement.css';
 
 const InventoryManagement = () => {
-    console.log('=== InventoryManagement COMPONENT LOADED ===');
-    console.log('DEBUG: This is the updated version with debug info');
     const navigate = useNavigate();
     const { itemsData } = useContext(AppContext);
-    console.log('AppContext itemsData:', itemsData);
     const [summary, setSummary] = useState(null);
     const [lowStockItems, setLowStockItems] = useState([]);
     const [outOfStockItems, setOutOfStockItems] = useState([]);
@@ -40,9 +37,6 @@ const InventoryManagement = () => {
 
     // Initial load
     useEffect(() => {
-        console.log('=== useEffect for initial load triggered ===');
-        console.error('ERROR TEST - useEffect triggered');
-        console.warn('WARNING TEST - useEffect triggered');
         loadInventoryDataDirectly();
     }, []);
 
@@ -89,7 +83,6 @@ const InventoryManagement = () => {
     const loadInventoryDataDirectly = async () => {
         try {
             setLoading(true);
-            console.log('=== STARTING INVENTORY DATA LOAD ===');
             
             const [summaryData, lowStockData, outOfStockData, allItemsData, transactionsData, alertsData] = await Promise.all([
                 InventoryService.getInventorySummary(),
@@ -99,23 +92,6 @@ const InventoryManagement = () => {
                 InventoryService.getRecentTransactions(),
                 InventoryService.getActiveAlerts()
             ]);
-            
-            console.log('=== INVENTORY DATA LOADED ===');
-            console.log('All items data:', allItemsData);
-            console.log('Number of items:', allItemsData?.length);
-            console.log('First item structure:', allItemsData?.[0]);
-            console.log('Items with missing itemId:', allItemsData?.filter(item => !item.itemId || item.itemId === 'undefined' || item.itemId === 'null'));
-            
-            // Check each item's structure
-            allItemsData?.forEach((item, index) => {
-                console.log(`Item ${index}:`, {
-                    id: item.id,
-                    itemId: item.itemId,
-                    name: item.name,
-                    hasItemId: !!item.itemId,
-                    itemIdType: typeof item.itemId
-                });
-            });
             
             setSummary(summaryData);
             setLowStockItems(lowStockData);
@@ -134,9 +110,6 @@ const InventoryManagement = () => {
     };
 
     const filterAndSortItems = () => {
-        console.log('=== filterAndSortItems called ===');
-        console.log('allItems length:', allItems.length);
-        console.log('allItems:', allItems);
         let filtered = [...allItems];
 
         // Apply search filter
@@ -350,10 +323,6 @@ const InventoryManagement = () => {
                                             });
                                             if (response.ok) {
                                                 const data = await response.json();
-                                                console.log('=== DEBUG ITEMS DATA ===');
-                                                console.log('Debug items:', data);
-                                                console.error('ERROR TEST - This should be visible');
-                                                console.warn('WARNING TEST - This should be visible');
                                                 alert('Debug данните са заредени! Проверете конзолата (F12)');
                                                 toast.success('Debug данните са заредени в конзолата');
                                             } else {
@@ -579,7 +548,6 @@ const InventoryManagement = () => {
                                                 </thead>
                                                 <tbody>
                                                     {filteredItems.map((item) => {
-                                                        console.log('Rendering item in table:', item);
                                                         const stock = item.stockQuantity || 0;
                                                         const reorderPoint = item.reorderPoint || 0;
                                                         return (
@@ -624,18 +592,12 @@ const InventoryManagement = () => {
                                                                         <button
                                                                             className="btn btn-sm btn-outline-success"
                                                                             onClick={() => {
-                                                                                console.log('Edit button clicked for item:', item);
-                                                                                console.log('Item ID:', item.itemId);
-                                                                                console.log('Item ID type:', typeof item.itemId);
-                                                                                console.log('Item numeric ID:', item.id);
-                                                                                
                                                                                 // Try to use itemId first, fallback to numeric id
                                                                                 let itemIdToUse = item.itemId;
                                                                                 
                                                                                 if (!itemIdToUse || itemIdToUse === 'undefined' || itemIdToUse === 'null' || itemIdToUse.trim() === '') {
                                                                                     if (item.id) {
                                                                                         itemIdToUse = item.id.toString();
-                                                                                        console.log('Using numeric ID as fallback:', itemIdToUse);
                                                                                     } else {
                                                                                         toast.error('Артикулът няма валиден ID. Моля, опитайте отново или се свържете с администратора.');
                                                                                         console.error('Invalid item ID:', item.itemId, 'and numeric ID:', item.id);
@@ -643,7 +605,6 @@ const InventoryManagement = () => {
                                                                                     }
                                                                                 }
                                                                                 
-                                                                                console.log('Navigating to edit page with ID:', itemIdToUse);
                                                                                 navigate(`/inventory/${itemIdToUse}`);
                                                                             }}
                                                                             title="Редактиране на артикула"

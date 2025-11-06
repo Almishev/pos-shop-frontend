@@ -15,18 +15,12 @@ export const searchItems = async (searchTerm) => instance.get(`/items/search?q=$
 export const generateBarcode = async () => instance.get('/items/generate-barcode');
 
 export const getItemById = async (itemId) => {
-    console.log('=== getItemById called ===');
-    console.log('Getting item by ID:', itemId);
-    console.log('Item ID type:', typeof itemId);
     const url = `/items/${itemId}`;
-    console.log('Request URL:', url);
     try {
         const response = await instance.get(url);
-        console.log('getItemById response:', response);
         return response;
     } catch (error) {
         console.error('getItemById error:', error);
-        console.error('Error response:', error.response);
         throw error;
     }
 }

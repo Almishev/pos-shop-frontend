@@ -8,8 +8,6 @@ export const login = async (data) => {
         `${import.meta.env.VITE_API_BASE_URL}/login` : 
         '/api/login'; // Relative path - Vite proxy forwards to backend
     
-    console.log('Login attempt to:', loginUrl);
-    console.log('Login data:', { email: data.email, password: '***' });
     
     try {
         const response = await axios.post(loginUrl, data, {
@@ -18,7 +16,6 @@ export const login = async (data) => {
             },
             withCredentials: false // Don't send cookies for CORS
         });
-        console.log('Login successful:', response.status);
         return response;
     } catch (error) {
         console.error('Login error:', error);

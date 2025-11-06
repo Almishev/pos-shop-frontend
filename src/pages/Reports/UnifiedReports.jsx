@@ -47,9 +47,6 @@ const UnifiedReports = () => {
 
     useEffect(() => {
         if (activeTab === 'fiscal') {
-            console.log('=== FISCAL TAB ACTIVATED ===');
-            console.log('Current users state:', users);
-            console.log('Current loading state:', loading);
             loadFiscalData();
             loadUsers(); // Load users separately
             // Prefill device from active cashier session
@@ -72,21 +69,15 @@ const UnifiedReports = () => {
 
     const loadFiscalData = async () => {
         try {
-            console.log('=== UnifiedReports.loadFiscalData called ===');
             setLoading(true);
             
             // Load devices first - filter only ACTIVE devices
             const allDevices = await FiscalService.getAllDevices();
             const activeDevices = allDevices.filter(device => device.status === 'ACTIVE');
             setDevices(activeDevices);
-            console.log('Loaded active devices for reports:', activeDevices);
             
             // Allow both ADMIN and USER to see reports
-            console.log('=== UnifiedReports.loadFiscalData - calling getAllReports ===');
             const reportsData = await FiscalService.getAllReports();
-            console.log('UnifiedReports - Loaded reports:', reportsData);
-            console.log('UnifiedReports - Reports data type:', typeof reportsData);
-            console.log('UnifiedReports - Reports data length:', reportsData?.length);
             // If not admin, show only today's generated reports AND only for the logged-in cashier
             const todayStr = new Date().toISOString().split('T')[0];
             const userKeys = [auth?.name, auth?.email]
@@ -110,35 +101,22 @@ const UnifiedReports = () => {
                 return (b.id || 0) - (a.id || 0);
             });
             setReports(sorted);
-            console.log('UnifiedReports - Reports state updated');
         } catch (error) {
             toast.error('Грешка при зареждане на данни');
             console.error('Error loading data:', error);
         } finally {
             setLoading(false);
-            console.log('UnifiedReports - Loading finished');
         }
     };
 
     const loadUsers = async () => {
         if (auth.role === 'ROLE_ADMIN') {
             try {
-                console.log('=== FETCHING USERS DEBUG ===');
-                console.log('Auth token:', localStorage.getItem('token'));
-                console.log('Auth role:', auth.role);
-                
                 const response = await fetchUsers();
-                console.log('Users response:', response);
-                console.log('Users response.data:', response.data);
-                
                 // Use the same logic as ManageUsers.jsx
                 setUsers(response.data);
-                console.log('✅ Successfully loaded users:', response.data);
-                console.log('✅ Users count:', response.data?.length || 0);
             } catch (error) {
-                console.error('❌ Error fetching users:', error);
-                console.error('❌ Error response:', error.response);
-                console.error('❌ Error status:', error.response?.status);
+                console.error('Error fetching users:', error);
                 toast.error("Неуспешно зареждане на потребители");
                 setUsers([]);
             }
@@ -260,14 +238,32 @@ const UnifiedReports = () => {
                 }
             }
             
-            console.log('UnifiedReports - Generated report result:', result);
             toast.success('Отчетът е генериран успешно');
             resetForm();
-            console.log('UnifiedReports - About to reload fiscal data...');
             await loadFiscalData();
-            console.log('UnifiedReports - Fiscal data reloaded after generation');
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Грешка при генериране на отчет');
+            // Прихващане на специфични грешки с приятелски съобщения
+            const status = error.response?.status;
+            const errorMessage = error.response?.data?.message || '';
+            const reportDate = formData.reportDate ? new Date(formData.reportDate).toLocaleDateString('bg-BG') : 'избраната дата';
+            
+            // Забележка: Вече позволяваме множество "Общ дневен отчет" за деня
+            // Вторият отчет ще включва само продажбите след първия отчет
+            // Така че 409 CONFLICT вече не се хвърля за STORE_DAILY отчети
+            
+            if (status === 403) {
+                toast.error('Нямате права за генериране на този тип отчет или има проблем с авторизацията.', { duration: 5000 });
+            } else if (status === 412) {
+                // 412 Precondition Failed - няма активна cash drawer session
+                toast.error(
+                    error.response?.data?.message || 
+                    'За да генерирате сменен отчет, трябва първо да започнете работен ден (Контрол на касата).',
+                    { duration: 6000 }
+                );
+            } else {
+                // Обща грешка
+                toast.error(error.response?.data?.message || 'Грешка при генериране на отчет');
+            }
             console.error('Error generating report:', error);
         }
     };
@@ -314,13 +310,43 @@ const UnifiedReports = () => {
             let pb = null;
             try { if (report.paymentBreakdown) pb = JSON.parse(report.paymentBreakdown); } catch(e) { pb = null; }
             const paymentsTxt = pb ? `\n\nПЛАЩАНИЯ\n==========\nВ БРОЙ: ${formatCurrency(pb.CASH?.total)}\nС КАРТА: ${formatCurrency(pb.CARD?.total)}\nСМЕСЕНО: ${formatCurrency(pb.SPLIT?.total)} (в брой ${formatCurrency(pb.SPLIT?.cash)}, карта ${formatCurrency(pb.SPLIT?.card)})\nОБЩО В БРОЙ: ${formatCurrency(((pb.CASH?.total || 0) + (pb.SPLIT?.cash || 0)))}\nОБЩО С КАРТА: ${formatCurrency(((pb.CARD?.total || 0) + (pb.SPLIT?.card || 0)))}\n` : '';
+            
+            // Cashier breakdown (for STORE_DAILY reports)
+            let cashierBreakdownTxt = '';
+            if (report.reportType === 'STORE_DAILY' && report.cashierBreakdown) {
+                try {
+                    const cashierData = JSON.parse(report.cashierBreakdown);
+                    if (cashierData && cashierData.length > 0) {
+                        let totalCashierOrders = 0;
+                        let totalCashierAmount = 0;
+                        cashierBreakdownTxt = '\n\nРАЗБИВКА ПО КАСИЕРИ\n==================\n';
+                        cashierData.forEach((cashier, index) => {
+                            const cashierName = cashier.cashier || 'Неизвестен';
+                            const ordersCount = cashier.ordersCount || 0;
+                            const totalAmount = cashier.totalAmount || 0;
+                            totalCashierOrders += ordersCount;
+                            totalCashierAmount += totalAmount;
+                            cashierBreakdownTxt += `${index + 1}. ${cashierName}\n`;
+                            cashierBreakdownTxt += `   Брой поръчки: ${ordersCount}\n`;
+                            cashierBreakdownTxt += `   Оборот: ${formatCurrency(totalAmount)}\n`;
+                            if (index < cashierData.length - 1) cashierBreakdownTxt += '\n';
+                        });
+                        cashierBreakdownTxt += `\nОБЩО ЗА ВСИЧКИ КАСИЕРИ:\n`;
+                        cashierBreakdownTxt += `Общо поръчки: ${totalCashierOrders}\n`;
+                        cashierBreakdownTxt += `Общо оборот: ${formatCurrency(totalCashierAmount)}\n`;
+                    }
+                } catch(e) {
+                    console.error('Error parsing cashier breakdown:', e);
+                }
+            }
+            
             const reportContent = `
 ФИСКАЛЕН ОТЧЕТ
 ================
 Номер на отчет: ${report.reportNumber}
 Тип: ${typeLabel}
 Дата: ${new Date(report.reportDate).toLocaleDateString('bg-BG')}
-Касиер: ${report.cashierName || 'Неизвестен'}
+${report.reportType === 'STORE_DAILY' ? 'Касиер: Всички касиери' : `Касиер: ${report.cashierName || 'Неизвестен'}`}
 Устройство: ${report.deviceSerialNumber || 'Неизвестно'}
 
 СТАТИСТИКА
@@ -329,14 +355,14 @@ const UnifiedReports = () => {
 Общо продажби: ${formatCurrency(report.totalSales)}
 ДДС: ${formatCurrency(report.totalVAT)}
 Нето продажби: ${formatCurrency(report.totalNetSales)}
-${paymentsTxt}
+${paymentsTxt}${cashierBreakdownTxt}
 
-КОНТРОЛ НА КАСАТА
+${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
 =================
 Начална сума: ${formatCurrency(report.cashDrawerStartAmount)}
 Крайна сума: ${formatCurrency(report.cashDrawerEndAmount)}
 
-СТАТУС: ${statusLabel}
+` : ''}СТАТУС: ${statusLabel}
 Генериран на: ${new Date(report.generatedAt).toLocaleString('bg-BG')}
 Бележки: ${report.notes || 'Няма'}
             `.trim();
@@ -457,25 +483,47 @@ ${paymentsTxt}
                         </table>
                     </div>
 
-                    ${report.reportType === 'STORE_DAILY' && report.cashierBreakdown ? `
+                    ${report.reportType === 'STORE_DAILY' && report.cashierBreakdown ? (() => {
+                        try {
+                            const cashierData = JSON.parse(report.cashierBreakdown);
+                            if (!cashierData || cashierData.length === 0) return '';
+                            let totalCashierOrders = 0;
+                            let totalCashierAmount = 0;
+                            cashierData.forEach(c => {
+                                totalCashierOrders += (c.ordersCount || 0);
+                                totalCashierAmount += (c.totalAmount || 0);
+                            });
+                            return `
                     <div class="section">
                         <h3>Разбивка по касиери</h3>
                         <table>
                             <tr style="background-color: #f0f0f0; font-weight: bold;">
+                                <td>№</td>
                                 <td>Касиер</td>
                                 <td>Брой поръчки</td>
                                 <td>Оборот</td>
                             </tr>
-                            ${JSON.parse(report.cashierBreakdown).map(cashier => `
+                            ${cashierData.map((cashier, index) => `
                                 <tr>
-                                    <td>${cashier.cashier}</td>
-                                    <td>${cashier.ordersCount}</td>
-                                    <td>${formatCurrency(cashier.totalAmount)}</td>
+                                    <td>${index + 1}</td>
+                                    <td>${cashier.cashier || 'Неизвестен'}</td>
+                                    <td>${cashier.ordersCount || 0}</td>
+                                    <td>${formatCurrency(cashier.totalAmount || 0)}</td>
                                 </tr>
                             `).join('')}
+                            <tr style="background-color: #e8f4f8; font-weight: bold; border-top: 2px solid #000;">
+                                <td colspan="2"><strong>ОБЩО ЗА ВСИЧКИ КАСИЕРИ:</strong></td>
+                                <td><strong>${totalCashierOrders}</strong></td>
+                                <td><strong>${formatCurrency(totalCashierAmount)}</strong></td>
+                            </tr>
                         </table>
                     </div>
-                    ` : ''}
+                    `;
+                        } catch(e) {
+                            console.error('Error parsing cashier breakdown for print:', e);
+                            return '';
+                        }
+                    })() : ''}
 
                     <div class="section">
                         <h3>Сторно / Анулирания</h3>
@@ -1015,7 +1063,7 @@ ${paymentsTxt}
                                                 </tr>
                                                 <tr>
                                                     <td><strong>Касиер:</strong></td>
-                                                    <td>{selectedReport.cashierName || 'Неизвестен'}</td>
+                                                    <td>{selectedReport.reportType === 'STORE_DAILY' ? 'Всички касиери' : (selectedReport.cashierName || 'Неизвестен')}</td>
                                                 </tr>
                                                 <tr>
                                                     <td><strong>Устройство:</strong></td>
@@ -1086,6 +1134,56 @@ ${paymentsTxt}
                                         )}
                                     </div>
                                 </div>
+                                {selectedReport.reportType === 'STORE_DAILY' && selectedReport.cashierBreakdown && (() => {
+                                    try {
+                                        const cashierData = JSON.parse(selectedReport.cashierBreakdown);
+                                        if (!cashierData || cashierData.length === 0) return null;
+                                        let totalCashierOrders = 0;
+                                        let totalCashierAmount = 0;
+                                        cashierData.forEach(c => {
+                                            totalCashierOrders += (c.ordersCount || 0);
+                                            totalCashierAmount += (c.totalAmount || 0);
+                                        });
+                                        return (
+                                            <div className="row mt-3">
+                                                <div className="col-12">
+                                                    <h6>Разбивка по касиери</h6>
+                                                    <div className="table-responsive">
+                                                        <table className="table table-sm table-bordered">
+                                                            <thead className="table-light">
+                                                                <tr>
+                                                                    <th>№</th>
+                                                                    <th>Касиер</th>
+                                                                    <th>Брой поръчки</th>
+                                                                    <th>Оборот</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {cashierData.map((cashier, index) => (
+                                                                    <tr key={index}>
+                                                                        <td>{index + 1}</td>
+                                                                        <td>{cashier.cashier || 'Неизвестен'}</td>
+                                                                        <td>{cashier.ordersCount || 0}</td>
+                                                                        <td>{formatCurrency(cashier.totalAmount || 0)}</td>
+                                                                    </tr>
+                                                                ))}
+                                                                <tr className="table-info fw-bold">
+                                                                    <td colSpan="2">ОБЩО ЗА ВСИЧКИ КАСИЕРИ:</td>
+                                                                    <td>{totalCashierOrders}</td>
+                                                                    <td>{formatCurrency(totalCashierAmount)}</td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    } catch(e) {
+                                        console.error('Error parsing cashier breakdown:', e);
+                                        return null;
+                                    }
+                                })()}
+                                
                                 {selectedReport.paymentBreakdown && (() => { let pb=null; try { pb=JSON.parse(selectedReport.paymentBreakdown);} catch(e){} return pb ? (
                                     <div className="row mt-3">
                                         <div className="col-12">

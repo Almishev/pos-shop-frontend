@@ -16,13 +16,9 @@ const createAuthInstance = () => {
 const LabelService = {
     // Печат на ценови етикети
     printPriceLabels: async (items) => {
-        console.log('=== LabelService.printPriceLabels called ===');
-        console.log('Items to print:', items);
-        
         const instance = createAuthInstance();
         try {
             const response = await instance.post('/admin/labels/price-labels', items);
-            console.log('Price labels printed successfully:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error printing price labels:', error);
@@ -32,13 +28,9 @@ const LabelService = {
 
     // Печат на рафтови етикети
     printShelfLabels: async (categories) => {
-        console.log('=== LabelService.printShelfLabels called ===');
-        console.log('Categories to print:', categories);
-        
         const instance = createAuthInstance();
         try {
             const response = await instance.post('/admin/labels/shelf-labels', categories);
-            console.log('Shelf labels printed successfully:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error printing shelf labels:', error);
@@ -48,13 +40,9 @@ const LabelService = {
 
     // Печат на промо етикети
     printPromoLabels: async (promoItems) => {
-        console.log('=== LabelService.printPromoLabels called ===');
-        console.log('Promo items to print:', promoItems);
-        
         const instance = createAuthInstance();
         try {
             const response = await instance.post('/admin/labels/promo-labels', promoItems);
-            console.log('Promo labels printed successfully:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error printing promo labels:', error);
@@ -64,16 +52,12 @@ const LabelService = {
 
     // Масов печат на всички продукти
     bulkPrintAllItems: async (categoryId = null) => {
-        console.log('=== LabelService.bulkPrintAllItems called ===');
-        console.log('Category ID:', categoryId);
-        
         const instance = createAuthInstance();
         try {
             const url = categoryId 
                 ? `/admin/labels/bulk-print?categoryId=${categoryId}`
                 : '/admin/labels/bulk-print';
             const response = await instance.post(url);
-            console.log('Bulk print completed successfully:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error in bulk print:', error);
@@ -83,13 +67,9 @@ const LabelService = {
 
     // Предварителен преглед на етикет
     previewLabel: async (labelData) => {
-        console.log('=== LabelService.previewLabel called ===');
-        console.log('Label data:', labelData);
-        
         const instance = createAuthInstance();
         try {
             const response = await instance.post('/admin/labels/preview', labelData);
-            console.log('Label preview generated successfully:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error generating label preview:', error);
@@ -99,12 +79,9 @@ const LabelService = {
 
     // Получаване на налични етикет шаблони
     getLabelTemplates: async () => {
-        console.log('=== LabelService.getLabelTemplates called ===');
-        
         const instance = createAuthInstance();
         try {
             const response = await instance.get('/admin/labels/templates');
-            console.log('Label templates loaded successfully:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error loading label templates:', error);
@@ -159,9 +136,6 @@ const LabelService = {
 
     // Печат на HTML етикети
     printLabels: (htmlContent, labelType = 'labels') => {
-        console.log('=== LabelService.printLabels called ===');
-        console.log('Label type:', labelType);
-        
         const printWindow = window.open('', '_blank');
         printWindow.document.write(`
             <!DOCTYPE html>

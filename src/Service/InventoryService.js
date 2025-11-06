@@ -2,9 +2,6 @@ import axios from 'axios';
 
 const createAuthInstance = () => {
     const token = localStorage.getItem('token');
-    console.log('=== createAuthInstance called ===');
-    console.log('Token exists:', !!token);
-    console.log('Token length:', token?.length);
     return axios.create({
         baseURL: '/api',
         headers: {
@@ -73,11 +70,7 @@ const InventoryService = {
 
     getAllItems: async () => {
         const instance = createAuthInstance();
-        console.log('=== InventoryService.getAllItems() called ===');
-        console.log('Making request to:', instance.defaults.baseURL + '/items');
         const response = await instance.get('/items');
-        console.log('Response status:', response.status);
-        console.log('Response data:', response.data);
         return response.data;
     },
 

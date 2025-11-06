@@ -32,7 +32,6 @@ const PromotionService = {
     const startAt = formatTs(startDate, '00:00:00');
     const endAt = formatTs(endDate, '23:59:59');
     const body = { itemDbId, itemId, promoPrice, startAt, endAt };
-    console.log('PromotionService.createPromotion body:', body);
     const resp = await axios.post(`${API_BASE}/admin/promotions`, body, {
       headers: { 'Authorization': `Bearer ${token}` }
     });

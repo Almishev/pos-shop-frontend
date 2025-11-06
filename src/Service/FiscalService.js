@@ -22,25 +22,12 @@ const createAuthInstance = () => {
 const FiscalService = {
     // Fiscal Devices
     getAllDevices: async () => {
-        console.log('=== FiscalService.getAllDevices called ===');
-        const token = getAuthToken();
-        console.log('Token exists:', !!token);
-        console.log('Token preview:', token ? token.substring(0, 20) + '...' : 'null');
-
         const instance = createAuthInstance();
-        console.log('Making request to:', API_BASE_URL + '/admin/fiscal-devices');
-
         try {
             const response = await instance.get('/admin/fiscal-devices');
-            console.log('Response received:', response);
-            console.log('Response status:', response.status);
-            console.log('Response data:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error in getAllDevices:', error);
-            console.error('Error response:', error.response);
-            console.error('Error status:', error.response?.status);
-            console.error('Error data:', error.response?.data);
             throw error;
         }
     },
@@ -52,54 +39,33 @@ const FiscalService = {
     },
 
     registerDevice: async (deviceData) => {
-        console.log('=== FiscalService.registerDevice called ===');
-        console.log('Device data:', deviceData);
-        
         const instance = createAuthInstance();
-        console.log('Making POST request to:', API_BASE_URL + '/admin/fiscal-devices');
-        
         try {
             const response = await instance.post('/admin/fiscal-devices', deviceData);
-            console.log('Device registered successfully:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error in registerDevice:', error);
-            console.error('Error response:', error.response);
             throw error;
         }
     },
 
     updateDevice: async (deviceData) => {
-        console.log('=== FiscalService.updateDevice called ===');
-        console.log('Device data:', deviceData);
-        
         const instance = createAuthInstance();
-        console.log('Making PUT request to:', API_BASE_URL + '/admin/fiscal-devices');
-        
         try {
             const response = await instance.put('/admin/fiscal-devices', deviceData);
-            console.log('Device updated successfully:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error in updateDevice:', error);
-            console.error('Error response:', error.response);
             throw error;
         }
     },
 
     deleteDevice: async (deviceId) => {
-        console.log('=== FiscalService.deleteDevice called ===');
-        console.log('Device ID:', deviceId);
-        
         const instance = createAuthInstance();
-        console.log('Making DELETE request to:', API_BASE_URL + '/admin/fiscal-devices/' + deviceId);
-        
         try {
             await instance.delete(`/admin/fiscal-devices/${deviceId}`);
-            console.log('Device deleted successfully');
         } catch (error) {
             console.error('Error in deleteDevice:', error);
-            console.error('Error response:', error.response);
             throw error;
         }
     },
@@ -137,39 +103,23 @@ const FiscalService = {
     },
 
         generateShiftReport: async (reportData) => {
-            console.log('=== FiscalService.generateShiftReport called ===');
-            console.log('Report data:', reportData);
             const instance = createAuthInstance();
-            console.log('Making request to:', instance.defaults.baseURL + '/admin/fiscal-reports/shift');
             try {
                 const response = await instance.post('/admin/fiscal-reports/shift', reportData);
-                console.log('generateShiftReport response status:', response.status);
-                console.log('generateShiftReport response data:', response.data);
                 return response.data;
             } catch (error) {
                 console.error('Error in generateShiftReport:', error);
-                console.error('Error response:', error.response);
-                console.error('Error status:', error.response?.status);
-                console.error('Error data:', error.response?.data);
                 throw error;
             }
         },
 
         generateStoreDailyReport: async (reportData) => {
-            console.log('=== FiscalService.generateStoreDailyReport called ===');
-            console.log('Report data:', reportData);
             const instance = createAuthInstance();
-            console.log('Making request to:', instance.defaults.baseURL + '/admin/fiscal-reports/store-daily');
             try {
                 const response = await instance.post('/admin/fiscal-reports/store-daily', reportData);
-                console.log('generateStoreDailyReport response status:', response.status);
-                console.log('generateStoreDailyReport response data:', response.data);
                 return response.data;
             } catch (error) {
                 console.error('Error in generateStoreDailyReport:', error);
-                console.error('Error response:', error.response);
-                console.error('Error status:', error.response?.status);
-                console.error('Error data:', error.response?.data);
                 throw error;
             }
         },
@@ -187,19 +137,12 @@ const FiscalService = {
     },
 
     getAllReports: async () => {
-        console.log('=== FiscalService.getAllReports called ===');
         const instance = createAuthInstance();
-        console.log('Making request to:', instance.defaults.baseURL + '/admin/fiscal-reports');
         try {
             const response = await instance.get('/admin/fiscal-reports');
-            console.log('getAllReports response status:', response.status);
-            console.log('getAllReports response data:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error in getAllReports:', error);
-            console.error('Error response:', error.response);
-            console.error('Error status:', error.response?.status);
-            console.error('Error data:', error.response?.data);
             throw error;
         }
     },

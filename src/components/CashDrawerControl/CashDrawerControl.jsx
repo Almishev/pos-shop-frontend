@@ -21,7 +21,6 @@ const CashDrawerControl = () => {
     const [devices, setDevices] = useState([]);
 
     useEffect(() => {
-        console.log('=== CashDrawerControl useEffect called ===');
         loadActiveSession();
         loadDevices();
     }, []);
@@ -29,20 +28,9 @@ const CashDrawerControl = () => {
     const loadDevices = async () => {
         try {
             const all = await FiscalService.getAllDevices();
-            console.log('=== loadDevices: All devices from backend ===');
-            console.log('Total devices:', all?.length || 0);
-            all?.forEach(device => {
-                console.log(`Device: ${device.serialNumber}, Status: ${device.status}, Locked: ${device.locked}`);
-            });
             
             // Показваме всички активни устройства, но с различни статуси
             const active = (all || []).filter(d => d.status === 'ACTIVE');
-            console.log('=== Filtered devices (ACTIVE only) ===');
-            console.log('Available devices:', active.length);
-            active.forEach(device => {
-                console.log(`Device: ${device.serialNumber}, Locked: ${device.locked}`);
-            });
-            
             setDevices(active);
             
             // Логика за auto-selection:
@@ -86,13 +74,6 @@ const CashDrawerControl = () => {
 
     const handleStartWorkDay = async (e) => {
         e.preventDefault();
-        console.log('=== handleStartWorkDay called ===');
-        console.log('Form payload:', {
-            startAmount: formData.startAmount,
-            deviceSerialNumber: formData.deviceSerialNumber,
-            registerId: formData.registerId,
-            notes: formData.notes
-        });
         
         if (!formData.startAmount || parseFloat(formData.startAmount) < 0) {
             toast.error('Моля, въведете валидна начална сума');
@@ -106,7 +87,6 @@ const CashDrawerControl = () => {
                 formData.deviceSerialNumber || undefined,
                 formData.registerId || undefined
             );
-            console.log('Start work day response:', response);
             
             setActiveSession(response);
             setShowStartForm(false);

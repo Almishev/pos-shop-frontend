@@ -22,7 +22,7 @@ const OrderHistory = () => {
                 setTotalPages(response.data.totalPages || 0);
                 setTotalElements(response.data.totalElements || 0);
             } catch (error) {
-                console.log(error);
+                console.error('Error fetching orders:', error);
             } finally {
                 setLoading(false);
             }
