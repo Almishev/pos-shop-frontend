@@ -329,6 +329,22 @@ const UnifiedReports = () => {
                             cashierBreakdownTxt += `${index + 1}. ${cashierName}\n`;
                             cashierBreakdownTxt += `   Брой поръчки: ${ordersCount}\n`;
                             cashierBreakdownTxt += `   Оборот: ${formatCurrency(totalAmount)}\n`;
+                            
+                            // Payment breakdown for this cashier
+                            if (cashier.payments) {
+                                const p = cashier.payments;
+                                cashierBreakdownTxt += `   Плащания:\n`;
+                                if (p.CASH) {
+                                    cashierBreakdownTxt += `      В брой: ${p.CASH.count} поръчки, ${formatCurrency(p.CASH.total)}\n`;
+                                }
+                                if (p.CARD) {
+                                    cashierBreakdownTxt += `      С карта: ${p.CARD.count} поръчки, ${formatCurrency(p.CARD.total)}\n`;
+                                }
+                                if (p.SPLIT) {
+                                    cashierBreakdownTxt += `      Смесено: ${p.SPLIT.count} поръчки, ${formatCurrency(p.SPLIT.total)} (в брой ${formatCurrency(p.SPLIT.cash)}, карта ${formatCurrency(p.SPLIT.card)})\n`;
+                                }
+                            }
+                            
                             if (index < cashierData.length - 1) cashierBreakdownTxt += '\n';
                         });
                         cashierBreakdownTxt += `\nОБЩО ЗА ВСИЧКИ КАСИЕРИ:\n`;
@@ -503,14 +519,26 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                 <td>Брой поръчки</td>
                                 <td>Оборот</td>
                             </tr>
-                            ${cashierData.map((cashier, index) => `
+                            ${cashierData.map((cashier, index) => {
+                                let paymentDetails = '';
+                                if (cashier.payments) {
+                                    const p = cashier.payments;
+                                    paymentDetails = '<tr style="font-size: 0.9em; color: #666;"><td colspan="4" style="padding-left: 40px;">';
+                                    if (p.CASH) paymentDetails += `В брой: ${p.CASH.count} поръчки, ${formatCurrency(p.CASH.total)} | `;
+                                    if (p.CARD) paymentDetails += `С карта: ${p.CARD.count} поръчки, ${formatCurrency(p.CARD.total)} | `;
+                                    if (p.SPLIT) paymentDetails += `Смесено: ${p.SPLIT.count} поръчки, ${formatCurrency(p.SPLIT.total)} (в брой ${formatCurrency(p.SPLIT.cash)}, карта ${formatCurrency(p.SPLIT.card)})`;
+                                    paymentDetails += '</td></tr>';
+                                }
+                                return `
                                 <tr>
                                     <td>${index + 1}</td>
                                     <td>${cashier.cashier || 'Неизвестен'}</td>
                                     <td>${cashier.ordersCount || 0}</td>
                                     <td>${formatCurrency(cashier.totalAmount || 0)}</td>
                                 </tr>
-                            `).join('')}
+                                ${paymentDetails}
+                            `;
+                            }).join('')}
                             <tr style="background-color: #e8f4f8; font-weight: bold; border-top: 2px solid #000;">
                                 <td colspan="2"><strong>ОБЩО ЗА ВСИЧКИ КАСИЕРИ:</strong></td>
                                 <td><strong>${totalCashierOrders}</strong></td>
@@ -1160,12 +1188,36 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                                             </thead>
                                                             <tbody>
                                                                 {cashierData.map((cashier, index) => (
-                                                                    <tr key={index}>
-                                                                        <td>{index + 1}</td>
-                                                                        <td>{cashier.cashier || 'Неизвестен'}</td>
-                                                                        <td>{cashier.ordersCount || 0}</td>
-                                                                        <td>{formatCurrency(cashier.totalAmount || 0)}</td>
-                                                                    </tr>
+                                                                    <React.Fragment key={index}>
+                                                                        <tr>
+                                                                            <td>{index + 1}</td>
+                                                                            <td>{cashier.cashier || 'Неизвестен'}</td>
+                                                                            <td>{cashier.ordersCount || 0}</td>
+                                                                            <td>{formatCurrency(cashier.totalAmount || 0)}</td>
+                                                                        </tr>
+                                                                        {cashier.payments && (
+                                                                            <tr style={{ fontSize: '0.9em', color: '#666' }}>
+                                                                                <td colSpan="4" style={{ paddingLeft: '40px' }}>
+                                                                                    {cashier.payments.CASH && (
+                                                                                        <span style={{ marginRight: '15px' }}>
+                                                                                            В брой: {cashier.payments.CASH.count} поръчки, {formatCurrency(cashier.payments.CASH.total)}
+                                                                                        </span>
+                                                                                    )}
+                                                                                    {cashier.payments.CARD && (
+                                                                                        <span style={{ marginRight: '15px' }}>
+                                                                                            С карта: {cashier.payments.CARD.count} поръчки, {formatCurrency(cashier.payments.CARD.total)}
+                                                                                        </span>
+                                                                                    )}
+                                                                                    {cashier.payments.SPLIT && (
+                                                                                        <span>
+                                                                                            Смесено: {cashier.payments.SPLIT.count} поръчки, {formatCurrency(cashier.payments.SPLIT.total)} 
+                                                                                            (в брой {formatCurrency(cashier.payments.SPLIT.cash)}, карта {formatCurrency(cashier.payments.SPLIT.card)})
+                                                                                        </span>
+                                                                                    )}
+                                                                                </td>
+                                                                            </tr>
+                                                                        )}
+                                                                    </React.Fragment>
                                                                 ))}
                                                                 <tr className="table-info fw-bold">
                                                                     <td colSpan="2">ОБЩО ЗА ВСИЧКИ КАСИЕРИ:</td>
