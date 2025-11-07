@@ -3,6 +3,32 @@
     height: calc(100vh - 5rem);
     box-sizing: border-box;
     background-color: #2c3335;
+    width: 100%;
+}
+
+.reports-container .container-fluid {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.reports-container .card {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block;
+}
+
+.reports-container .card .card-header,
+.reports-container .card .card-body,
+.reports-container .card .table-responsive,
+.reports-container .card .table {
+    width: 100% !important;
+}
+
+.reports-container .fiscal-reports-page {
+    width: 100% !important;
+    max-width: 100% !important;
 }
 
 .filters-bar {

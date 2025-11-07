@@ -1,19 +1,28 @@
 /* Allow global page scrolling; avoid constraining body/html here */
 body, html {
     height: 100%;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
 }
 
 .dashboard-wrapper {
     height: 100vh;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
+    width: 100%;
+    max-width: 100%;
 }
 .dashboard-container {
     padding: 20px;
     background-color: #212529;
     min-height: 100vh;
     color: #e9ecef;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 /* Ensure dark theme for all cards in dashboard */
@@ -98,13 +107,17 @@ body, html {
 }
 
 .orders-table-container {
-    overflow-x: auto;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
 }
 
 .orders-table {
     width: 100%;
+    max-width: 100%;
     border-collapse: collapse;
     margin-top: 15px;
+    table-layout: auto;
 }
 
 .orders-table th {

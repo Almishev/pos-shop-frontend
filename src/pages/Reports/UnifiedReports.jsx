@@ -592,14 +592,21 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
 
             // Open print window
             const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                toast.error('Моля, разрешете pop-up прозорците за да принтирате отчета');
+                return;
+            }
+            
             printWindow.document.write(printContent);
             printWindow.document.close();
             
-            // Wait for content to load, then print
-            printWindow.onload = () => {
+            // Use setTimeout instead of onload - more reliable after document.write()
+            // Same approach as LabelService.js which works correctly
+            setTimeout(() => {
+                printWindow.focus();
                 printWindow.print();
-                printWindow.close();
-            };
+                // Don't close immediately - let user interact with print dialog
+            }, 500);
             
             toast.success('Отчетът е готов за печат');
         } catch (error) {
@@ -650,12 +657,15 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
 
     return (
         <div className="reports-container">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="mb-0 text-light">📊 Отчети</h2>
-            </div>
+            <div className="container-fluid">
+                <div className="row">
+                    <div className="col-12">
+                        <div className="d-flex justify-content-between align-items-center mb-4">
+                            <h2 className="mb-0 text-light">📊 Отчети</h2>
+                        </div>
 
-            {/* Tab Navigation */}
-            <ul className="nav nav-tabs mb-4" role="tablist">
+                        {/* Tab Navigation */}
+                        <ul className="nav nav-tabs mb-4" role="tablist">
                 {isAdmin && (
                     <li className="nav-item" role="presentation">
                         <button 
@@ -687,11 +697,11 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                         🏪 Фискални отчети
                     </button>
                 </li>
-            </ul>
+                        </ul>
 
-            {/* Date Filters - only for ADMIN */}
-            {isAdmin && (
-            <div className="filters-bar text-light mb-4">
+                        {/* Date Filters - only for ADMIN */}
+                        {isAdmin && (
+                        <div className="filters-bar text-light mb-4">
                 <div className="row g-3 align-items-end m-0">
                     <div className="col-md-4">
                         <label className="form-label">От дата</label>
@@ -722,13 +732,13 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                         >
                             Днес
                         </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-            )}
+                )}
 
-            {/* Export Tab */}
-            {isAdmin && activeTab === 'export' && (
+                        {/* Export Tab */}
+                        {isAdmin && activeTab === 'export' && (
                 <div className="card bg-dark text-light">
                     <div className="card-body">
                         <h5 className="card-title">📋 Експорт на данни</h5>
@@ -757,12 +767,12 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                             <li><i className="bi bi-check-circle text-success me-2"></i>Включват всички поръчки за избрания период</li>
                             <li><i className="bi bi-check-circle text-success me-2"></i>Файловете са достъпни за данъчни и счетоводни цели</li>
                         </ul>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Cashiers Tab */}
-            {isAdmin && activeTab === 'cashiers' && (
+                        {/* Cashiers Tab */}
+                        {isAdmin && activeTab === 'cashiers' && (
                 <div className="card bg-dark text-light">
                     <div className="card-body">
                         <h5 className="card-title">👩‍💼 Отчети по касиерки</h5>
@@ -786,6 +796,17 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                                 <td>{formatCurrency(r.totalAmount)}</td>
                                             </tr>
                                         ))}
+                                        {cashierRows.length > 0 && (() => {
+                                            const totalOrders = cashierRows.reduce((sum, r) => sum + (r.totalOrders || 0), 0);
+                                            const totalAmount = cashierRows.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+                                            return (
+                                                <tr style={{ backgroundColor: '#e8f4f8', fontWeight: 'bold', borderTop: '2px solid #000' }}>
+                                                    <td><strong>ОБЩО ЗА ВСИЧКИ КАСИЕРИ:</strong></td>
+                                                    <td><strong>{totalOrders}</strong></td>
+                                                    <td><strong>{formatCurrency(totalAmount)}</strong></td>
+                                                </tr>
+                                            );
+                                        })()}
                                         {cashierRows.length === 0 && (
                                             <tr className="empty-state-row">
                                                 <td colSpan="3" className="text-center empty-state">Няма данни за избрания период</td>
@@ -795,12 +816,12 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                 </table>
                             </div>
                         )}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Fiscal Reports Tab */}
-            {activeTab === 'fiscal' && (
+                        {/* Fiscal Reports Tab */}
+                        {activeTab === 'fiscal' && (
                 <div className="fiscal-reports-page">
                     {loading ? (
                         <div className="d-flex justify-content-center">
@@ -1029,7 +1050,11 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                                                     <button
                                                                         className="btn btn-sm btn-outline-success"
                                                                         title="Принтирай"
-                                                                        onClick={() => printReport(report)}
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            printReport(report);
+                                                                        }}
                                                                     >
                                                                         <i className="bi bi-printer"></i>
                                                                     </button>
@@ -1264,7 +1289,11 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                 <button 
                                     type="button" 
                                     className="btn btn-success"
-                                    onClick={() => printReport(selectedReport)}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        printReport(selectedReport);
+                                    }}
                                 >
                                     <i className="bi bi-printer me-2"></i>
                                     Принтирай
@@ -1284,7 +1313,10 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                         </div>
                     </div>
                 </div>
-            )}
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
