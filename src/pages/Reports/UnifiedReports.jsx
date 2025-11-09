@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { toast } from 'react-hot-toast';
 import { exportOrdersReport, getCashierSummaries } from "../../Service/ReportService.js";
+import { archiveOrders } from "../../Service/OrderService.js";
 import FiscalService from '../../Service/FiscalService';
 import CashDrawerService from '../../Service/CashDrawerService';
 import { fetchUsers } from '../../Service/UserService.js';
@@ -18,6 +19,8 @@ const UnifiedReports = () => {
     
     // Export reports state
     const [exporting, setExporting] = useState(false);
+    const [archiving, setArchiving] = useState(false);
+    const [archivePeriod, setArchivePeriod] = useState('6months'); // '6months', '1month', 'today'
     const [cashierLoading, setCashierLoading] = useState(false);
     const [cashierRows, setCashierRows] = useState([]);
     
@@ -37,6 +40,7 @@ const UnifiedReports = () => {
         notes: ''
     });
     const [activeSession, setActiveSession] = useState(null);
+    const [existingMonthlyReports, setExistingMonthlyReports] = useState([]);
 
     // When role is USER, prefill cashierName with logged-in email
     useEffect(() => {
@@ -66,6 +70,25 @@ const UnifiedReports = () => {
             loadCashierSummaries();
         }
     }, [activeTab, dateFrom, dateTo]);
+
+    // Проверка за съществуващи месечни отчети при промяна на датата или типа отчет
+    useEffect(() => {
+        if (selectedReportType === 'MONTHLY' && formData.reportDate && reports.length > 0) {
+            const reportDate = new Date(formData.reportDate);
+            const startOfMonth = new Date(reportDate.getFullYear(), reportDate.getMonth(), 1);
+            const endOfMonth = new Date(reportDate.getFullYear(), reportDate.getMonth() + 1, 0);
+            
+            const existing = reports.filter(report => {
+                if (report.reportType !== 'MONTHLY') return false;
+                const reportDateObj = new Date(report.reportDate);
+                return reportDateObj >= startOfMonth && reportDateObj <= endOfMonth;
+            });
+            
+            setExistingMonthlyReports(existing);
+        } else {
+            setExistingMonthlyReports([]);
+        }
+    }, [selectedReportType, formData.reportDate, reports]);
 
     const loadFiscalData = async () => {
         try {
@@ -162,6 +185,54 @@ const UnifiedReports = () => {
             console.error('Export error:', error);
         } finally {
             setExporting(false);
+        }
+    };
+
+    const handleArchive = async () => {
+        // Calculate cutoff date based on selected period
+        let cutoffDate = null;
+        let periodDescription = '';
+        const today = new Date();
+        
+        switch (archivePeriod) {
+            case '6months':
+                cutoffDate = new Date(today);
+                cutoffDate.setMonth(today.getMonth() - 6);
+                periodDescription = 'по-стари от 6 месеца';
+                break;
+            case '1month':
+                cutoffDate = new Date(today);
+                cutoffDate.setMonth(today.getMonth() - 1);
+                periodDescription = 'по-стари от 1 месец';
+                break;
+            case 'today':
+                cutoffDate = new Date(today);
+                cutoffDate.setHours(0, 0, 0, 0);
+                periodDescription = 'по-стари от днес (всички поръчки преди днес)';
+                break;
+            default:
+                cutoffDate = new Date(today);
+                cutoffDate.setMonth(today.getMonth() - 6);
+                periodDescription = 'по-стари от 6 месеца';
+        }
+        
+        const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+        const confirmMessage = `Сигурни ли сте, че искате да архивирате поръчки ${periodDescription}?\n\nПоръчките ще бъдат архивирани в AWS S3 и изтрити от базата данни.\n\nCutoff дата: ${cutoffDateStr}`;
+        
+        if (!window.confirm(confirmMessage)) {
+            return;
+        }
+
+        try {
+            setArchiving(true);
+            const response = await archiveOrders(cutoffDateStr);
+            const message = response.data || 'Архивирането е завършено';
+            toast.success(message);
+        } catch (error) {
+            toast.error(error.response?.data || 'Грешка при архивиране на поръчки');
+            console.error('Archive error:', error);
+        } finally {
+            setArchiving(false);
         }
     };
 
@@ -311,9 +382,9 @@ const UnifiedReports = () => {
             try { if (report.paymentBreakdown) pb = JSON.parse(report.paymentBreakdown); } catch(e) { pb = null; }
             const paymentsTxt = pb ? `\n\nПЛАЩАНИЯ\n==========\nВ БРОЙ: ${formatCurrency(pb.CASH?.total)}\nС КАРТА: ${formatCurrency(pb.CARD?.total)}\nСМЕСЕНО: ${formatCurrency(pb.SPLIT?.total)} (в брой ${formatCurrency(pb.SPLIT?.cash)}, карта ${formatCurrency(pb.SPLIT?.card)})\nОБЩО В БРОЙ: ${formatCurrency(((pb.CASH?.total || 0) + (pb.SPLIT?.cash || 0)))}\nОБЩО С КАРТА: ${formatCurrency(((pb.CARD?.total || 0) + (pb.SPLIT?.card || 0)))}\n` : '';
             
-            // Cashier breakdown (for STORE_DAILY reports)
+            // Cashier breakdown (for STORE_DAILY and MONTHLY reports)
             let cashierBreakdownTxt = '';
-            if (report.reportType === 'STORE_DAILY' && report.cashierBreakdown) {
+            if ((report.reportType === 'STORE_DAILY' || report.reportType === 'MONTHLY') && report.cashierBreakdown) {
                 try {
                     const cashierData = JSON.parse(report.cashierBreakdown);
                     if (cashierData && cashierData.length > 0) {
@@ -362,7 +433,7 @@ const UnifiedReports = () => {
 Номер на отчет: ${report.reportNumber}
 Тип: ${typeLabel}
 Дата: ${new Date(report.reportDate).toLocaleDateString('bg-BG')}
-${report.reportType === 'STORE_DAILY' ? 'Касиер: Всички касиери' : `Касиер: ${report.cashierName || 'Неизвестен'}`}
+${(report.reportType === 'STORE_DAILY' || report.reportType === 'MONTHLY') ? 'Касиер: Всички касиери' : `Касиер: ${report.cashierName || 'Неизвестен'}`}
 Устройство: ${report.deviceSerialNumber || 'Неизвестно'}
 
 СТАТИСТИКА
@@ -449,8 +520,8 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                         <table>
                             <tr><td class="label">Тип отчет:</td><td>${typeLabel}</td></tr>
                             <tr><td class="label">Дата:</td><td>${new Date(report.reportDate).toLocaleDateString('bg-BG')}</td></tr>
-                            <tr><td class="label">Касиер:</td><td>${report.reportType === 'STORE_DAILY' ? 'Всички касиери' : (report.cashierName || 'Неизвестен')}</td></tr>
-                            <tr><td class="label">Устройство:</td><td>${report.reportType === 'STORE_DAILY' ? (report.deviceSerialNumber || 'Главно устройство') : (report.deviceSerialNumber || 'Неизвестно')}</td></tr>
+                            <tr><td class="label">Касиер:</td><td>${(report.reportType === 'STORE_DAILY' || report.reportType === 'MONTHLY') ? 'Всички касиери' : (report.cashierName || 'Неизвестен')}</td></tr>
+                            <tr><td class="label">Устройство:</td><td>${(report.reportType === 'STORE_DAILY' || report.reportType === 'MONTHLY') ? (report.deviceSerialNumber || 'Всички устройства') : (report.deviceSerialNumber || 'Неизвестно')}</td></tr>
                             <tr><td class="label">Статус:</td><td>${statusLabel}</td></tr>
                         </table>
                     </div>
@@ -499,7 +570,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                         </table>
                     </div>
 
-                    ${report.reportType === 'STORE_DAILY' && report.cashierBreakdown ? (() => {
+                    ${(report.reportType === 'STORE_DAILY' || report.reportType === 'MONTHLY') && report.cashierBreakdown ? (() => {
                         try {
                             const cashierData = JSON.parse(report.cashierBreakdown);
                             if (!cashierData || cashierData.length === 0) return '';
@@ -742,7 +813,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                 <div className="card bg-dark text-light">
                     <div className="card-body">
                         <h5 className="card-title">📋 Експорт на данни</h5>
-                        <div className="mb-3">
+                        <div className="mb-3 d-flex gap-2">
                             <button 
                                 className="btn btn-primary"
                                 onClick={handleExport}
@@ -760,6 +831,23 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                     </>
                                 )}
                             </button>
+                            <button 
+                                className="btn btn-warning"
+                                onClick={handleArchive}
+                                disabled={archiving}
+                            >
+                                {archiving ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        Архивиране...
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="bi bi-archive me-2"></i>
+                                        Архивирай поръчки
+                                    </>
+                                )}
+                            </button>
                         </div>
                         <ul className="list-unstyled">
                             <li><i className="bi bi-check-circle text-success me-2"></i>Отчетите се генерират в CSV формат</li>
@@ -767,6 +855,59 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                             <li><i className="bi bi-check-circle text-success me-2"></i>Включват всички поръчки за избрания период</li>
                             <li><i className="bi bi-check-circle text-success me-2"></i>Файловете са достъпни за данъчни и счетоводни цели</li>
                         </ul>
+                        <div className="mt-4">
+                            <h6 className="text-warning">📦 Архивиране на поръчки</h6>
+                            <div className="mb-3">
+                                <label className="form-label text-light">Изберете период за архивиране:</label>
+                                <div className="form-check">
+                                    <input 
+                                        className="form-check-input" 
+                                        type="radio" 
+                                        name="archivePeriod" 
+                                        id="archive6months"
+                                        value="6months"
+                                        checked={archivePeriod === '6months'}
+                                        onChange={(e) => setArchivePeriod(e.target.value)}
+                                    />
+                                    <label className="form-check-label text-light" htmlFor="archive6months">
+                                        По-стари от 6 месеца
+                                    </label>
+                                </div>
+                                <div className="form-check">
+                                    <input 
+                                        className="form-check-input" 
+                                        type="radio" 
+                                        name="archivePeriod" 
+                                        id="archive1month"
+                                        value="1month"
+                                        checked={archivePeriod === '1month'}
+                                        onChange={(e) => setArchivePeriod(e.target.value)}
+                                    />
+                                    <label className="form-check-label text-light" htmlFor="archive1month">
+                                        По-стари от 1 месец
+                                    </label>
+                                </div>
+                                <div className="form-check">
+                                    <input 
+                                        className="form-check-input" 
+                                        type="radio" 
+                                        name="archivePeriod" 
+                                        id="archiveToday"
+                                        value="today"
+                                        checked={archivePeriod === 'today'}
+                                        onChange={(e) => setArchivePeriod(e.target.value)}
+                                    />
+                                    <label className="form-check-label text-light" htmlFor="archiveToday">
+                                        По-стари от днес (всички поръчки преди днес)
+                                    </label>
+                                </div>
+                            </div>
+                            <ul className="list-unstyled">
+                                <li><i className="bi bi-info-circle text-info me-2"></i>Съхранява в AWS S3 bucket: <code>my-pos-orders</code></li>
+                                <li><i className="bi bi-info-circle text-info me-2"></i>Формат: JSONL компресиран (GZIP)</li>
+                                <li><i className="bi bi-exclamation-triangle text-warning me-2"></i>Внимание: Поръчките се изтриват от базата данни след архивиране!</li>
+                            </ul>
+                        </div>
                         </div>
                     </div>
                 )}
@@ -877,7 +1018,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                                         required
                                                     />
                                                 </div>
-                                                {auth.role === 'ROLE_ADMIN' && selectedReportType !== 'STORE_DAILY' ? (
+                                                {auth.role === 'ROLE_ADMIN' && selectedReportType !== 'STORE_DAILY' && selectedReportType !== 'MONTHLY' ? (
                                                     <div className="col-md-3 mb-3">
                                                         <label className="form-label">Касиер</label>
                                                         <select
@@ -914,7 +1055,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                                         </select>
                                                     </div>
                                                 ) : null}
-                                                {auth.role === 'ROLE_ADMIN' && selectedReportType !== 'STORE_DAILY' ? (
+                                                {auth.role === 'ROLE_ADMIN' && selectedReportType !== 'STORE_DAILY' && selectedReportType !== 'MONTHLY' ? (
                                                     <div className="col-md-3 mb-3">
                                                         <label className="form-label">Фискално устройство</label>
                                                         <select
@@ -952,6 +1093,20 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                                     <i className="bi bi-info-circle me-2"></i>
                                                     <strong>Общ дневен отчет за магазина:</strong> Този отчет включва данни от всички каси и всички фискални устройства в магазина за избраната дата.
                                                 </div>
+                                            )}
+                                            {selectedReportType === 'MONTHLY' && (
+                                                <>
+                                                    <div className="alert alert-info mb-3">
+                                                        <i className="bi bi-info-circle me-2"></i>
+                                                        <strong>Месечен отчет за магазина:</strong> Този отчет включва данни от всички каси и всички фискални устройства в магазина за целия месец. Включва разбивка по касиери и плащания.
+                                                    </div>
+                                                    {existingMonthlyReports.length > 0 && (
+                                                        <div className="alert alert-warning mb-3">
+                                                            <i className="bi bi-exclamation-triangle me-2"></i>
+                                                            <strong>Забележка:</strong> Вече има {existingMonthlyReports.length} генериран{existingMonthlyReports.length > 1 ? 'и' : ''} месечен{existingMonthlyReports.length > 1 ? 'и' : ''} отчет{existingMonthlyReports.length > 1 ? 'и' : ''} за този месец. Можете да генерирате допълнителен отчет, когато е необходимо (например за корекции или преглед). Срокът за подаване към НАП е от 1-во до 15-то число на следващия месец.
+                                                        </div>
+                                                    )}
+                                                </>
                                             )}
 
                                             <div className="mb-3">
@@ -1116,7 +1271,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                                 </tr>
                                                 <tr>
                                                     <td><strong>Касиер:</strong></td>
-                                                    <td>{selectedReport.reportType === 'STORE_DAILY' ? 'Всички касиери' : (selectedReport.cashierName || 'Неизвестен')}</td>
+                                                    <td>{(selectedReport.reportType === 'STORE_DAILY' || selectedReport.reportType === 'MONTHLY') ? 'Всички касиери' : (selectedReport.cashierName || 'Неизвестен')}</td>
                                                 </tr>
                                                 <tr>
                                                     <td><strong>Устройство:</strong></td>
@@ -1187,7 +1342,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                         )}
                                     </div>
                                 </div>
-                                {selectedReport.reportType === 'STORE_DAILY' && selectedReport.cashierBreakdown && (() => {
+                                {(selectedReport.reportType === 'STORE_DAILY' || selectedReport.reportType === 'MONTHLY') && selectedReport.cashierBreakdown && (() => {
                                     try {
                                         const cashierData = JSON.parse(selectedReport.cashierBreakdown);
                                         if (!cashierData || cashierData.length === 0) return null;

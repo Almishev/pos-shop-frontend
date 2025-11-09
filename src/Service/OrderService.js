@@ -18,3 +18,12 @@ export const getOrders = async ({ page = 0, size = 20, sort = 'createdAt,desc', 
 }
 
 export const refundOrder = async (orderId, payload) => instance.post(`/orders/${orderId}/refund`, payload);
+
+export const archiveOrders = async (cutoffDate = null) => {
+    const params = new URLSearchParams();
+    if (cutoffDate) {
+        params.append('cutoffDate', cutoffDate);
+    }
+    const url = `/orders/archive/run${params.toString() ? '?' + params.toString() : ''}`;
+    return instance.post(url);
+};
