@@ -16,9 +16,16 @@ const Menubar = () => {
         localStorage.removeItem("role");
         localStorage.removeItem("email");
         localStorage.removeItem("name");
+        // Допълнително изчистване на всички други възможни ключове
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('auth') || key.startsWith('user') || key.startsWith('session')) {
+                localStorage.removeItem(key);
+            }
+        });
         // Изчистваме и state-а
         setAuthData(null, null, null, null);
-        navigate("/login");
+        // Принудително навигация с replace за да изчистим history
+        navigate("/login", { replace: true });
     }
 
     const isActive = (path) => {

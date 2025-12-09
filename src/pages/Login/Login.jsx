@@ -27,18 +27,28 @@ const Login = () => {
             const response = await login(data);
             if (response.status === 200) {
                 toast.success("Успешен вход");
-                // Първо изчистваме стари данни (ако има такива от предишен потребител)
+                // Първо изчистваме ВСИЧКИ стари данни (ако има такива от предишен потребител)
+                // Използваме clear() за да гарантираме пълно изчистване
                 localStorage.removeItem("token");
                 localStorage.removeItem("role");
                 localStorage.removeItem("email");
                 localStorage.removeItem("name");
+                // Допълнително изчистване на всички други възможни ключове
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('auth') || key.startsWith('user') || key.startsWith('session')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                // Малка забавяне за да гарантираме, че изчистването е завършено
+                await new Promise(resolve => setTimeout(resolve, 100));
                 // След това записваме новите данни
                 localStorage.setItem("token", response.data.token);
                 localStorage.setItem("role", response.data.role);
                 localStorage.setItem("email", response.data.email);
                 localStorage.setItem("name", response.data.name);
                 setAuthData(response.data.token, response.data.role, response.data.email, response.data.name);
-                navigate("/dashboard");
+                // Принудително обновяване на страницата за да гарантираме, че новият token се използва
+                navigate("/dashboard", { replace: true });
             }
         } catch (error) {
             console.error(error);
