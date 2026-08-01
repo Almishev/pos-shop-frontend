@@ -236,7 +236,7 @@ const ItemEditPage = () => {
 
                                             <div className="row">
                                                 <div className="col-md-6 mb-3">
-                                                    <label className="form-label">Цена (лв.) *</label>
+                                                    <label className="form-label">Цена (€) *</label>
                                                     <input
                                                         type="number"
                                                         step="0.01"

@@ -3,6 +3,7 @@ import { toast } from 'react-hot-toast';
 import CashDrawerService from '../../Service/CashDrawerService';
 import FiscalService from '../../Service/FiscalService';
 import { AppContext } from '../../context/AppContext';
+import { formatMoney } from '../../util/formatMoney.js';
 import './CashDrawerControl.css';
 
 const CashDrawerControl = () => {
@@ -133,12 +134,7 @@ const CashDrawerControl = () => {
         }
     };
 
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('bg-BG', {
-            style: 'currency',
-            currency: 'BGN'
-        }).format(amount || 0);
-    };
+    const formatCurrency = (amount) => formatMoney(amount);
 
     const formatDateTime = (dateTime) => {
         return new Date(dateTime).toLocaleString('bg-BG');
@@ -260,7 +256,7 @@ const CashDrawerControl = () => {
                             <form onSubmit={handleStartWorkDay}>
                                 <div className="modal-body">
                                     <div className="mb-3">
-                                        <label className="form-label">Начална сума в касата (евро.) *</label>
+                                        <label className="form-label">Начална сума в касата (€) *</label>
                                         <input
                                             type="number"
                                             step="0.01"

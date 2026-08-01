@@ -3,6 +3,7 @@ import { toast } from 'react-hot-toast';
 import FiscalService from '../../Service/FiscalService';
 import './FiscalReports.css';
 import { AppContext } from '../../context/AppContext.jsx';
+import { formatMoney } from '../../util/formatMoney.js';
 
 const FiscalReports = () => {
     const { auth } = useContext(AppContext);
@@ -159,12 +160,7 @@ const FiscalReports = () => {
         );
     };
 
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('bg-BG', {
-            style: 'currency',
-            currency: 'BGN'
-        }).format(amount || 0);
-    };
+    const formatCurrency = (amount) => formatMoney(amount);
 
     if (loading) {
         return (
@@ -262,7 +258,7 @@ const FiscalReports = () => {
                                     {selectedReportType === 'SHIFT' && (
                                         <div className="row">
                                             <div className="col-md-6 mb-3">
-                                                <label className="form-label">Начална сума в касата (лв.)</label>
+                                                <label className="form-label">Начална сума в касата (€)</label>
                                                 <input
                                                     type="number"
                                                     step="0.01"
@@ -274,7 +270,7 @@ const FiscalReports = () => {
                                                 />
                                             </div>
                                             <div className="col-md-6 mb-3">
-                                                <label className="form-label">Крайна сума в касата (лв.)</label>
+                                                <label className="form-label">Крайна сума в касата (€)</label>
                                                 <input
                                                     type="number"
                                                     step="0.01"

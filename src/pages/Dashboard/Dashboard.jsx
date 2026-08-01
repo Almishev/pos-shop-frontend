@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import FiscalService from "../../Service/FiscalService.js";
 import CashDrawerService from "../../Service/CashDrawerService.js";
 import { AppContext } from "../../context/AppContext.jsx";
+import { formatMoney } from "../../util/formatMoney.js";
 
 const Dashboard = () => {
     const { auth } = useContext(AppContext);
@@ -104,7 +105,7 @@ const Dashboard = () => {
                         </div>
                         <div className="stat-content">
                             <h3>Продажби днес</h3>
-                            <p>{new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'}).format(data.todaySales)}</p>
+                            <p>{formatMoney(data.todaySales)}</p>
                         </div>
                     </div>
 
@@ -146,7 +147,7 @@ const Dashboard = () => {
                                 </div>
                                 <div className="stat-content">
                                     <h3>ДДС днес</h3>
-                                    <p>{new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'}).format(fiscalStats.todayVAT)}</p>
+                                    <p>{formatMoney(fiscalStats.todayVAT)}</p>
                                 </div>
                             </div>
 
@@ -184,7 +185,7 @@ const Dashboard = () => {
                                 <tr key={order.orderId}>
                                     <td>{order.orderId.substring(0,8)}...</td>
                                     <td>{order.customerName}</td>
-                                    <td>{new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'}).format(order.grandTotal)}</td>
+                                    <td>{formatMoney(order.grandTotal)}</td>
                                     <td>
                                         <span className={`payment-method ${order.paymentMethod.toLowerCase()}`}>
                                             {order.paymentMethod}

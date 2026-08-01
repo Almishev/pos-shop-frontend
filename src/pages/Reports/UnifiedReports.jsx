@@ -6,6 +6,7 @@ import FiscalService from '../../Service/FiscalService';
 import CashDrawerService from '../../Service/CashDrawerService';
 import { fetchUsers } from '../../Service/UserService.js';
 import { AppContext } from '../../context/AppContext.jsx';
+import { formatMoney } from '../../util/formatMoney.js';
 import './Reports.css';
 
 const UnifiedReports = () => {
@@ -719,12 +720,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
         );
     };
 
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('bg-BG', {
-            style: 'currency',
-            currency: 'BGN'
-        }).format(amount || 0);
-    };
+    const formatCurrency = (amount) => formatMoney(amount);
 
     return (
         <div className="reports-container">

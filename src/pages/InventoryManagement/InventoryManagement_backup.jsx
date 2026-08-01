@@ -259,7 +259,7 @@ const InventoryManagement = () => {
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('bg-BG', {
             style: 'currency',
-            currency: 'BGN'
+            currency: 'EUR'
         }).format(amount || 0);
     };
 

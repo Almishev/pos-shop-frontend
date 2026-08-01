@@ -1,9 +1,9 @@
 import './ReceiptPopup.css';
 import './Print.css';
 import { createPortal } from 'react-dom';
+import { formatMoney } from '../../util/formatMoney.js';
 
 const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
-    const formatBGN = (amount) => new Intl.NumberFormat('bg-BG', { style: 'currency', currency: 'BGN' }).format(amount || 0);
     const getPaymentMethodLabel = (method) => {
         const key = (method || '').toString().toUpperCase();
         switch (key) {
@@ -66,7 +66,7 @@ const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
                     {(orderDetails.items || []).map((item, index) => (
                         <div key={index} className="d-flex justify-content-between mb-2">
                             <span>{item.name} x{item.quantity}</span>
-                            <span>{formatBGN((item.price * item.quantity))}</span>
+                            <span>{formatMoney((item.price * item.quantity))}</span>
                         </div>
                     ))}
                 </div>
@@ -75,19 +75,19 @@ const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
                     <span>
                         <strong>Обща сума (с ДДС):</strong>
                     </span>
-                    <span>{formatBGN(orderDetails.subtotal)}</span>
+                    <span>{formatMoney(orderDetails.subtotal)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-2">
                     <span>
                         <strong>ДДС :</strong>
                     </span>
-                    <span>{formatBGN(orderDetails.tax)}</span>
+                    <span>{formatMoney(orderDetails.tax)}</span>
                 </div>
                 <div className="mb-2">
                     <small>
                         {Object.keys(vatGroups).map((k) => (
                             <div key={k}>
-                                Ставка {k}%: Основа {formatBGN(vatGroups[k].base)} | ДДС {formatBGN(vatGroups[k].vat)}
+                                Ставка {k}%: Основа {formatMoney(vatGroups[k].base)} | ДДС {formatMoney(vatGroups[k].vat)}
                             </div>
                         ))}
                     </small>
@@ -96,7 +96,7 @@ const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
                     <span>
                         <strong>Крайна сума за плащане:</strong>
                     </span>
-                    <span>{formatBGN(orderDetails.grandTotal)}</span>
+                    <span>{formatMoney(orderDetails.grandTotal)}</span>
                 </div>
                 <p>
                     <strong>Метод на плащане: </strong> {getPaymentMethodLabel(orderDetails.paymentMethod)}
@@ -105,13 +105,13 @@ const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
                     orderDetails.paymentMethod === 'SPLIT' && (
                         <>
                             <p>
-                                <strong>В брой: </strong> {formatBGN(orderDetails.paymentDetails?.cashAmount || 0)}
+                                <strong>В брой: </strong> {formatMoney(orderDetails.paymentDetails?.cashAmount || 0)}
                             </p>
                             <p>
-                                <strong>С карта: </strong> {formatBGN(orderDetails.paymentDetails?.cardAmount || 0)}
+                                <strong>С карта: </strong> {formatMoney(orderDetails.paymentDetails?.cardAmount || 0)}
                             </p>
                             <p>
-                                <small>Сбор: {formatBGN((orderDetails.paymentDetails?.cashAmount || 0) + (orderDetails.paymentDetails?.cardAmount || 0))}</small>
+                                <small>Сбор: {formatMoney((orderDetails.paymentDetails?.cashAmount || 0) + (orderDetails.paymentDetails?.cardAmount || 0))}</small>
                             </p>
                             {(orderDetails.paymentDetails?.posTransactionId || orderDetails.paymentDetails?.authCode || orderDetails.paymentDetails?.posAuthCode) && (
                                 <>

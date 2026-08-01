@@ -1,6 +1,7 @@
 import './OrderHistory.css';
 import {useEffect, useState} from "react";
 import {getOrders, refundOrder} from "../../Service/OrderService.js";
+import { formatMoney } from "../../util/formatMoney.js";
 
 const OrderHistory = () => {
     const [orders, setOrders] = useState([]);
@@ -137,7 +138,7 @@ const OrderHistory = () => {
                                     ))}
                                 </div>
                             </td>
-                            <td>{new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'}).format(order.grandTotal)}</td>
+                            <td>{formatMoney(order.grandTotal)}</td>
                             <td>{order.paymentMethod}</td>
                             <td>
                                 {order.orderStatus === 'REFUNDED' && (

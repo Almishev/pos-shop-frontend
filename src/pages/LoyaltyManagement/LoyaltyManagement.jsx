@@ -383,7 +383,7 @@ const LoyaltyManagement = () => {
                                                                 )}
                                                             </td>
                                                             <td>{customer.loyaltyPoints || 0}</td>
-                                                            <td>{customer.totalSpent?.toFixed(2) || '0.00'} лв.</td>
+                                                            <td>{customer.totalSpent?.toFixed(2) || '0.00'} €</td>
                                                             <td>
                                                                 <span className={`badge ${customer.isLoyaltyActive ? 'bg-success' : 'bg-warning'}`}>
                                                                     {customer.isLoyaltyActive ? 'Активна' : 'Неактивна'}
@@ -466,7 +466,7 @@ const LoyaltyManagement = () => {
                                                                 {promotion.discountType === 'PERCENTAGE' ? (
                                                                     `${(promotion.discountValue * 100).toFixed(0)}%`
                                                                 ) : (
-                                                                    `${promotion.discountValue} лв.`
+                                                                    `${promotion.discountValue} €`
                                                                 )}
                                                             </td>
                                                             <td>
@@ -531,7 +531,7 @@ const LoyaltyManagement = () => {
                                                                             {customer.loyaltyPoints || 0}
                                                                         </span>
                                                                     </td>
-                                                                    <td>{customer.totalSpent?.toFixed(2) || '0.00'} лв.</td>
+                                                                    <td>{customer.totalSpent?.toFixed(2) || '0.00'} €</td>
                                                                     <td>{customer.totalOrders || 0}</td>
                                                                 </tr>
                                                             ))}
@@ -580,7 +580,7 @@ const LoyaltyManagement = () => {
                                                                         {promotion.discountType === 'PERCENTAGE' ? (
                                                                             `${(promotion.discountValue * 100).toFixed(0)}%`
                                                                         ) : (
-                                                                            `${promotion.discountValue} лв.`
+                                                                            `${promotion.discountValue} €`
                                                                         )}
                                                                     </td>
                                                                     <td>
@@ -822,7 +822,7 @@ const LoyaltyManagement = () => {
                                                     <option value="PRODUCT">За конкретен продукт</option>
                                                     <option value="CATEGORY">За категория продукти</option>
                                                     <option value="QUANTITY">Купи X вземи Y</option>
-                                                    <option value="AMOUNT">При сума над X лв.</option>
+                                                    <option value="AMOUNT">При сума над X €</option>
                                                 </select>
                                             </div>
                                         </div>

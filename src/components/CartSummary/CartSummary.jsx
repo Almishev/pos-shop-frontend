@@ -10,6 +10,7 @@ import FiscalService from "../../Service/FiscalService.js";
 import InventoryService from "../../Service/InventoryService.js";
 import LoyaltyService from "../../Service/LoyaltyService.js";
 import CashDrawerService from "../../Service/CashDrawerService.js";
+import { formatMoney, SHOP_CURRENCY } from "../../util/formatMoney.js";
 
 const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerName, loyaltyCustomer}) => {
     const {cartItems, clearCart} = useContext(AppContext);
@@ -18,8 +19,6 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
     const [orderDetails, setOrderDetails] = useState(null);
     const [showPopup, setShowPopup] = useState(false);
     const [loyaltyDiscounts, setLoyaltyDiscounts] = useState(null);
-
-    const formatBGN = (amount) => new Intl.NumberFormat('bg-BG', { style: 'currency', currency: 'BGN' }).format(amount || 0);
 
     const getItemVatRate = (item) => (item.vatRate ?? 0.20);
 
@@ -188,9 +187,9 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
 
         // Потвърждение от касиера преди да продължим с плащане
         const methodLabel = paymentMode === 'cash' ? 'в брой' : paymentMode === 'card' ? 'с карта' : paymentMode === 'split' ? 'съвместно' : paymentMode;
-        let confirmText = `Потвърждавате плащане ${methodLabel} за ${formatBGN(grandTotal)}?`;
+        let confirmText = `Потвърждавате плащане ${methodLabel} за ${formatMoney(grandTotal)}?`;
         if (paymentMode === 'split') {
-            confirmText = `Потвърждавате съвместно плащане?\nВ брой: ${formatBGN(splitCashAmount)}\nКарта: ${formatBGN(splitCardAmount)}\nОбщо: ${formatBGN(grandTotal)}`;
+            confirmText = `Потвърждавате съвместно плащане?\nВ брой: ${formatMoney(splitCashAmount)}\nКарта: ${formatMoney(splitCardAmount)}\nОбщо: ${formatMoney(grandTotal)}`;
         }
         if (!window.confirm(confirmText)) {
             return;
@@ -261,7 +260,7 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                     const initResp = await initiatePosPayment({
                         orderId: savedData.orderId,
                         amount: grandTotal,
-                        currency: 'BGN'
+                        currency: SHOP_CURRENCY
                     });
                     const result = initResp.data;
                     if (result.status === 'APPROVED') {
@@ -287,13 +286,13 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                 try {
                     // приемаме кеш частта на място
                     if (splitCashAmount > 0) {
-                        toast.success(`Прието в брой: ${formatBGN(splitCashAmount)}`);
+                        toast.success(`Прието в брой: ${formatMoney(splitCashAmount)}`);
                     }
                     if (splitCardAmount > 0) {
                         const initResp = await initiatePosPayment({
                             orderId: savedData.orderId,
                             amount: splitCardAmount,
-                            currency: 'BGN'
+                            currency: SHOP_CURRENCY
                         });
                         const result = initResp.data;
                         if (result.status === 'APPROVED') {
@@ -419,21 +418,21 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
             <div className="cart-summary-details">
                 <div className="d-flex justify-content-between mb-2">
                     <span className="text-light">Междинна сума (с ДДС):</span>
-                    <span className="text-light">{formatBGN(subtotal)}</span>
+                    <span className="text-light">{formatMoney(subtotal)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-2">
                     <span className="text-light">ДДС: </span>
-                    <span className="text-light">{formatBGN(tax)}</span>
+                    <span className="text-light">{formatMoney(tax)}</span>
                 </div>
                 {loyaltyDiscounts && loyaltyDiscountAmount > 0 && (
                     <div className="d-flex justify-content-between mb-2">
                         <span className="text-success">🎯 Лоялна отстъпка:</span>
-                        <span className="text-success">-{formatBGN(loyaltyDiscountAmount)}</span>
+                        <span className="text-success">-{formatMoney(loyaltyDiscountAmount)}</span>
                     </div>
                 )}
                 <div className="d-flex justify-content-between mb-4">
                     <span className="text-light">Крайна сума за плащане:</span>
-                    <span className="text-light">{formatBGN(grandTotal)}</span>
+                    <span className="text-light">{formatMoney(grandTotal)}</span>
                 </div>
             </div>
 

@@ -205,8 +205,8 @@ const ItemForm = () => {
                                     </select>
                                 </div>
                                 <div className="mb-3">
-                                    <label htmlFor="price" className="form-label">Цена</label>
-                                    <input type="number" name="price" id="price" className="form-control" placeholder="EUR;200.00" onChange={onChangeHandler} value={data.price} required/>
+                                    <label htmlFor="price" className="form-label">Цена (€)</label>
+                                    <input type="number" name="price" id="price" className="form-control" placeholder="0.00" onChange={onChangeHandler} value={data.price} required/>
                                 </div>
                                 <div className="mb-3">
                                     <label htmlFor="description" className="form-label">Описание</label>

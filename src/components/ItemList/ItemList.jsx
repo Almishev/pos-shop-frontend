@@ -3,6 +3,7 @@ import {AppContext} from "../../context/AppContext.jsx";
 import {deleteItem, searchItems} from "../../Service/ItemService.js";
 import LabelService from "../../Service/LabelService.js";
 import toast from "react-hot-toast";
+import { formatMoney } from "../../util/formatMoney.js";
 import './ItemList.css';
 
 const ItemList = () => {
@@ -128,15 +129,15 @@ const ItemList = () => {
                                     )}
                                     {!item.isPromo ? (
                                         <span className="mb-0 text-block badge rounded-pill text-bg-warning">
-                                            {(new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'})).format(item.price)}
+                                            {formatMoney(item.price)}
                                         </span>
                                     ) : (
                                         <div className="d-flex align-items-center gap-2">
                                             <span className="text-muted text-decoration-line-through small">
-                                                {(new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'})).format(item.price)}
+                                                {formatMoney(item.price)}
                                             </span>
                                             <span className="badge rounded-pill text-bg-danger">
-                                                {(new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'})).format(item.effectivePrice)}
+                                                {formatMoney(item.effectivePrice)}
                                             </span>
                                         </div>
                                     )}

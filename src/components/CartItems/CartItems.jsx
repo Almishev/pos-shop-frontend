@@ -1,6 +1,7 @@
 import './CartItems.css';
 import {useContext, useState} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
+import { formatMoney } from "../../util/formatMoney.js";
 
 const CartItems = () => {
     const {cartItems, removeFromCart, updateQuantity} = useContext(AppContext);
@@ -46,7 +47,7 @@ const CartItems = () => {
                             <div className="d-flex justify-content-between align-items-center mb-2">
                                 <h6 className="mb-0 text-light">{item.name}</h6>
                                 <p className="mb-0 text-light">
-                                    {(new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'})).format(item.price * item.quantity)}
+                                    {formatMoney(item.price * item.quantity)}
                                 </p>
                             </div>
                             {item.barcode && (

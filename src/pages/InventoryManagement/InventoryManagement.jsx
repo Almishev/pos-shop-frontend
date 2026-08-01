@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { AppContext } from '../../context/AppContext';
 import InventoryService from '../../Service/InventoryService';
+import { formatMoney } from '../../util/formatMoney.js';
 import './InventoryManagement.css';
 
 const InventoryManagement = () => {
@@ -284,12 +285,7 @@ const InventoryManagement = () => {
         );
     };
 
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('bg-BG', {
-            style: 'currency',
-            currency: 'BGN'
-        }).format(amount || 0);
-    };
+    const formatCurrency = (amount) => formatMoney(amount);
 
     if (loading) {
         return (

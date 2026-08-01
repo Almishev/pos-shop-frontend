@@ -2,6 +2,7 @@ import './Item.css';
 import {useContext} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
 import {assets} from "../../assets/assets.js";
+import { formatMoney } from "../../util/formatMoney.js";
 
 const Item = ({itemName, itemPrice, itemImage, itemId, itemBarcode, itemVatRate}) => {
     const {addToCart} = useContext(AppContext);
@@ -29,7 +30,7 @@ const Item = ({itemName, itemPrice, itemImage, itemId, itemBarcode, itemVatRate}
                     </small>
                 )}
                 <p className="mb-0 fw-bold text-light">
-                    {(new Intl.NumberFormat('bg-BG', {style:'currency', currency:'BGN'})).format(itemPrice)}
+                    {formatMoney(itemPrice)}
                 </p>
             </div>
 

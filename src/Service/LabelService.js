@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { formatMoney } from '../util/formatMoney.js';
 
 const API_BASE_URL = '/api';
 
@@ -90,12 +91,7 @@ const LabelService = {
     },
 
     // Утилити функции за форматиране
-    formatPrice: (price) => {
-        return new Intl.NumberFormat('bg-BG', { 
-            style: 'currency', 
-            currency: 'BGN' 
-        }).format(price || 0);
-    },
+    formatPrice: (price) => formatMoney(price),
 
     formatDate: (date) => {
         if (!date) return '';
