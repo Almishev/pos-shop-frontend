@@ -3,6 +3,7 @@ import {useContext, useState} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
 import {deleteCategory} from "../../Service/CategoryService.js";
 import toast from "react-hot-toast";
+import {assets} from "../../assets/assets.js";
 
 const CategoryList = () => {
     const {categories, setCategories} = useContext(AppContext);

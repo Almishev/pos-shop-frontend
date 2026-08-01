@@ -4,6 +4,7 @@ import {deleteItem, searchItems} from "../../Service/ItemService.js";
 import LabelService from "../../Service/LabelService.js";
 import toast from "react-hot-toast";
 import { formatMoney } from "../../util/formatMoney.js";
+import {assets} from "../../assets/assets.js";
 import './ItemList.css';
 
 const ItemList = () => {
