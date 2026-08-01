@@ -1,5 +1,53 @@
 @media print {
-    .receipt-popup .btn {
-        display: none;
+    @page {
+        size: portrait;
+        margin: 12mm;
+    }
+
+    /* Hide the whole app; receipt is portaled to document.body */
+    #root {
+        display: none !important;
+    }
+
+    body {
+        background: #fff !important;
+        margin: 0 !important;
+        color: #000 !important;
+    }
+
+    .receipt-popup-overlay {
+        display: block !important;
+        position: static !important;
+        inset: auto !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        background: none !important;
+        z-index: auto !important;
+    }
+
+    .receipt-popup {
+        display: block !important;
+        max-height: none !important;
+        overflow: visible !important;
+        width: 100% !important;
+        max-width: 80mm !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: #fff !important;
+        color: #000 !important;
+    }
+
+    .cart-items-scrollable {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    .receipt-popup .btn,
+    .receipt-popup .bi-check-circle-fill,
+    .no-print {
+        display: none !important;
     }
 }

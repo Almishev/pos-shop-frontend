@@ -260,7 +260,7 @@ const CashDrawerControl = () => {
                             <form onSubmit={handleStartWorkDay}>
                                 <div className="modal-body">
                                     <div className="mb-3">
-                                        <label className="form-label">Начална сума в касата (лв.) *</label>
+                                        <label className="form-label">Начална сума в касата (евро.) *</label>
                                         <input
                                             type="number"
                                             step="0.01"

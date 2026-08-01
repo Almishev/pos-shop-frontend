@@ -1,5 +1,6 @@
 import './ReceiptPopup.css';
 import './Print.css';
+import { createPortal } from 'react-dom';
 
 const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
     const formatBGN = (amount) => new Intl.NumberFormat('bg-BG', { style: 'currency', currency: 'BGN' }).format(amount || 0);
@@ -43,10 +44,10 @@ const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
         return groups;
     };
     const vatGroups = groupByVat(orderDetails?.items || []);
-    return (
+    const content = (
         <div className="receipt-popup-overlay text-dark">
             <div className="receipt-popup">
-                <div className="text-center mb-4">
+                <div className="text-center mb-4 no-print">
                     <i className="bi bi-check-circle-fill text-success fs-1"></i>
                 </div>
                 <h3 className="text-center mb-4">Касова бележка</h3>
@@ -62,7 +63,7 @@ const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
                 <hr className="my-3" />
                 <h5 className="mb-3">Поръчани артикули</h5>
                 <div className="cart-items-scrollable">
-                    {orderDetails.items.map((item, index) => (
+                    {(orderDetails.items || []).map((item, index) => (
                         <div key={index} className="d-flex justify-content-between mb-2">
                             <span>{item.name} x{item.quantity}</span>
                             <span>{formatBGN((item.price * item.quantity))}</span>
@@ -154,13 +155,15 @@ const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
                         </>
                     )
                 }
-                <div className="d-flex justify-content-end gap-3 mt-4">
+                <div className="d-flex justify-content-end gap-3 mt-4 no-print">
                     <button className="btn btn-warning" onClick={onPrint}>Печат</button>
                     <button className="btn btn-danger" onClick={onClose}>Затвори</button>
                 </div>
             </div>
         </div>
-    )
+    );
+
+    return createPortal(content, document.body);
 }
 
 export default ReceiptPopup;

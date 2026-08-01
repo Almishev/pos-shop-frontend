@@ -79,25 +79,31 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
     }
 
     const placeOrder = () => {
+        if (!orderDetails) return;
         setShowPopup(true);
         clearAll();
     }
 
-    const handlePrintReceipt = () => {
-        window.print();
-        // След печат започваме нова продажба
+    const closeReceipt = () => {
         setShowPopup(false);
         setOrderDetails(null);
+        clearAll();
     }
 
-    // Автоматично показване на бележката след успешно плащане
-    useEffect(() => {
-        if (orderDetails) {
-            // Показваме попъпа и чистим количката веднага след setOrderDetails
-            setShowPopup(true);
-            clearAll();
-        }
-    }, [orderDetails]);
+    const handlePrintReceipt = () => {
+        const finish = () => {
+            window.removeEventListener('afterprint', finish);
+            closeReceipt();
+        };
+        window.addEventListener('afterprint', finish);
+        window.print();
+    }
+
+    /** Open receipt modal; cart is cleared when the modal closes/prints. */
+    const openReceipt = (data) => {
+        setOrderDetails(data);
+        setShowPopup(true);
+    }
 
     const loadRazorpayScript = () => {
         return new Promise((resolve, reject) => {
@@ -208,7 +214,7 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
             
             if (response.status === 201 && paymentMode === "cash") {
                 toast.success("Плащане в брой прието");
-                setOrderDetails(savedData);
+                openReceipt(savedData);
             } else if (response.status === 201 && paymentMode === "upi") {
                 const razorpayLoaded = await loadRazorpayScript();
                 if (!razorpayLoaded) {
@@ -260,7 +266,7 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                     const result = initResp.data;
                     if (result.status === 'APPROVED') {
                         toast.success("Картово плащане одобрено");
-                        setOrderDetails({
+                        openReceipt({
                             ...savedData,
                             paymentDetails: {
                                 posTransactionId: result.transactionId,
@@ -292,7 +298,7 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                         const result = initResp.data;
                         if (result.status === 'APPROVED') {
                             toast.success("Картова част: одобрена");
-                            setOrderDetails({
+                            openReceipt({
                                 ...savedData,
                                 paymentDetails: {
                                     ...savedData.paymentDetails,
@@ -310,7 +316,7 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                         }
                     } else {
                         // изцяло кеш
-                        setOrderDetails({ ...savedData, paymentMethod: 'SPLIT' });
+                        openReceipt({ ...savedData, paymentMethod: 'SPLIT' });
                     }
                 } catch (err) {
                     await deleteOrderOnFailure(savedData.orderId);
@@ -468,14 +474,15 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                 </button>
             </div>
             {
-                showPopup && (
+                showPopup && orderDetails && (
                     <ReceiptPopup
                         orderDetails={{
                             ...orderDetails,
+                            items: orderDetails.items || [],
                             razorpayOrderId: orderDetails.paymentDetails?.razorpayOrderId,
                             razorpayPaymentId: orderDetails.paymentDetails?.razorpayPaymentId,
                         }}
-                        onClose={() => { setShowPopup(false); setOrderDetails(null); }}
+                        onClose={closeReceipt}
                         onPrint={handlePrintReceipt}
                     />
                 )

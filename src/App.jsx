@@ -18,12 +18,13 @@ import OrderHistory from "./pages/OrderHistory/OrderHistory.jsx";
 import UnifiedReports from "./pages/Reports/UnifiedReports.jsx";
 import LabelManagement from "./components/Labels/LabelManagement.jsx";
 import {useContext} from "react";
-import {AppContext} from "./context/AppContext.jsx";
+import {AuthContext} from "./context/AppContext.jsx";
 import NotFound from "./pages/NotFound/NotFound.jsx";
 
 const App = () => {
     const location = useLocation();
-    const {auth} = useContext(AppContext);
+    // AuthContext only — cart/catalog updates must not remount routed pages
+    const {auth} = useContext(AuthContext);
 
     const LoginRoute = ({element}) => {
         if(auth.token) {
@@ -51,8 +52,8 @@ const App = () => {
             {location.pathname !== "/login" && location.pathname !== '/' && <Menubar />}
             <Toaster />
             <Routes>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/explore" element={<Explore />} />
+                <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['ROLE_USER', 'ROLE_ADMIN']} />} />
+                <Route path="/explore" element={<ProtectedRoute element={<Explore />} allowedRoles={['ROLE_USER', 'ROLE_ADMIN']} />} />
                 {/*Admin only routes*/}
                 <Route path="/category" element={<ProtectedRoute element={<ManageCategory />} allowedRoles={['ROLE_ADMIN']} />} />
                 <Route path="/users" element={<ProtectedRoute element={<ManageUsers />} allowedRoles={["ROLE_ADMIN"]} />} />
@@ -66,7 +67,7 @@ const App = () => {
                 <Route path="/labels" element={<ProtectedRoute element={<LabelManagement />} allowedRoles={["ROLE_ADMIN"]} />} />
 
                 <Route path="/login" element={<LoginRoute element={<Login />} />} />
-                <Route path="/orders" element={<OrderHistory />} />
+                <Route path="/orders" element={<ProtectedRoute element={<OrderHistory />} allowedRoles={['ROLE_USER', 'ROLE_ADMIN']} />} />
                 <Route path="/reports" element={<ProtectedRoute element={<UnifiedReports />} allowedRoles={["ROLE_USER", "ROLE_ADMIN"]} />} />
                 <Route path="/" element={<Login />} />
                 <Route path="*" element={<NotFound />} />
