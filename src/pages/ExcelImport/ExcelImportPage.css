@@ -1,10 +1,14 @@
 .excel-import-page {
-    background-color: #212529;
+    background-color: #2c3335;
     min-height: 100vh;
     color: #e9ecef;
     padding: 20px;
     width: 100%;
     max-width: 100%;
+}
+
+.excel-import-page .text-muted {
+    color: #adb5bd !important;
 }
 
 .excel-import-page .container-fluid {

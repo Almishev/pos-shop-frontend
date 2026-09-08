@@ -1,14 +1,46 @@
 import './CartItems.css';
-import {useContext, useState} from "react";
+import {useContext, useEffect, useRef, useState} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
 import { formatMoney } from "../../util/formatMoney.js";
 
 const CartItems = () => {
     const {cartItems, removeFromCart, updateQuantity} = useContext(AppContext);
+    const prevCartRef = useRef([]);
+    const itemRefs = useRef({});
 
     const [showQtyModal, setShowQtyModal] = useState(false);
     const [activeItem, setActiveItem] = useState(null);
     const [tempQty, setTempQty] = useState('1');
+
+    useEffect(() => {
+        const prev = prevCartRef.current;
+        let targetId = null;
+
+        if (cartItems.length > prev.length) {
+            targetId = cartItems[cartItems.length - 1]?.itemId;
+        } else {
+            for (const item of cartItems) {
+                const old = prev.find((p) => p.itemId === item.itemId);
+                if (old && item.quantity > old.quantity) {
+                    targetId = item.itemId;
+                    break;
+                }
+            }
+        }
+
+        prevCartRef.current = cartItems.map((i) => ({
+            itemId: i.itemId,
+            quantity: i.quantity,
+        }));
+
+        if (!targetId) return;
+
+        requestAnimationFrame(() => {
+            const el = itemRefs.current[targetId];
+            if (!el) return;
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        });
+    }, [cartItems]);
 
     const openQtyModal = (item) => {
         setActiveItem(item);
@@ -35,15 +67,22 @@ const CartItems = () => {
         closeQtyModal();
     };
     return (
-        <div className="p-3 h-100 overflow-y-auto">
+        <div className="cart-items-inner p-3 h-100">
             {cartItems.length === 0 ? (
                 <p className="text-light">
                     Количката е празна.
                 </p>
             ) : (
                 <div className="cart-items-list">
-                    {cartItems.map((item, index) => (
-                        <div key={index} className="cart-item mb-3 p-3 bg-dark rounded">
+                    {cartItems.map((item) => (
+                        <div
+                            key={item.itemId}
+                            ref={(node) => {
+                                if (node) itemRefs.current[item.itemId] = node;
+                                else delete itemRefs.current[item.itemId];
+                            }}
+                            className="cart-item mb-3 p-3 bg-dark rounded"
+                        >
                             <div className="d-flex justify-content-between align-items-center mb-2">
                                 <h6 className="mb-0 text-light">{item.name}</h6>
                                 <p className="mb-0 text-light">

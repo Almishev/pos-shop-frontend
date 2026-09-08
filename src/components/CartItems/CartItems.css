@@ -1,0 +1,7 @@
+.cart-items-inner {
+    min-height: 100%;
+}
+
+.cart-item {
+    scroll-margin-bottom: 8px;
+}
