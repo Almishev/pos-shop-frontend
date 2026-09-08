@@ -163,35 +163,30 @@
     color: #ced4da;
 }
 
-.alert {
+.excel-import-container .alert {
     padding: 1rem;
     margin-bottom: 1rem;
-    border: 1px solid transparent;
     border-radius: 0.375rem;
 }
 
-.alert-info {
-    color: #cfe2ff;
-    background-color: rgba(13, 110, 253, 0.2);
-    border-color: rgba(13, 110, 253, 0.35);
+.excel-import-container .alert.alert-info {
+    background-color: #2c3335 !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #e9ecef !important;
 }
 
-.alert h6 {
+.excel-import-container .alert.alert-info h6,
+.excel-import-container .alert.alert-info li,
+.excel-import-container .alert.alert-info p,
+.excel-import-container .alert.alert-info strong {
+    color: #f8f9fa !important;
+}
+
+.excel-import-container .alert.alert-info ol,
+.excel-import-container .alert.alert-info ul {
     margin-bottom: 0.5rem;
-    font-weight: 600;
-    color: #e7f1ff;
 }
 
-.alert ol,
-.alert ul {
-    margin-bottom: 0.5rem;
-}
-
-.alert li {
+.excel-import-container .alert.alert-info li {
     margin-bottom: 0.25rem;
-    color: #cfe2ff;
-}
-
-.alert p {
-    color: #cfe2ff;
 }
