@@ -47,8 +47,8 @@ const Login = () => {
                 localStorage.setItem("email", response.data.email);
                 localStorage.setItem("name", response.data.name);
                 setAuthData(response.data.token, response.data.role, response.data.email, response.data.name);
-                // Принудително обновяване на страницата за да гарантираме, че новият token се използва
-                navigate("/dashboard", { replace: true });
+                const home = response.data.role === "ROLE_ADMIN" ? "/dashboard" : "/explore";
+                navigate(home, { replace: true });
             }
         } catch (error) {
             console.error(error);

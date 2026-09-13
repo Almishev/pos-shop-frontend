@@ -66,12 +66,11 @@ const CartItems = () => {
         updateQuantity(activeItem.itemId, value);
         closeQtyModal();
     };
+
     return (
-        <div className="cart-items-inner p-3 h-100">
+        <div className="cart-items-inner">
             {cartItems.length === 0 ? (
-                <p className="text-light">
-                    Количката е празна.
-                </p>
+                <p className="text-secondary mb-0 px-1">Количката е празна.</p>
             ) : (
                 <div className="cart-items-list">
                     {cartItems.map((item) => (
@@ -81,37 +80,48 @@ const CartItems = () => {
                                 if (node) itemRefs.current[item.itemId] = node;
                                 else delete itemRefs.current[item.itemId];
                             }}
-                            className="cart-item mb-3 p-3 bg-dark rounded"
+                            className="cart-item-row"
                         >
-                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                <h6 className="mb-0 text-light">{item.name}</h6>
-                                <p className="mb-0 text-light">
-                                    {formatMoney(item.price * item.quantity)}
-                                </p>
+                            <div className="cart-item-main">
+                                <div className="cart-item-info min-width-0">
+                                    <span className="cart-item-name text-truncate" title={item.name}>{item.name}</span>
+                                    {item.barcode && (
+                                        <span className="cart-item-barcode text-truncate">
+                                            <i className="bi bi-upc-scan"></i> {item.barcode}
+                                        </span>
+                                    )}
+                                </div>
+                                <span className="cart-item-line-total">{formatMoney(item.price * item.quantity)}</span>
                             </div>
-                            {item.barcode && (
-                                <div className="mb-2">
-                                    <small className="text-light">
-                                        <i className="bi bi-upc-scan"></i> {item.barcode}
-                                    </small>
-                                </div>
-                            )}
-                            <div className="d-flex justify-content-between align-item-center">
-                                <div className="d-flex align-items center gap-2">
-                                    <button className="btn btn-danger btn-sm"
-                                        onClick={() => updateQuantity(item.itemId, item.quantity - 1)}
-                                        disabled={item.quantity === 1}>
-                                        <i className="bi bi-dash"></i>
-                                    </button>
-                                    <span className="text-light">{item.quantity}</span>
-                                    <button className="btn btn-primary btn-sm" onClick={() => updateQuantity(item.itemId, item.quantity + 1)}>
-                                        <i className="bi bi-plus"></i>
-                                    </button>
-                                    <button className="btn btn-outline-light btn-sm" title="Задай количество" onClick={() => openQtyModal(item)}>
-                                        <i className="bi bi-keyboard"></i>
-                                    </button>
-                                </div>
-                                <button className="btn btn-danger btn-sm" style={{width: "auto"}} onClick={() => removeFromCart(item.itemId)}>
+                            <div className="cart-item-actions">
+                                <button
+                                    className="btn btn-outline-light btn-sm cart-qty-btn"
+                                    onClick={() => updateQuantity(item.itemId, item.quantity - 1)}
+                                    disabled={item.quantity === 1}
+                                    title="Намали"
+                                >
+                                    <i className="bi bi-dash"></i>
+                                </button>
+                                <span className="cart-qty-value">{item.quantity}</span>
+                                <button
+                                    className="btn btn-outline-light btn-sm cart-qty-btn"
+                                    onClick={() => updateQuantity(item.itemId, item.quantity + 1)}
+                                    title="Увеличи"
+                                >
+                                    <i className="bi bi-plus"></i>
+                                </button>
+                                <button
+                                    className="btn btn-outline-warning btn-sm cart-qty-btn"
+                                    title="Задай количество"
+                                    onClick={() => openQtyModal(item)}
+                                >
+                                    <i className="bi bi-keyboard"></i>
+                                </button>
+                                <button
+                                    className="btn btn-outline-danger btn-sm cart-qty-btn"
+                                    onClick={() => removeFromCart(item.itemId)}
+                                    title="Премахни"
+                                >
                                     <i className="bi bi-trash"></i>
                                 </button>
                             </div>
@@ -119,7 +129,7 @@ const CartItems = () => {
                     ))}
                 </div>
             )}
-            {/* Quantity Modal */}
+
             {showQtyModal && (
                 <div className="modal d-block" tabIndex="-1" style={{background: 'rgba(0,0,0,0.6)'}}>
                     <div className="modal-dialog modal-sm modal-dialog-centered">
@@ -129,15 +139,15 @@ const CartItems = () => {
                                 <button type="button" className="btn-close btn-close-white" onClick={closeQtyModal}></button>
                             </div>
                             <div className="modal-body">
-                                <label className="modal-title text-light d-block">Количество (до 2 десетични знака)</label>
+                                <label className="text-light d-block mb-1">Количество (до 2 десетични знака)</label>
                                 <input
                                     type="number"
                                     step="0.01"
                                     min="0.01"
                                     className="form-control"
                                     value={tempQty}
-                                    onChange={(e)=>setTempQty(e.target.value)}
-                                    onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); saveQty(); } }}
+                                    onChange={(e) => setTempQty(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveQty(); } }}
                                     autoFocus
                                 />
                             </div>

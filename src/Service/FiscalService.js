@@ -2,12 +2,8 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
-// Get auth token from localStorage
-const getAuthToken = () => {
-    return localStorage.getItem('token');
-};
+const getAuthToken = () => localStorage.getItem('token');
 
-// Create axios instance with auth header
 const createAuthInstance = () => {
     const token = getAuthToken();
     return axios.create({
@@ -20,7 +16,6 @@ const createAuthInstance = () => {
 };
 
 const FiscalService = {
-    // Fiscal Devices
     getAllDevices: async () => {
         const instance = createAuthInstance();
         try {
@@ -82,7 +77,6 @@ const FiscalService = {
         return response.data;
     },
 
-    // Fiscal Receipts
     sendReceipt: async (receiptData) => {
         const instance = createAuthInstance();
         const response = await instance.post('/admin/receipts', receiptData);
@@ -95,34 +89,27 @@ const FiscalService = {
         return response.data;
     },
 
-    // Fiscal Reports
-    generateDailyReport: async (reportData) => {
+    generateShiftReport: async (reportData) => {
         const instance = createAuthInstance();
-        const response = await instance.post('/admin/fiscal-reports/daily', reportData);
-        return response.data;
+        try {
+            const response = await instance.post('/admin/fiscal-reports/shift', reportData);
+            return response.data;
+        } catch (error) {
+            console.error('Error in generateShiftReport:', error);
+            throw error;
+        }
     },
 
-        generateShiftReport: async (reportData) => {
-            const instance = createAuthInstance();
-            try {
-                const response = await instance.post('/admin/fiscal-reports/shift', reportData);
-                return response.data;
-            } catch (error) {
-                console.error('Error in generateShiftReport:', error);
-                throw error;
-            }
-        },
-
-        generateStoreDailyReport: async (reportData) => {
-            const instance = createAuthInstance();
-            try {
-                const response = await instance.post('/admin/fiscal-reports/store-daily', reportData);
-                return response.data;
-            } catch (error) {
-                console.error('Error in generateStoreDailyReport:', error);
-                throw error;
-            }
-        },
+    generateStoreDailyReport: async (reportData) => {
+        const instance = createAuthInstance();
+        try {
+            const response = await instance.post('/admin/fiscal-reports/store-daily', reportData);
+            return response.data;
+        } catch (error) {
+            console.error('Error in generateStoreDailyReport:', error);
+            throw error;
+        }
+    },
 
     generateMonthlyReport: async (reportData) => {
         const instance = createAuthInstance();
@@ -136,70 +123,34 @@ const FiscalService = {
         return response.data;
     },
 
-    getAllReports: async () => {
+    getReports: async ({ page = 0, size = 20, type, dateFrom, dateTo } = {}) => {
         const instance = createAuthInstance();
-        try {
-            const response = await instance.get('/admin/fiscal-reports');
-            return response.data;
-        } catch (error) {
-            console.error('Error in getAllReports:', error);
-            throw error;
-        }
-    },
-
-    getReportById: async (reportId) => {
-        const instance = createAuthInstance();
-        const response = await instance.get(`/admin/fiscal-reports/${reportId}`);
+        const params = new URLSearchParams({
+            page: String(page),
+            size: String(size),
+            sort: 'generatedAt,desc'
+        });
+        params.append('sort', 'id,desc');
+        if (type) params.append('type', type);
+        if (dateFrom) params.append('dateFrom', dateFrom);
+        if (dateTo) params.append('dateTo', dateTo);
+        const response = await instance.get(`/admin/fiscal-reports?${params.toString()}`);
         return response.data;
     },
 
-    getReportsByType: async (reportType) => {
+    archiveReports: async (cutoffDate = null, destination = 'local') => {
         const instance = createAuthInstance();
-        const response = await instance.get(`/admin/fiscal-reports/type/${reportType}`);
-        return response.data;
-    },
-
-    getReportsByDateRange: async (startDate, endDate) => {
-        const instance = createAuthInstance();
-        const response = await instance.get(`/admin/fiscal-reports/date-range?startDate=${startDate}&endDate=${endDate}`);
+        const params = new URLSearchParams();
+        if (cutoffDate) params.append('cutoffDate', cutoffDate);
+        if (destination) params.append('destination', destination);
+        const url = `/admin/fiscal-reports/archive/run${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await instance.post(url);
         return response.data;
     },
 
     sendReportToNAF: async (reportId) => {
         const instance = createAuthInstance();
         const response = await instance.post(`/admin/fiscal-reports/${reportId}/send-to-naf`);
-        return response.data;
-    },
-
-    // Statistics
-    getSalesForDate: async (date) => {
-        const instance = createAuthInstance();
-        const response = await instance.get(`/admin/fiscal-reports/stats/sales/${date}`);
-        return response.data;
-    },
-
-    getVATForDate: async (date) => {
-        const instance = createAuthInstance();
-        const response = await instance.get(`/admin/fiscal-reports/stats/vat/${date}`);
-        return response.data;
-    },
-
-    getReceiptsForDate: async (date) => {
-        const instance = createAuthInstance();
-        const response = await instance.get(`/admin/fiscal-reports/stats/receipts/${date}`);
-        return response.data;
-    },
-
-    // X and Z Reports
-    generateXReport: async (deviceSerialNumber) => {
-        const instance = createAuthInstance();
-        const response = await instance.post(`/admin/devices/${deviceSerialNumber}/x-report`);
-        return response.data;
-    },
-
-    generateZReport: async (deviceSerialNumber) => {
-        const instance = createAuthInstance();
-        const response = await instance.post(`/admin/devices/${deviceSerialNumber}/z-report`);
         return response.data;
     }
 };

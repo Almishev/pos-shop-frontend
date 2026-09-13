@@ -41,11 +41,38 @@
     color: #fff !important;
 }
 
+.excel-import-container .form-control::placeholder {
+    color: #b8c0c6 !important;
+    opacity: 1 !important;
+}
+
+.excel-import-container .form-control::-webkit-input-placeholder {
+    color: #b8c0c6 !important;
+    opacity: 1 !important;
+}
+
+.excel-import-container .form-control::-moz-placeholder {
+    color: #b8c0c6 !important;
+    opacity: 1 !important;
+}
+
 .excel-import-container .form-control:focus {
     background-color: #2c3335 !important;
     border-color: #ffc107 !important;
     color: #fff !important;
     box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25) !important;
+}
+
+.excel-import-container .form-control:focus::placeholder {
+    color: #9aa3aa !important;
+}
+
+.excel-import-container input[type="date"].form-control {
+    color-scheme: dark;
+}
+
+.excel-import-container .form-check-label {
+    color: #e9ecef !important;
 }
 
 .excel-import-container .form-control::file-selector-button {

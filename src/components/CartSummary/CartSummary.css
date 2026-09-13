@@ -1,0 +1,96 @@
+.cart-summary-secondary {
+    color: #adb5bd;
+    font-size: 0.8rem;
+    margin-bottom: 0.15rem;
+}
+
+.cart-summary-total {
+    margin-top: 0.45rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.cart-summary-total-label {
+    color: #f8f9fa;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.cart-summary-total-value {
+    color: #ffc107;
+    font-size: 1.65rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.02em;
+}
+
+.cart-pay-btn {
+    font-size: 1.15rem;
+    font-weight: 600;
+    padding: 0.65rem 1rem;
+}
+
+.payment-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.65);
+}
+
+.payment-modal {
+    width: 100%;
+    max-width: 380px;
+    background: #212529;
+    color: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.5rem 1.25rem 1.25rem;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    text-align: center;
+}
+
+.payment-modal-title {
+    margin: 0 0 0.35rem;
+    font-weight: 600;
+}
+
+.payment-modal-hint {
+    margin: 0;
+    color: #adb5bd;
+    font-size: 0.9rem;
+}
+
+.payment-modal-amount {
+    margin: 0.5rem 0 0.25rem;
+    color: #ffc107;
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.payment-modal-discount {
+    margin: 0 0 1rem;
+    color: #198754;
+    font-size: 0.85rem;
+}
+
+.payment-modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 1rem;
+}
+
+.payment-modal-btn {
+    font-size: 1.05rem;
+    font-weight: 600;
+    padding: 0.7rem 1rem;
+}
+
+.payment-modal-cancel {
+    margin-top: 0.85rem;
+    width: 100%;
+}

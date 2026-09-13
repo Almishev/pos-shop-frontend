@@ -15,6 +15,12 @@
         color: #000 !important;
     }
 
+    /* Override LabelTemplates / other global print visibility rules */
+    .receipt-popup-overlay,
+    .receipt-popup-overlay * {
+        visibility: visible !important;
+    }
+
     .receipt-popup-overlay {
         display: block !important;
         position: static !important;
@@ -33,7 +39,7 @@
         width: 100% !important;
         max-width: 80mm !important;
         margin: 0 auto !important;
-        padding: 0 !important;
+        padding: 12px !important;
         border-radius: 0 !important;
         box-shadow: none !important;
         background: #fff !important;
@@ -49,5 +55,6 @@
     .receipt-popup .bi-check-circle-fill,
     .no-print {
         display: none !important;
+        visibility: hidden !important;
     }
 }

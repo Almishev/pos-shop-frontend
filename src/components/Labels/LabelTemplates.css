@@ -1,14 +1,16 @@
 /* Label Templates CSS */
 
-/* Print styles for labels */
+/* Print styles only when this page contains a label print area (do not hide receipt/POS).
+   LabelService also prints in a separate window with its own HTML. */
 @media print {
-    body * {
+    body:has(.label-print-area) * {
         visibility: hidden;
     }
-    .label-print-area, .label-print-area * {
+    body:has(.label-print-area) .label-print-area,
+    body:has(.label-print-area) .label-print-area * {
         visibility: visible;
     }
-    .label-print-area {
+    body:has(.label-print-area) .label-print-area {
         position: absolute;
         left: 0;
         top: 0;

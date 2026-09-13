@@ -27,6 +27,12 @@ const UnifiedReports = () => {
     
     // Fiscal reports state
     const [reports, setReports] = useState([]);
+    const [reportsPage, setReportsPage] = useState(0);
+    const [reportsTotalPages, setReportsTotalPages] = useState(0);
+    const [reportsTotalElements, setReportsTotalElements] = useState(0);
+    const [reportTypeFilter, setReportTypeFilter] = useState('');
+    const [reportDateFrom, setReportDateFrom] = useState('');
+    const [reportDateTo, setReportDateTo] = useState('');
     const [devices, setDevices] = useState([]);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -42,6 +48,8 @@ const UnifiedReports = () => {
     });
     const [activeSession, setActiveSession] = useState(null);
     const [existingMonthlyReports, setExistingMonthlyReports] = useState([]);
+    const [archivingReports, setArchivingReports] = useState(false);
+    const [reportArchiveYears, setReportArchiveYears] = useState(5);
 
     // When role is USER, prefill cashierName with logged-in email
     useEffect(() => {
@@ -53,11 +61,10 @@ const UnifiedReports = () => {
     useEffect(() => {
         if (activeTab === 'fiscal') {
             loadFiscalData();
-            loadUsers(); // Load users separately
-            // Prefill device from active cashier session
+            loadUsers();
             preloadActiveSession();
         }
-    }, [activeTab]);
+    }, [activeTab, reportsPage, reportTypeFilter, reportDateFrom, reportDateTo]);
 
     // Ensure non-admin users cannot access the export/cashiers tabs if role changes
     useEffect(() => {
@@ -74,60 +81,55 @@ const UnifiedReports = () => {
 
     // Проверка за съществуващи месечни отчети при промяна на датата или типа отчет
     useEffect(() => {
-        if (selectedReportType === 'MONTHLY' && formData.reportDate && reports.length > 0) {
-            const reportDate = new Date(formData.reportDate);
-            const startOfMonth = new Date(reportDate.getFullYear(), reportDate.getMonth(), 1);
-            const endOfMonth = new Date(reportDate.getFullYear(), reportDate.getMonth() + 1, 0);
-            
-            const existing = reports.filter(report => {
-                if (report.reportType !== 'MONTHLY') return false;
-                const reportDateObj = new Date(report.reportDate);
-                return reportDateObj >= startOfMonth && reportDateObj <= endOfMonth;
-            });
-            
-            setExistingMonthlyReports(existing);
-        } else {
-            setExistingMonthlyReports([]);
-        }
-    }, [selectedReportType, formData.reportDate, reports]);
+        const checkMonthly = async () => {
+            if (selectedReportType !== 'MONTHLY' || !formData.reportDate) {
+                setExistingMonthlyReports([]);
+                return;
+            }
+            try {
+                const reportDate = new Date(formData.reportDate);
+                const startOfMonth = new Date(reportDate.getFullYear(), reportDate.getMonth(), 1);
+                const endOfMonth = new Date(reportDate.getFullYear(), reportDate.getMonth() + 1, 0);
+                const toIso = (d) => d.toISOString().split('T')[0];
+                const page = await FiscalService.getReports({
+                    page: 0,
+                    size: 50,
+                    type: 'MONTHLY',
+                    dateFrom: toIso(startOfMonth),
+                    dateTo: toIso(endOfMonth)
+                });
+                setExistingMonthlyReports(page.content || []);
+            } catch (e) {
+                setExistingMonthlyReports([]);
+            }
+        };
+        checkMonthly();
+    }, [selectedReportType, formData.reportDate]);
 
     const loadFiscalData = async () => {
         try {
             setLoading(true);
-            
-            // Load devices first - filter only ACTIVE devices
+
             const allDevices = await FiscalService.getAllDevices();
             const activeDevices = allDevices.filter(device => device.status === 'ACTIVE');
             setDevices(activeDevices);
-            
-            // Allow both ADMIN and USER to see reports
-            const reportsData = await FiscalService.getAllReports();
-            // If not admin, show only today's generated reports AND only for the logged-in cashier
-            const todayStr = new Date().toISOString().split('T')[0];
-            const userKeys = [auth?.name, auth?.email]
-                .filter(Boolean)
-                .map(v => String(v).trim().toLowerCase());
-            const visible = isAdmin ? (reportsData || []) : (reportsData || []).filter(r => {
-                const baseDate = r.generatedAt || r.reportDate;
-                if (!baseDate) return false;
-                const repStr = new Date(baseDate).toISOString().split('T')[0];
-                if (repStr !== todayStr) return false;
-                const repCashier = String(r.cashierName || '').trim().toLowerCase();
-                // Some historical reports may store email as cashierName; match against both name and email
-                return userKeys.length === 0 ? false : userKeys.includes(repCashier);
-            });
 
-            // Sort newest first by generatedAt (fallback by id)
-            const sorted = visible.slice().sort((a, b) => {
-                const da = a.generatedAt ? new Date(a.generatedAt).getTime() : 0;
-                const db = b.generatedAt ? new Date(b.generatedAt).getTime() : 0;
-                if (db !== da) return db - da;
-                return (b.id || 0) - (a.id || 0);
+            const pageData = await FiscalService.getReports({
+                page: reportsPage,
+                size: 20,
+                type: reportTypeFilter || undefined,
+                dateFrom: isAdmin ? (reportDateFrom || undefined) : undefined,
+                dateTo: isAdmin ? (reportDateTo || undefined) : undefined
             });
-            setReports(sorted);
+            setReports(pageData.content || []);
+            setReportsTotalPages(pageData.totalPages || 0);
+            setReportsTotalElements(pageData.totalElements || 0);
         } catch (error) {
             toast.error('Грешка при зареждане на данни');
             console.error('Error loading data:', error);
+            setReports([]);
+            setReportsTotalPages(0);
+            setReportsTotalElements(0);
         } finally {
             setLoading(false);
         }
@@ -166,7 +168,7 @@ const UnifiedReports = () => {
         }
     };
 
-    const handleExport = async () => {
+    const handleExport = async (destination = 'local') => {
         if (!dateFrom || !dateTo) {
             toast.error('Моля, изберете начална и крайна дата');
             return;
@@ -179,17 +181,17 @@ const UnifiedReports = () => {
 
         try {
             setExporting(true);
-            const response = await exportOrdersReport(dateFrom, dateTo);
+            const response = await exportOrdersReport(dateFrom, dateTo, destination);
             toast.success(`Отчетът е генериран: ${response.data}`);
         } catch (error) {
-            toast.error('Грешка при генериране на отчета');
+            toast.error(error.response?.data || 'Грешка при генериране на отчета');
             console.error('Export error:', error);
         } finally {
             setExporting(false);
         }
     };
 
-    const handleArchive = async () => {
+    const handleArchive = async (destination = 'local') => {
         // Calculate cutoff date based on selected period
         let cutoffDate = null;
         let periodDescription = '';
@@ -218,7 +220,8 @@ const UnifiedReports = () => {
         }
         
         const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
-        const confirmMessage = `Сигурни ли сте, че искате да архивирате поръчки ${periodDescription}?\n\nПоръчките ще бъдат архивирани в AWS S3 и изтрити от базата данни.\n\nCutoff дата: ${cutoffDateStr}`;
+        const destLabel = destination === 's3' ? 'AWS S3' : 'локален диск';
+        const confirmMessage = `Сигурни ли сте, че искате да архивирате поръчки ${periodDescription}?\n\nДестинация: ${destLabel}.\nПоръчките се изтриват от базата данни след успешен запис.\n\nCutoff дата: ${cutoffDateStr}`;
         
         if (!window.confirm(confirmMessage)) {
             return;
@@ -226,7 +229,7 @@ const UnifiedReports = () => {
 
         try {
             setArchiving(true);
-            const response = await archiveOrders(cutoffDateStr);
+            const response = await archiveOrders(cutoffDateStr, destination);
             const message = response.data || 'Архивирането е завършено';
             toast.success(message);
         } catch (error) {
@@ -234,6 +237,37 @@ const UnifiedReports = () => {
             console.error('Archive error:', error);
         } finally {
             setArchiving(false);
+        }
+    };
+
+    const handleArchiveReports = async (destination = 'local') => {
+        const years = Number(reportArchiveYears) || 5;
+        const cutoffDate = new Date();
+        cutoffDate.setFullYear(cutoffDate.getFullYear() - years);
+        const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+        const destLabel = destination === 's3' ? 'AWS S3' : 'локален диск';
+        const confirmMessage =
+            `Сигурни ли сте, че искате да архивирате фискални отчети по-стари от ${years} години?\n\n` +
+            `Дестинация: ${destLabel}.\n` +
+            `След успешен запис отчетите се изтриват от базата данни.\n\n` +
+            `Cutoff дата: ${cutoffDateStr}`;
+
+        if (!window.confirm(confirmMessage)) {
+            return;
+        }
+
+        try {
+            setArchivingReports(true);
+            const message = await FiscalService.archiveReports(cutoffDateStr, destination);
+            toast.success(typeof message === 'string' ? message : `Архивирани отчети (cutoff ${cutoffDateStr})`);
+            if (activeTab === 'fiscal') {
+                loadFiscalData();
+            }
+        } catch (error) {
+            toast.error(error.response?.data || 'Грешка при архивиране на отчети');
+            console.error('Report archive error:', error);
+        } finally {
+            setArchivingReports(false);
         }
     };
 
@@ -288,15 +322,13 @@ const UnifiedReports = () => {
                 const payload = { ...formData, cashierName: undefined };
                 result = await FiscalService.generateShiftReport(payload);
             } else {
+                if (selectedReportType === 'SHIFT') {
+                    toast.error('Влезте с потребител касиер за сменен отчет, контрол на касата и продажби.', { duration: 5000 });
+                    return;
+                }
                 switch (selectedReportType) {
                     case 'STORE_DAILY':
                         result = await FiscalService.generateStoreDailyReport(formData);
-                        break;
-                    case 'DAILY':
-                        result = await FiscalService.generateDailyReport(formData);
-                        break;
-                    case 'SHIFT':
-                        result = await FiscalService.generateShiftReport(formData);
                         break;
                     case 'MONTHLY':
                         result = await FiscalService.generateMonthlyReport(formData);
@@ -312,29 +344,36 @@ const UnifiedReports = () => {
             
             toast.success('Отчетът е генериран успешно');
             resetForm();
+            setReportsPage(0);
             await loadFiscalData();
+            // Immediately open view/print for the cashier (and admin)
+            if (result) {
+                setSelectedReport(result);
+                setShowReportDetails(true);
+            }
         } catch (error) {
-            // Прихващане на специфични грешки с приятелски съобщения
             const status = error.response?.status;
-            const errorMessage = error.response?.data?.message || '';
-            const reportDate = formData.reportDate ? new Date(formData.reportDate).toLocaleDateString('bg-BG') : 'избраната дата';
-            
-            // Забележка: Вече позволяваме множество "Общ дневен отчет" за деня
-            // Вторият отчет ще включва само продажбите след първия отчет
-            // Така че 409 CONFLICT вече не се хвърля за STORE_DAILY отчети
-            
-            if (status === 403) {
+            const data = error.response?.data;
+            const errorMessage = (typeof data === 'string'
+                ? data
+                : (data?.message || data?.detail || data?.title || data?.error || '')) || '';
+
+            if (status === 409) {
+                toast.error(
+                    errorMessage ||
+                    'Не може общ дневен отчет: има неприключени смени. Първо всеки касиер трябва да генерира сменен отчет.',
+                    { duration: 8000 }
+                );
+            } else if (status === 403) {
                 toast.error('Нямате права за генериране на този тип отчет или има проблем с авторизацията.', { duration: 5000 });
             } else if (status === 412) {
-                // 412 Precondition Failed - няма активна cash drawer session
                 toast.error(
-                    error.response?.data?.message || 
+                    errorMessage ||
                     'За да генерирате сменен отчет, трябва първо да започнете работен ден (Контрол на касата).',
                     { duration: 6000 }
                 );
             } else {
-                // Обща грешка
-                toast.error(error.response?.data?.message || 'Грешка при генериране на отчет');
+                toast.error(errorMessage || 'Грешка при генериране на отчет');
             }
             console.error('Error generating report:', error);
         }
@@ -809,10 +848,10 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                 <div className="card bg-dark text-light">
                     <div className="card-body">
                         <h5 className="card-title">📋 Експорт на данни</h5>
-                        <div className="mb-3 d-flex gap-2">
+                        <div className="mb-3 d-flex flex-wrap gap-2">
                             <button 
                                 className="btn btn-primary"
-                                onClick={handleExport}
+                                onClick={() => handleExport('local')}
                                 disabled={exporting}
                             >
                                 {exporting ? (
@@ -822,34 +861,25 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                     </>
                                 ) : (
                                     <>
-                                        <i className="bi bi-download me-2"></i>
-                                        Експорт CSV
+                                        <i className="bi bi-hdd me-2"></i>
+                                        Експорт CSV (локално)
                                     </>
                                 )}
                             </button>
                             <button 
-                                className="btn btn-warning"
-                                onClick={handleArchive}
-                                disabled={archiving}
+                                className="btn btn-outline-primary"
+                                onClick={() => handleExport('s3')}
+                                disabled={exporting}
                             >
-                                {archiving ? (
-                                    <>
-                                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                                        Архивиране...
-                                    </>
-                                ) : (
-                                    <>
-                                        <i className="bi bi-archive me-2"></i>
-                                        Архивирай поръчки
-                                    </>
-                                )}
+                                <i className="bi bi-cloud-upload me-2"></i>
+                                Експорт CSV (AWS)
                             </button>
                         </div>
                         <ul className="list-unstyled">
                             <li><i className="bi bi-check-circle text-success me-2"></i>Отчетите се генерират в CSV формат</li>
-                            <li><i className="bi bi-check-circle text-success me-2"></i>Съхраняват се в AWS S3 bucket: <code>pos-reports-supermarket</code></li>
+                            <li><i className="bi bi-check-circle text-success me-2"></i>Локално: <code>archives/order-exports</code></li>
+                            <li><i className="bi bi-check-circle text-success me-2"></i>AWS: bucket <code>pos-reports-supermarket</code></li>
                             <li><i className="bi bi-check-circle text-success me-2"></i>Включват всички поръчки за избрания период</li>
-                            <li><i className="bi bi-check-circle text-success me-2"></i>Файловете са достъпни за данъчни и счетоводни цели</li>
                         </ul>
                         <div className="mt-4">
                             <h6 className="text-warning">📦 Архивиране на поръчки</h6>
@@ -898,10 +928,94 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                     </label>
                                 </div>
                             </div>
+                            <div className="mb-3 d-flex flex-wrap gap-2">
+                                <button 
+                                    className="btn btn-warning"
+                                    onClick={() => handleArchive('local')}
+                                    disabled={archiving}
+                                >
+                                    {archiving ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                            Архивиране...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="bi bi-hdd me-2"></i>
+                                            Архивирай локално
+                                        </>
+                                    )}
+                                </button>
+                                <button 
+                                    className="btn btn-outline-warning"
+                                    onClick={() => handleArchive('s3')}
+                                    disabled={archiving}
+                                >
+                                    <i className="bi bi-cloud-upload me-2"></i>
+                                    Архивирай в AWS
+                                </button>
+                            </div>
                             <ul className="list-unstyled">
-                                <li><i className="bi bi-info-circle text-info me-2"></i>Съхранява в AWS S3 bucket: <code>my-pos-orders</code></li>
+                                <li><i className="bi bi-info-circle text-info me-2"></i>Локално: <code>archives/orders</code></li>
+                                <li><i className="bi bi-info-circle text-info me-2"></i>AWS bucket: <code>my-pos-orders</code></li>
                                 <li><i className="bi bi-info-circle text-info me-2"></i>Формат: JSONL компресиран (GZIP)</li>
                                 <li><i className="bi bi-exclamation-triangle text-warning me-2"></i>Внимание: Поръчките се изтриват от базата данни след архивиране!</li>
+                            </ul>
+                        </div>
+                        <div className="mt-4 pt-3 border-top border-secondary">
+                            <h6 className="text-warning">📁 Архивиране на отчети</h6>
+                            <p className="text-muted small mb-3">
+                                Сменни и дневни отчети от приложението се архивират локално или в AWS.
+                                Това не замества фискалната памет / електронния журнал на устройството.
+                            </p>
+                            <div className="mb-3">
+                                <label className="form-label text-light" htmlFor="reportArchiveYears">
+                                    Архивирай отчети по-стари от (години):
+                                </label>
+                                <select
+                                    id="reportArchiveYears"
+                                    className="form-select bg-dark text-light border-secondary"
+                                    style={{ maxWidth: 200 }}
+                                    value={reportArchiveYears}
+                                    onChange={(e) => setReportArchiveYears(Number(e.target.value))}
+                                >
+                                    <option value={5}>5 години</option>
+                                    <option value={7}>7 години</option>
+                                    <option value={10}>10 години</option>
+                                </select>
+                            </div>
+                            <div className="mb-3 d-flex flex-wrap gap-2">
+                                <button
+                                    className="btn btn-outline-warning"
+                                    onClick={() => handleArchiveReports('local')}
+                                    disabled={archivingReports}
+                                >
+                                    {archivingReports ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                            Архивиране на отчети...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="bi bi-hdd me-2"></i>
+                                            Архивирай локално
+                                        </>
+                                    )}
+                                </button>
+                                <button
+                                    className="btn btn-outline-info"
+                                    onClick={() => handleArchiveReports('s3')}
+                                    disabled={archivingReports}
+                                >
+                                    <i className="bi bi-cloud-upload me-2"></i>
+                                    Архивирай в AWS
+                                </button>
+                            </div>
+                            <ul className="list-unstyled mt-3 mb-0">
+                                <li><i className="bi bi-info-circle text-info me-2"></i>Локално: <code>archives/fiscal-reports</code></li>
+                                <li><i className="bi bi-info-circle text-info me-2"></i>AWS prefix: <code>fiscal-reports/</code></li>
+                                <li><i className="bi bi-info-circle text-info me-2"></i>Формат: JSONL.GZ по месец</li>
+                                <li><i className="bi bi-exclamation-triangle text-warning me-2"></i>След успех отчетите се трият от PostgreSQL</li>
                             </ul>
                         </div>
                         </div>
@@ -997,11 +1111,15 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                                     >
                                                         <option value="">Изберете тип</option>
                                                         {auth.role === 'ROLE_ADMIN' && <option value="STORE_DAILY">🏪 Общ дневен отчет за магазина</option>}
-                                                        {auth.role === 'ROLE_ADMIN' && <option value="DAILY">Дневен отчет</option>}
-                                                        <option value="SHIFT">Сменен отчет</option>
+                                                        {auth.role !== 'ROLE_ADMIN' && <option value="SHIFT">Сменен отчет</option>}
                                                         {auth.role === 'ROLE_ADMIN' && <option value="MONTHLY">Месечен отчет</option>}
                                                         {auth.role === 'ROLE_ADMIN' && <option value="YEARLY">Годишен отчет</option>}
                                                     </select>
+                                                    {auth.role === 'ROLE_ADMIN' && (
+                                                        <small className="text-muted d-block mt-1">
+                                                            Сменен отчет, контрол на касата и продажби се правят с потребител касиер.
+                                                        </small>
+                                                    )}
                                                 </div>
                                                 <div className="col-md-3 mb-3">
                                                     <label className="form-label">Дата на отчет *</label>
@@ -1087,7 +1205,14 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                             {selectedReportType === 'STORE_DAILY' && (
                                                 <div className="alert alert-info mb-3">
                                                     <i className="bi bi-info-circle me-2"></i>
-                                                    <strong>Общ дневен отчет за магазина:</strong> Този отчет включва данни от всички каси и всички фискални устройства в магазина за избраната дата.
+                                                    <strong>Общ дневен отчет за магазина:</strong> Възможен е само след като
+                                                    всички касиери са генерирали сменен отчет (няма отворени касови сесии).
+                                                    Включва данни от всички каси за избраната дата.
+                                                    <br />
+                                                    <span className="small">
+                                                        При продажба след затваряне: нова каса → сменен отчет → нов общ дневен
+                                                        (само продажбите след предишния общ дневен).
+                                                    </span>
                                                 </div>
                                             )}
                                             {selectedReportType === 'MONTHLY' && (
@@ -1134,10 +1259,54 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                             )}
 
                             <div className="card w-100">
-                                <div className="card-header">
-                                    <h5>Генерирани отчети</h5>
+                                <div className="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                    <div>
+                                        <h5 className="mb-0">Генерирани отчети</h5>
+                                        {!isAdmin && (
+                                            <small className="text-muted">
+                                                Вашите сменни отчети (последните 14 дни). Използвайте окото / принтера за преглед и печат.
+                                            </small>
+                                        )}
+                                    </div>
+                                    <div className="text-muted small">Общо: {reportsTotalElements}</div>
                                 </div>
                                 <div className="card-body">
+                                    {isAdmin && (
+                                        <div className="row g-2 mb-3">
+                                            <div className="col-md-3">
+                                                <label className="form-label">Тип</label>
+                                                <select
+                                                    className="form-select"
+                                                    value={reportTypeFilter}
+                                                    onChange={(e) => { setReportsPage(0); setReportTypeFilter(e.target.value); }}
+                                                >
+                                                    <option value="">Всички</option>
+                                                    <option value="SHIFT">Сменен</option>
+                                                    <option value="STORE_DAILY">Дневен магазин</option>
+                                                    <option value="MONTHLY">Месечен</option>
+                                                    <option value="YEARLY">Годишен</option>
+                                                </select>
+                                            </div>
+                                            <div className="col-md-3">
+                                                <label className="form-label">От дата</label>
+                                                <input
+                                                    type="date"
+                                                    className="form-control"
+                                                    value={reportDateFrom}
+                                                    onChange={(e) => { setReportsPage(0); setReportDateFrom(e.target.value); }}
+                                                />
+                                            </div>
+                                            <div className="col-md-3">
+                                                <label className="form-label">До дата</label>
+                                                <input
+                                                    type="date"
+                                                    className="form-control"
+                                                    value={reportDateTo}
+                                                    onChange={(e) => { setReportsPage(0); setReportDateTo(e.target.value); }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                     {reports.length === 0 ? (
                                         <div className="text-center py-4">
                                             <i className="bi bi-file-earmark-text display-1 text-muted"></i>
@@ -1150,6 +1319,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                             </button>
                                         </div>
                                     ) : (
+                                        <>
                                         <div className="table-responsive">
                                             <table className="table table-hover">
                                                 <thead>
@@ -1223,6 +1393,28 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                                 </tbody>
                                             </table>
                                         </div>
+                                        <div className="d-flex justify-content-between align-items-center mt-3">
+                                            <div>
+                                                <button
+                                                    className="btn btn-outline-secondary btn-sm me-2"
+                                                    disabled={reportsPage <= 0}
+                                                    onClick={() => setReportsPage(p => Math.max(0, p - 1))}
+                                                >
+                                                    <i className="bi bi-chevron-left"></i> Предишна
+                                                </button>
+                                                <button
+                                                    className="btn btn-outline-secondary btn-sm"
+                                                    disabled={reportsPage + 1 >= reportsTotalPages}
+                                                    onClick={() => setReportsPage(p => p + 1)}
+                                                >
+                                                    Следваща <i className="bi bi-chevron-right"></i>
+                                                </button>
+                                            </div>
+                                            <div className="text-muted small">
+                                                Страница {reportsPage + 1} от {reportsTotalPages || 1}
+                                            </div>
+                                        </div>
+                                        </>
                                     )}
                                 </div>
                             </div>

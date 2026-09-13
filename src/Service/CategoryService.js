@@ -5,6 +5,10 @@ export const addCategory = async (category) => {
     return await axios.post(`${API_BASE_URL}/admin/categories`, category, {headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}});
 }
 
+export const updateCategory = async (categoryId, category) => {
+    return await axios.put(`${API_BASE_URL}/admin/categories/${categoryId}`, category, {headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}});
+}
+
 export const deleteCategory = async (categoryId) => {
     return await axios.delete(`${API_BASE_URL}/admin/categories/${categoryId}`, {headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}});
 }

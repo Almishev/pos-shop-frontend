@@ -1,4 +1,3 @@
-import './DisplayItems.css';
 import {useContext, useState} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
 import Item from "../Item/Item.jsx";
@@ -17,20 +16,16 @@ const DisplayItems = ({selectedCategory}) => {
     );
 
     return (
-        <div className="p-3">
-            <div className="d-flex justify-content-between align-items-center align-items-center mb-4">
-                <div></div>
-                <div>
-                    <SearchBox onSearch={setSearchText} placeholder="Търси по име или баркод..." />
-                </div>
+        <div className="p-2">
+            <div className="d-flex justify-content-end mb-2">
+                <SearchBox onSearch={setSearchText} placeholder="Търси по име или баркод..." />
             </div>
-            <div className="row g-3">
-                {filteredItems.map((item, index) => (
-                    <div key={index} className="col-md-4 col-sm-6">
+            <div className="row g-2">
+                {filteredItems.map((item) => (
+                    <div key={item.itemId} className="col-xl-3 col-lg-3 col-md-4 col-sm-6">
                         <Item
                             itemName={item.name}
                             itemPrice={item.isPromo ? item.effectivePrice : item.price}
-                            itemImage={item.imgUrl}
                             itemId={item.itemId}
                             itemBarcode={item.barcode}
                             itemVatRate={item.vatRate}

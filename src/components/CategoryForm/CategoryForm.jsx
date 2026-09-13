@@ -1,19 +1,33 @@
 import {useContext, useEffect, useState} from "react";
-import {assets} from "../../assets/assets.js";
 import toast from "react-hot-toast";
-import {addCategory} from "../../Service/CategoryService.js";
+import {addCategory, updateCategory} from "../../Service/CategoryService.js";
 import {AppContext} from "../../context/AppContext.jsx";
 
-const CategoryForm = () => {
+const CategoryForm = ({editingCategory = null, onCancelEdit}) => {
     const {setCategories, categories} = useContext(AppContext);
     const [loading, setLoading] = useState(false);
-    const [image, setImage] = useState(false);
 
     const [data, setData] = useState({
         name: "",
         description: "",
         bgColor: "#2c2c2c",
     });
+
+    useEffect(() => {
+        if (editingCategory) {
+            setData({
+                name: editingCategory.name || "",
+                description: editingCategory.description || "",
+                bgColor: editingCategory.bgColor || "#2c2c2c",
+            });
+        } else {
+            setData({
+                name: "",
+                description: "",
+                bgColor: "#2c2c2c",
+            });
+        }
+    }, [editingCategory]);
 
     const onChangeHandler = (e) => {
         const value = e.target.value;
@@ -27,24 +41,31 @@ const CategoryForm = () => {
         setLoading(true);
         const formData = new FormData();
         formData.append("category", JSON.stringify(data));
-        if (image) {
-            formData.append("file", image);
-        }
         try {
-            const response = await addCategory(formData);
-            if (response.status === 201) {
-                setCategories([...categories, response.data]);
-                toast.success("Категорията е добавена");
-                setData({
-                    name: "",
-                    description: "",
-                    bgColor: "#2c2c2c",
-                });
-                setImage(false);
+            if (editingCategory?.categoryId) {
+                const response = await updateCategory(editingCategory.categoryId, formData);
+                if (response.status === 200) {
+                    setCategories(categories.map(category =>
+                        category.categoryId === editingCategory.categoryId ? response.data : category
+                    ));
+                    toast.success("Категорията е обновена");
+                    onCancelEdit?.();
+                }
+            } else {
+                const response = await addCategory(formData);
+                if (response.status === 201) {
+                    setCategories([...categories, response.data]);
+                    toast.success("Категорията е добавена");
+                    setData({
+                        name: "",
+                        description: "",
+                        bgColor: "#2c2c2c",
+                    });
+                }
             }
         }catch(err) {
             console.error(err);
-            toast.error("Грешка при добавяне на категория");
+            toast.error(editingCategory ? "Грешка при обновяване на категория" : "Грешка при добавяне на категория");
         }finally {
             setLoading(false);
         }
@@ -55,23 +76,8 @@ const CategoryForm = () => {
             <div className="row">
                 <div className="card col-md-12 form-container">
                     <div className="card-body">
+                        <h5 className="mb-3">{editingCategory ? "Редактиране на категория" : "Нова категория"}</h5>
                         <form onSubmit={onSubmitHandler}>
-                            <div className="mb-3">
-                                <label htmlFor="categoryImage" className="form-label d-block">
-                                    <img src={image ? URL.createObjectURL(image) : assets.upload} alt="" width={48}/>
-                                </label>
-                                <input
-                                    type="file"
-                                    name="image"
-                                    id="categoryImage"
-                                    accept="image/*"
-                                    className='form-control'
-                                    onChange={(e) => setImage(e.target.files[0])}
-                                />
-                                {image && (
-                                    <small className="text-light">Избрано: {image.name}</small>
-                                )}
-                            </div>
                             <div className="mb-3">
                                 <label htmlFor="name" className="form-label">Име</label>
                                 <input type="text"
@@ -109,7 +115,19 @@ const CategoryForm = () => {
                             </div>
                             <button type="submit"
                                     disabled={loading}
-                                    className="btn btn-warning w-100">{loading ? "Зареждане..." : "Запази"}</button>
+                                    className="btn btn-warning w-100">
+                                {loading ? "Зареждане..." : (editingCategory ? "Запази промените" : "Запази")}
+                            </button>
+                            {editingCategory && (
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-secondary w-100 mt-2"
+                                    onClick={() => onCancelEdit?.()}
+                                    disabled={loading}
+                                >
+                                    Отказ
+                                </button>
+                            )}
                         </form>
                     </div>
                 </div>

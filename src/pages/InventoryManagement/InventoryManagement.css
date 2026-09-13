@@ -110,6 +110,17 @@
     margin-bottom: 20px;
 }
 
+.stock-operation-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block;
+}
+.stock-operation-card .card-header,
+.stock-operation-card .card-body {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
 .low-stock-alert {
     background-color: #fff3cd;
     border: 1px solid #ffeaa7;

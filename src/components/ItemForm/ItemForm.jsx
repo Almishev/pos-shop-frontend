@@ -1,14 +1,13 @@
 import {useContext, useRef, useState} from "react";
-import {assets} from "../../assets/assets.js";
 import {AppContext} from "../../context/AppContext.jsx";
 import toast from "react-hot-toast";
 import {addItem, generateBarcode} from "../../Service/ItemService.js";
+import {UNIT_OF_MEASURE_OPTIONS} from "../../util/unitOfMeasure.js";
 
 const ItemForm = () => {
     const {categories, setItemsData, itemsData, setCategories} = useContext(AppContext);
     const barcodeInputRef = useRef(null);
     const [isScanMode, setIsScanMode] = useState(false);
-    const [image, setImage] = useState(false);
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState({
         name: "",
@@ -17,6 +16,8 @@ const ItemForm = () => {
         description: "",
         barcode: "",
         vatRate: 0.20,
+        unitOfMeasure: "pcs",
+        costPrice: "",
     });
 
     const onChangeHandler = (e) => {
@@ -40,7 +41,6 @@ const ItemForm = () => {
         }
     }
 
-    // Simple GS1 validation helpers
     const onlyDigits = (value) => (value || '').replace(/\D+/g, '');
     const ean13ChecksumValid = (code) => {
         if (!/^\d{13}$/.test(code)) return false;
@@ -79,13 +79,14 @@ const ItemForm = () => {
     const onSubmitHandler = async (e) => {
         e.preventDefault();
         setLoading(true);
+        const payload = {
+            ...data,
+            price: data.price === "" ? null : Number(data.price),
+            costPrice: data.costPrice === "" || data.costPrice === null ? null : Number(data.costPrice),
+        };
         const formData = new FormData();
-        formData.append("item", JSON.stringify(data));
-        if (image) {
-            formData.append("file", image);
-        }
+        formData.append("item", JSON.stringify(payload));
         try {
-
             const response = await addItem(formData);
             if (response.status === 201) {
                 setItemsData([...itemsData, response.data]);
@@ -98,14 +99,27 @@ const ItemForm = () => {
                     price: "",
                     categoryId: "",
                     barcode: "",
+                    vatRate: 0.20,
+                    unitOfMeasure: "pcs",
+                    costPrice: "",
                 })
-                setImage(false);
             } else {
                 toast.error("Неуспешно добавяне на артикул");
             }
         } catch (error) {
             console.error(error);
-            toast.error("Неуспешно добавяне на артикул");
+            const status = error.response?.status;
+            const data = error.response?.data;
+            const msg = (typeof data === 'string' ? data : (data?.message || data?.detail || '')) || '';
+            if (status === 403) {
+                toast.error('Нямате права за добавяне на артикул. Влезте отново като админ (един таб / презаредете страницата).', { duration: 7000 });
+            } else if (status === 401) {
+                toast.error('Сесията е изтекла. Влезте отново като админ.');
+            } else if (status === 409) {
+                toast.error(msg || 'Артикул с този баркод вече съществува.');
+            } else {
+                toast.error(msg || 'Неуспешно добавяне на артикул');
+            }
         } finally {
             setLoading(false);
         }
@@ -118,22 +132,6 @@ const ItemForm = () => {
                     <div className="card col-md-12 form-container">
                         <div className="card-body">
                             <form onSubmit={onSubmitHandler}>
-                                <div className="mb-3">
-                                    <label htmlFor="itemImage" className="form-label d-block">
-                                        <img src={image ? URL.createObjectURL(image) : assets.supermarket} alt="" width={48}/>
-                                    </label>
-                                    <input
-                                        type="file"
-                                        name="image"
-                                        id="itemImage"
-                                        accept="image/*"
-                                        className='form-control'
-                                        onChange={(e) => setImage(e.target.files[0])}
-                                    />
-                                    {image && (
-                                        <small className="text-muted">Избрано: {image.name}</small>
-                                    )}
-                                </div>
                                 <div className="mb-3">
                                     <label htmlFor="name" className="form-label">Име</label>
                                     <input type="text"
@@ -205,8 +203,38 @@ const ItemForm = () => {
                                     </select>
                                 </div>
                                 <div className="mb-3">
-                                    <label htmlFor="price" className="form-label">Цена (€)</label>
-                                    <input type="number" name="price" id="price" className="form-control" placeholder="0.00" onChange={onChangeHandler} value={data.price} required/>
+                                    <label htmlFor="unitOfMeasure" className="form-label">Мерна единица</label>
+                                    <select
+                                        name="unitOfMeasure"
+                                        id="unitOfMeasure"
+                                        className="form-control"
+                                        onChange={onChangeHandler}
+                                        value={data.unitOfMeasure}
+                                        required
+                                    >
+                                        {UNIT_OF_MEASURE_OPTIONS.map((option) => (
+                                            <option key={option.value} value={option.value}>{option.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="mb-3">
+                                    <label htmlFor="price" className="form-label">Продажна цена (€)</label>
+                                    <input type="number" name="price" id="price" className="form-control" placeholder="0.00" step="0.01" onChange={onChangeHandler} value={data.price} required/>
+                                </div>
+                                <div className="mb-3">
+                                    <label htmlFor="costPrice" className="form-label">Последна доставна цена (€)</label>
+                                    <input
+                                        type="number"
+                                        name="costPrice"
+                                        id="costPrice"
+                                        className="form-control"
+                                        placeholder="по желание"
+                                        step="0.01"
+                                        min="0"
+                                        onChange={onChangeHandler}
+                                        value={data.costPrice}
+                                    />
+                                    <small className="form-text text-muted">Попълва се автоматично при доставка; тук само ако искаш начална стойност. Наличност не е задължителна при създаване.</small>
                                 </div>
                                 <div className="mb-3">
                                     <label htmlFor="description" className="form-label">Описание</label>

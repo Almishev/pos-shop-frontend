@@ -1,10 +1,9 @@
 import './Item.css';
 import {useContext} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
-import {assets} from "../../assets/assets.js";
 import { formatMoney } from "../../util/formatMoney.js";
 
-const Item = ({itemName, itemPrice, itemImage, itemId, itemBarcode, itemVatRate}) => {
+const Item = ({itemName, itemPrice, itemId, itemBarcode, itemVatRate}) => {
     const {addToCart} = useContext(AppContext);
     const handleAddToCart = () => {
         addToCart({
@@ -17,30 +16,21 @@ const Item = ({itemName, itemPrice, itemImage, itemId, itemBarcode, itemVatRate}
         });
     }
     return (
-        <div className="p-3 bg-dark rounded shadow-sm h-100 d-flex align-items-center item-card">
-            <div style={{position: "relative", marginRight: "15px"}}>
-                <img src={itemImage || assets.supermarket} alt={itemName} className="item-image" />
-            </div>
-
-            <div className="flex-grow-1 ms-2">
-                <h6 className="mb-1 text-light">{itemName}</h6>
+        <div className="item-card p-2 bg-dark rounded h-100 d-flex align-items-center gap-2">
+            <div className="flex-grow-1 min-width-0">
+                <h6 className="mb-0 text-light item-card-name text-truncate" title={itemName}>{itemName}</h6>
                 {itemBarcode && (
-                    <small className="text-light d-block mb-1">
+                    <small className="text-secondary d-block text-truncate">
                         <i className="bi bi-upc-scan"></i> {itemBarcode}
                     </small>
                 )}
-                <p className="mb-0 fw-bold text-light">
+                <p className="mb-0 fw-bold text-warning item-card-price">
                     {formatMoney(itemPrice)}
                 </p>
             </div>
-
-            <div className="d-flex flex-column justify-content-between align-items-center ms-3"
-                style={{height: "100%"}}>
-                <i className="bi bi-cart-plus fs-4 text-warning"></i>
-                <button className="btn btn-success btn-sm" onClick={handleAddToCart}>
-                    <i className="bi bi-plus"></i>
-                </button>
-            </div>
+            <button className="btn btn-success btn-sm flex-shrink-0" onClick={handleAddToCart} title="Добави">
+                <i className="bi bi-plus"></i>
+            </button>
         </div>
     )
 }

@@ -11,13 +11,10 @@ import LoyaltyService from "../../Service/LoyaltyService.js";
 import toast from "react-hot-toast";
 
 const Explore = () => {
-    const {categories, addToCart, cartItems} = useContext(AppContext);
+    const {categories, addToCart} = useContext(AppContext);
     const [selectedCategory, setSelectedCategory] = useState("");
-    const [customerName, setCustomerName] = useState("");
-    const [mobileNumber, setMobileNumber] = useState("");
     const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
     const [loyaltyCustomer, setLoyaltyCustomer] = useState(null);
-    const [loyaltyCardBarcode, setLoyaltyCardBarcode] = useState("");
     const [showLoyaltyScanner, setShowLoyaltyScanner] = useState(false);
 
     const handleItemFound = (item) => {
@@ -31,8 +28,7 @@ const Explore = () => {
         try {
             const response = await LoyaltyService.getCustomerByLoyaltyCard(barcode);
             setLoyaltyCustomer(response.data);
-            setLoyaltyCardBarcode(barcode);
-            toast.success(`Лоялна карта разпозната: ${response.data.firstName} ${response.data.lastName}`);
+            toast.success(`Лоялна карта: ${response.data.firstName} ${response.data.lastName}`);
         } catch (error) {
             toast.error('Лоялна карта не е намерена');
             console.error('Error finding loyalty customer:', error);
@@ -40,26 +36,8 @@ const Explore = () => {
         setShowLoyaltyScanner(false);
     };
 
-    const handlePhoneNumberChange = async (phone) => {
-        setMobileNumber(phone);
-        if (phone && phone.length >= 10) {
-            try {
-                const response = await LoyaltyService.getCustomerByPhone(phone);
-                setLoyaltyCustomer(response.data);
-                toast.success(`Клиент намерен: ${response.data.firstName} ${response.data.lastName}`);
-            } catch (error) {
-                // Phone not found, that's okay
-                setLoyaltyCustomer(null);
-            }
-        } else {
-            setLoyaltyCustomer(null);
-        }
-    };
-
     const clearLoyaltyCustomer = () => {
         setLoyaltyCustomer(null);
-        setLoyaltyCardBarcode("");
-        setMobileNumber("");
     };
 
     return (
@@ -95,29 +73,21 @@ const Explore = () => {
                 </div>
             </div>
             <div className="right-column d-flex flex-column">
-                <div className="customer-form-container" style={{height: '15%'}}>
+                <div className="customer-form-container">
                     <CustomerForm
-                        customerName={customerName}
-                        mobileNumber={mobileNumber}
-                        setMobileNumber={handlePhoneNumberChange}
-                        setCustomerName={setCustomerName}
                         loyaltyCustomer={loyaltyCustomer}
-                        loyaltyCardBarcode={loyaltyCardBarcode}
                         onLoyaltyCardScan={() => setShowLoyaltyScanner(true)}
                         onClearLoyaltyCustomer={clearLoyaltyCustomer}
                     />
                 </div>
-                <hr className="my-3 text-light" />
-                <div className="cart-items-container" style={{height: '55%', overflowY: 'auto'}}>
+                <hr className="my-2 text-secondary opacity-50" />
+                <div className="cart-items-container">
                     <CartItems />
                 </div>
-                <div className="cart-summary-container" style={{height: '30%'}}>
+                <div className="cart-summary-container">
                     <CartSummary
-                        customerName={customerName}
-                        mobileNumber={mobileNumber}
-                        setMobileNumber={setMobileNumber}
-                        setCustomerName={setCustomerName}
                         loyaltyCustomer={loyaltyCustomer}
+                        onClearLoyaltyCustomer={clearLoyaltyCustomer}
                     />
                 </div>
             </div>

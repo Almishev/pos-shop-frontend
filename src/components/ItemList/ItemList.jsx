@@ -1,13 +1,13 @@
 import {useContext, useState} from "react";
+import {useNavigate} from "react-router-dom";
 import {AppContext} from "../../context/AppContext.jsx";
 import {deleteItem, searchItems} from "../../Service/ItemService.js";
-import LabelService from "../../Service/LabelService.js";
 import toast from "react-hot-toast";
 import { formatMoney } from "../../util/formatMoney.js";
-import {assets} from "../../assets/assets.js";
 import './ItemList.css';
 
 const ItemList = () => {
+    const navigate = useNavigate();
     const {itemsData, setItemsData} = useContext(AppContext);
     const [searchTerm, setSearchTerm] = useState("");
     const [searchResults, setSearchResults] = useState(null);
@@ -54,18 +54,13 @@ const ItemList = () => {
 
     const displayItems = searchResults || filteredItems;
 
-    const printItemLabel = async (item) => {
-        try {
-            const result = await LabelService.printPriceLabels([item]);
-            if (result.success) {
-                toast.success('Етикетът е готов за печат');
-                const htmlContent = LabelService.generatePriceLabelHTML(item);
-                LabelService.printLabels(htmlContent, 'ценови етикет');
-            }
-        } catch (error) {
-            console.error('Error printing item label:', error);
-            toast.error('Грешка при печат на етикет');
+    const editItem = (item) => {
+        const itemId = item.itemId;
+        if (!itemId) {
+            toast.error('Артикулът няма валиден ID');
+            return;
         }
+        navigate(`/inventory/${itemId}`);
     };
 
     return (
@@ -115,9 +110,6 @@ const ItemList = () => {
                     <div className="col-lg-12" key={index}>
                         <div className="card p-3 bg-dark item-card">
                             <div className="d-flex align-items-center">
-                                <div style={{marginRight: '15px'}}>
-                                    <img src={item.imgUrl || assets.supermarket} alt={item.name} className="item-image" />
-                                </div>
                                 <div className="flex-grow-1">
                                     <h6 className="mb-1 text-white">{item.name}</h6>
                                     <p className="mb-1 text-white">
@@ -144,14 +136,14 @@ const ItemList = () => {
                                     )}
                                 </div>
                                 <div className="d-flex gap-2">
-                                    <button 
-                                        className="btn btn-warning btn-sm" 
-                                        onClick={() => printItemLabel(item)}
-                                        title="Печат на етикет"
+                                    <button
+                                        className="btn btn-warning btn-sm"
+                                        onClick={() => editItem(item)}
+                                        title="Редактирай артикул"
                                     >
-                                        <i className="bi bi-tag"></i>
+                                        <i className="bi bi-pencil"></i>
                                     </button>
-                                    <button className="btn btn-danger btn-sm" onClick={() => removeItem(item.itemId)}>
+                                    <button className="btn btn-danger btn-sm" onClick={() => removeItem(item.itemId)} title="Изтрий">
                                         <i className="bi bi-trash"></i>
                                     </button>
                                 </div>

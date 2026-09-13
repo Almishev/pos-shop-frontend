@@ -29,3 +29,18 @@
 .btn-outline-light {
     border-radius: 0 20px 20px 0;
 }
+
+.navbar .dropdown-menu {
+    min-width: 11rem;
+}
+
+.navbar .dropdown-item {
+    text-transform: none;
+    font-weight: 500;
+}
+
+.navbar .dropdown-item.active,
+.navbar .dropdown-item:active {
+    background-color: #ffc107;
+    color: #212529;
+}

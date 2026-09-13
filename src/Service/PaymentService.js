@@ -12,22 +12,7 @@ const createAuthInstance = () => {
     });
 };
 
-export const createRazorpayOrder = async (data) => {
-    const instance = createAuthInstance();
-    return instance.post('/payments/create-order', data);
-};
-
-export const verifyPayment = async (paymentData) => {
-    const instance = createAuthInstance();
-    return instance.post('/payments/verify', paymentData);
-};
-
 export const initiatePosPayment = async (data) => {
     const instance = createAuthInstance();
     return instance.post('/pos-payments/initiate', data);
-};
-
-export const refundPosPayment = async (data) => {
-    const instance = createAuthInstance();
-    return instance.post('/pos-payments/refund', data);
 };

@@ -1,12 +1,25 @@
-.item-card:hover {
-    transform: translateY(-5px);
-    transition: transform 0.3s ease;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+.item-card {
+    min-height: 64px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.item-image {
-    width: 80px;
-    height: 80px;
-    border-radius: 10px;
-    border: 3px solid white;
+.item-card:hover {
+    border-color: rgba(255, 193, 7, 0.45);
+    background-color: #343a40 !important;
+}
+
+.item-card-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.item-card-price {
+    font-size: 0.95rem;
+    margin-top: 2px;
+}
+
+.min-width-0 {
+    min-width: 0;
 }

@@ -11,8 +11,8 @@ const createAuthInstance = () => {
     });
 };
 
-export const exportOrdersReport = async (dateFrom, dateTo) => {
-    const params = new URLSearchParams({ dateFrom, dateTo });
+export const exportOrdersReport = async (dateFrom, dateTo, destination = 'local') => {
+    const params = new URLSearchParams({ dateFrom, dateTo, destination });
     const instance = createAuthInstance();
     return await instance.post(`/reports/export?${params.toString()}`, {});
 };

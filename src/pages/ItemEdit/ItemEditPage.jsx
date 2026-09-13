@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { AppContext } from '../../context/AppContext';
 import { getItemById, updateItem, generateBarcode } from '../../Service/ItemService';
+import { UNIT_OF_MEASURE_OPTIONS } from '../../util/unitOfMeasure.js';
 import './ItemEditPage.css';
 
 const ItemEditPage = () => {
@@ -18,8 +19,6 @@ const ItemEditPage = () => {
     
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [image, setImage] = useState(null);
-    const [imagePreview, setImagePreview] = useState(null);
     
     const [formData, setFormData] = useState({
         name: '',
@@ -28,7 +27,8 @@ const ItemEditPage = () => {
         description: '',
         barcode: '',
         vatRate: 0.20,
-        imgUrl: ''
+        unitOfMeasure: 'pcs',
+        costPrice: ''
     });
 
     useEffect(() => {
@@ -64,12 +64,9 @@ const ItemEditPage = () => {
                 description: item.description || '',
                 barcode: item.barcode || '',
                 vatRate: item.vatRate || 0.20,
-                imgUrl: item.imgUrl || ''
+                unitOfMeasure: item.unitOfMeasure || 'pcs',
+                costPrice: item.costPrice ?? ''
             });
-            
-            if (item.imgUrl) {
-                setImagePreview(item.imgUrl);
-            }
         } catch (error) {
             toast.error('Грешка при зареждане на артикула');
             console.error('Error loading item:', error);
@@ -85,18 +82,6 @@ const ItemEditPage = () => {
             ...prev,
             [name]: value
         }));
-    };
-
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setImage(file);
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                setImagePreview(e.target.result);
-            };
-            reader.readAsDataURL(file);
-        }
     };
 
     const handleGenerateBarcode = async () => {
@@ -147,12 +132,12 @@ const ItemEditPage = () => {
                 price: parseFloat(formData.price),
                 description: formData.description,
                 barcode: formData.barcode,
-                vatRate: parseFloat(formData.vatRate)
+                vatRate: parseFloat(formData.vatRate),
+                unitOfMeasure: formData.unitOfMeasure || 'pcs',
+                costPrice: formData.costPrice === '' || formData.costPrice === null
+                    ? null
+                    : parseFloat(formData.costPrice)
             }));
-            
-            if (image) {
-                formDataToSend.append('file', image);
-            }
             
             await updateItem(id, formDataToSend);
             toast.success('Артикулът е обновен успешно');
@@ -201,7 +186,7 @@ const ItemEditPage = () => {
                             <div className="card-body">
                                 <form onSubmit={handleSubmit}>
                                     <div className="row">
-                                        <div className="col-md-8">
+                                        <div className="col-12">
                                             <div className="row">
                                                 <div className="col-md-6 mb-3">
                                                     <label className="form-label">Име на артикула *</label>
@@ -235,8 +220,8 @@ const ItemEditPage = () => {
                                             </div>
 
                                             <div className="row">
-                                                <div className="col-md-6 mb-3">
-                                                    <label className="form-label">Цена (€) *</label>
+                                                <div className="col-md-3 mb-3">
+                                                    <label className="form-label">Продажна цена (€) *</label>
                                                     <input
                                                         type="number"
                                                         step="0.01"
@@ -248,7 +233,21 @@ const ItemEditPage = () => {
                                                         required
                                                     />
                                                 </div>
-                                                <div className="col-md-6 mb-3">
+                                                <div className="col-md-3 mb-3">
+                                                    <label className="form-label">Последна доставна цена (€)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        className="form-control"
+                                                        name="costPrice"
+                                                        value={formData.costPrice}
+                                                        onChange={handleInputChange}
+                                                        placeholder="по желание"
+                                                    />
+                                                    <small className="text-muted">Автоматично при доставка</small>
+                                                </div>
+                                                <div className="col-md-3 mb-3">
                                                     <label className="form-label">ДДС ставка</label>
                                                     <select
                                                         className="form-select"
@@ -259,6 +258,22 @@ const ItemEditPage = () => {
                                                         <option value={0.20}>20% (Стандартна)</option>
                                                         <option value={0.09}>9% (Намалена)</option>
                                                         <option value={0.00}>0% (Нулева)</option>
+                                                    </select>
+                                                </div>
+                                                <div className="col-md-3 mb-3">
+                                                    <label className="form-label">Мерна единица *</label>
+                                                    <select
+                                                        className="form-select"
+                                                        name="unitOfMeasure"
+                                                        value={formData.unitOfMeasure}
+                                                        onChange={handleInputChange}
+                                                        required
+                                                    >
+                                                        {UNIT_OF_MEASURE_OPTIONS.map((option) => (
+                                                            <option key={option.value} value={option.value}>
+                                                                {option.label}
+                                                            </option>
+                                                        ))}
                                                     </select>
                                                 </div>
                                             </div>
@@ -294,33 +309,6 @@ const ItemEditPage = () => {
                                                     rows="3"
                                                     placeholder="Описание на артикула..."
                                                 />
-                                            </div>
-                                        </div>
-
-                                        <div className="col-md-4">
-                                            <div className="mb-3">
-                                                <label className="form-label">Снимка</label>
-                                                <div className="image-upload-container">
-                                                    {imagePreview && (
-                                                        <div className="image-preview mb-3">
-                                                            <img
-                                                                src={imagePreview}
-                                                                alt="Preview"
-                                                                className="img-thumbnail"
-                                                                style={{ maxWidth: '200px', maxHeight: '200px' }}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                    <input
-                                                        type="file"
-                                                        className="form-control"
-                                                        accept="image/*"
-                                                        onChange={handleImageChange}
-                                                    />
-                                                    <small className="form-text text-muted">
-                                                        Оставете празно за да запазите текущата снимка
-                                                    </small>
-                                                </div>
                                             </div>
                                         </div>
                                     </div>

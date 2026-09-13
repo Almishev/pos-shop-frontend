@@ -1,40 +1,45 @@
 import './CartSummary.css';
 import {useContext, useState, useEffect} from "react";
+import {createPortal} from "react-dom";
 import {AppContext} from "../../context/AppContext.jsx";
 import ReceiptPopup from "../ReceiptPopup/ReceiptPopup.jsx";
 import {createOrder, deleteOrder} from "../../Service/OrderService.js";
 import toast from "react-hot-toast";
-import {createRazorpayOrder, verifyPayment, initiatePosPayment} from "../../Service/PaymentService.js";
-import {AppConstants} from "../../util/constants.js";
+import {initiatePosPayment} from "../../Service/PaymentService.js";
 import FiscalService from "../../Service/FiscalService.js";
-import InventoryService from "../../Service/InventoryService.js";
 import LoyaltyService from "../../Service/LoyaltyService.js";
 import CashDrawerService from "../../Service/CashDrawerService.js";
 import { formatMoney, SHOP_CURRENCY } from "../../util/formatMoney.js";
 
-const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerName, loyaltyCustomer}) => {
+const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
     const {cartItems, clearCart} = useContext(AppContext);
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [orderDetails, setOrderDetails] = useState(null);
     const [showPopup, setShowPopup] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [loyaltyDiscounts, setLoyaltyDiscounts] = useState(null);
 
-    const getItemVatRate = (item) => (item.vatRate ?? 0.20);
+    const getItemVatRate = (item) => {
+        const r = Number(item.vatRate);
+        return Number.isFinite(r) ? r : 0.20;
+    };
 
-    // Bulgarian VAT (ДДС) handling with prices that are VAT-inclusive (gross)
-    const subtotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-    const tax = cartItems.reduce((total, item) => {
-        const rate = getItemVatRate(item) || 0;
+    const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+
+    // Bulgarian VAT (ДДС) — prices are VAT-inclusive (gross); sum rounded per line to 2dp
+    const subtotal = round2(cartItems.reduce((total, item) => total + (item.price * item.quantity), 0));
+    const tax = round2(cartItems.reduce((total, item) => {
+        const rate = getItemVatRate(item);
         const lineTotal = (item.price || 0) * (item.quantity || 0);
-        if (rate <= 0) return total; // no VAT
+        if (rate <= 0) return total;
         const base = lineTotal / (1 + rate);
-        const vatAmount = lineTotal - base;
+        const vatAmount = round2(lineTotal - base);
         return total + vatAmount;
-    }, 0);
+    }, 0));
     const loyaltyDiscountAmount = loyaltyDiscounts?.totalDiscount || 0;
     // Grand total must NOT add VAT again because subtotal already includes VAT
-    const grandTotal = subtotal - loyaltyDiscountAmount;
+    const grandTotal = round2(subtotal - loyaltyDiscountAmount);
 
     // Calculate loyalty discounts when cart items or loyalty customer changes
     useEffect(() => {
@@ -72,15 +77,8 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
     }, [cartItems, loyaltyCustomer, subtotal]);
 
     const clearAll = () => {
-        setCustomerName("");
-        setMobileNumber("");
+        if (onClearLoyaltyCustomer) onClearLoyaltyCustomer();
         clearCart();
-    }
-
-    const placeOrder = () => {
-        if (!orderDetails) return;
-        setShowPopup(true);
-        clearAll();
     }
 
     const closeReceipt = () => {
@@ -89,29 +87,38 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
         clearAll();
     }
 
-    const handlePrintReceipt = () => {
-        const finish = () => {
-            window.removeEventListener('afterprint', finish);
-            closeReceipt();
-        };
-        window.addEventListener('afterprint', finish);
-        window.print();
+    const handlePrintReceipt = (opts) => {
+        if (opts?.fallbackSamePage) {
+            const finish = () => {
+                window.removeEventListener('afterprint', finish);
+                closeReceipt();
+            };
+            window.addEventListener('afterprint', finish);
+            window.print();
+            return;
+        }
+        // New-window print already started in ReceiptPopup — close modal
+        closeReceipt();
     }
 
     /** Open receipt modal; cart is cleared when the modal closes/prints. */
     const openReceipt = (data) => {
+        setShowPaymentModal(false);
         setOrderDetails(data);
         setShowPopup(true);
     }
 
-    const loadRazorpayScript = () => {
-        return new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = "https://checkout.razorpay.com/v1/checkout.js";
-            script.onload = () => resolve(true);
-            script.onerror = () => resolve(false);
-            document.body.appendChild(script);
-        })
+    const openPaymentModal = () => {
+        if (cartItems.length === 0) {
+            toast.error("Количката е празна");
+            return;
+        }
+        setShowPaymentModal(true);
+    }
+
+    const selectPaymentMethod = (paymentMode) => {
+        setShowPaymentModal(false);
+        completePayment(paymentMode);
     }
 
     const deleteOrderOnFailure = async (orderId) => {
@@ -125,8 +132,9 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
 
     const completePayment = async (paymentMode) => {
         // НАП изискване: Проверка за активна cash drawer session преди създаване на поръчка
+        let activeSession;
         try {
-            const activeSession = await CashDrawerService.getActiveSession();
+            activeSession = await CashDrawerService.getActiveSession();
             if (!activeSession) {
                 toast.error(
                     "За да създадете поръчка, трябва първо да започнете работен ден (Контрол на касата) с въведена начална сума и избрано фискално устройство. " +
@@ -135,15 +143,21 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
                 );
                 return;
             }
+            if (!activeSession.deviceSerialNumber) {
+                toast.error("Активната касова сесия няма фискално устройство. Започнете отново работния ден.");
+                return;
+            }
         } catch (error) {
             console.error('Error checking active session:', error);
             toast.error("Грешка при проверка на активна сесия. Моля, опитайте отново.");
             return;
         }
         
-        // Използваме дефаултни стойности ако не са въведени данни
-        const finalCustomerName = customerName.trim() || "Случаен клиент";
-        const finalMobileNumber = mobileNumber.trim() || "0000000000";
+        // Customer only from loyalty card; empty when walk-in (hidden on receipt)
+        const finalCustomerName = loyaltyCustomer
+            ? `${loyaltyCustomer.firstName || ''} ${loyaltyCustomer.lastName || ''}`.trim()
+            : '';
+        const finalMobileNumber = loyaltyCustomer?.phoneNumber || '';
 
         if (cartItems.length === 0) {
             toast.error("Количката е празна");
@@ -152,7 +166,14 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
         const orderData = {
             customerName: finalCustomerName,
             phoneNumber: finalMobileNumber,
-            cartItems,
+            cartItems: cartItems.map(item => ({
+                itemId: item.itemId,
+                name: item.name,
+                barcode: item.barcode,
+                price: item.price,
+                quantity: item.quantity,
+                vatRate: getItemVatRate(item)
+            })),
             subtotal: subtotal,
             tax,
             grandTotal,
@@ -200,12 +221,17 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
             const response = await createOrder(orderData);
             const savedData = response.data;
             
-            // Send to fiscal device after successful order creation
+            // Фискализация задължителна — при неуспех отменяме продажбата
             try {
-                await sendToFiscalDevice(savedData);
+                await sendToFiscalDevice(savedData, activeSession.deviceSerialNumber);
             } catch (fiscalError) {
                 console.error('Fiscal device error:', fiscalError);
-                toast.error('Внимание: Фискалният бон не е изпратен');
+                await deleteOrderOnFailure(savedData.orderId);
+                toast.error(
+                    'Продажбата е отказана: фискалният бон не е издаден. Стоките са върнати в склада.',
+                    { duration: 7000 }
+                );
+                return;
             }
             
             // Inventory is now updated server-side inside OrderServiceImpl#createOrder.
@@ -214,47 +240,6 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
             if (response.status === 201 && paymentMode === "cash") {
                 toast.success("Плащане в брой прието");
                 openReceipt(savedData);
-            } else if (response.status === 201 && paymentMode === "upi") {
-                const razorpayLoaded = await loadRazorpayScript();
-                if (!razorpayLoaded) {
-                    toast.error('Неуспешно зареждане на Razorpay');
-                    await deleteOrderOnFailure(savedData.orderId);
-                    return;
-                }
-
-                //create razorpay order
-                const razorpayResponse = await createRazorpayOrder({amount: grandTotal, currency: 'INR'});
-                const options = {
-                    key: AppConstants.RAZORPAY_KEY_ID,
-                    amount: razorpayResponse.data.amount,
-                    currency: razorpayResponse.data.currency,
-                    order_id: razorpayResponse.data.id,
-                    name: "My Retail Shop",
-                    description: "Order payment",
-                    handler: async function (response) {
-                        await verifyPaymentHandler(response,  savedData);
-                    },
-                    prefill: {
-                        name: finalCustomerName,
-                        contact: finalMobileNumber
-                    },
-                    theme: {
-                        color: "#3399cc"
-                    },
-                    modal: {
-                        ondismiss: async () => {
-                            await deleteOrderOnFailure(savedData.orderId);
-                            toast.error("Плащането е отменено");
-                        }
-                    },
-                };
-                const rzp = new window.Razorpay(options);
-                rzp.on("payment.failed", async (response) => {
-                    await deleteOrderOnFailure(savedData.orderId);
-                    toast.error("Плащането неуспешно");
-                    console.error(response.error.description);
-                });
-                rzp.open();
             } else if (response.status === 201 && paymentMode === "card") {
                 try {
                     const initResp = await initiatePosPayment({
@@ -331,22 +316,19 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
         }
     }
 
-    const sendToFiscalDevice = async (orderData) => {
+    const sendToFiscalDevice = async (orderData, deviceSerialNumber) => {
         try {
-            // Get first available fiscal device
-            const devices = await FiscalService.getAllDevices();
-            if (devices.length === 0) {
-                throw new Error('No fiscal devices registered');
+            if (!deviceSerialNumber) {
+                throw new Error('Няма фискално устройство в касовата сесия');
             }
-            
-            const device = devices[0]; // Use first device
+
             const fiscalReceiptData = {
                 orderId: orderData.orderId,
-                deviceSerialNumber: device.serialNumber,
+                deviceSerialNumber,
                 subtotal: orderData.subtotal,
                 vatAmount: orderData.tax,
                 grandTotal: orderData.grandTotal,
-                cashierName: "Cashier", // You can get this from context
+                cashierName: orderData.cashierUsername || undefined,
                 items: (orderData.items || orderData.cartItems || []).map(item => ({
                     itemName: item.name,
                     barcode: item.barcode || '',
@@ -366,120 +348,108 @@ const CartSummary = ({customerName, mobileNumber, setMobileNumber, setCustomerNa
         }
     };
 
-    const updateInventory = async (orderData) => {
-        try {
-            // Process each item in the order to update inventory
-            const items = orderData.items || orderData.cartItems || [];
-            for (const item of items) {
-                await InventoryService.processSaleTransaction(
-                    item.itemId,
-                    item.quantity,
-                    orderData.orderId
-                );
-            }
-            toast.success('Складът е обновен');
-            
-        } catch (error) {
-            console.error('Error updating inventory:', error);
-            throw error;
-        }
-    };
-
-    const verifyPaymentHandler = async (response, savedOrder) => {
-        const paymentData = {
-            razorpayOrderId: response.razorpay_order_id,
-            razorpayPaymentId: response.razorpay_payment_id,
-            razorpaySignature: response.razorpay_signature,
-            orderId: savedOrder.orderId
-        };
-        try {
-            const paymentResponse = await verifyPayment(paymentData);
-            if (paymentResponse.status === 200) {
-                toast.success("Payment successful");
-                setOrderDetails({
-                    ...savedOrder,
-                    paymentDetails: {
-                        razorpayOrderId: response.razorpay_order_id,
-                        razorpayPaymentId: response.razorpay_payment_id,
-                        razorpaySignature: response.razorpay_signature
-                    },
-                });
-            }else {
-                toast.error("Payment processing failed");
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error("Плащането неуспешно");
-        }
-    };
+    const paymentModal = showPaymentModal && createPortal(
+        <div
+            className="payment-modal-overlay"
+            onClick={() => !isProcessing && setShowPaymentModal(false)}
+            role="presentation"
+        >
+            <div
+                className="payment-modal"
+                onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="payment-modal-title"
+            >
+                <h5 id="payment-modal-title" className="payment-modal-title">Плащане</h5>
+                <p className="payment-modal-hint">Сума за плащане</p>
+                <div className="payment-modal-amount">{formatMoney(grandTotal)}</div>
+                {loyaltyDiscounts && loyaltyDiscountAmount > 0 && (
+                    <p className="payment-modal-discount">
+                        Вкл. лоялна отстъпка: −{formatMoney(loyaltyDiscountAmount)}
+                    </p>
+                )}
+                <div className="payment-modal-actions">
+                    <button
+                        type="button"
+                        className="btn btn-success payment-modal-btn"
+                        onClick={() => selectPaymentMethod("cash")}
+                        disabled={isProcessing}
+                    >
+                        В брой
+                    </button>
+                    <button
+                        type="button"
+                        className="btn btn-info payment-modal-btn"
+                        onClick={() => selectPaymentMethod("card")}
+                        disabled={isProcessing}
+                    >
+                        Карта
+                    </button>
+                    <button
+                        type="button"
+                        className="btn btn-secondary payment-modal-btn"
+                        onClick={() => selectPaymentMethod("split")}
+                        disabled={isProcessing}
+                    >
+                        Съвместно
+                    </button>
+                </div>
+                <button
+                    type="button"
+                    className="btn btn-outline-light payment-modal-cancel"
+                    onClick={() => setShowPaymentModal(false)}
+                    disabled={isProcessing}
+                >
+                    Отказ
+                </button>
+            </div>
+        </div>,
+        document.body
+    );
 
     return (
-        <div className="mt-2">
+        <div className="cart-summary mt-1">
             <div className="cart-summary-details">
-                <div className="d-flex justify-content-between mb-2">
-                    <span className="text-light">Междинна сума (с ДДС):</span>
-                    <span className="text-light">{formatMoney(subtotal)}</span>
+                <div className="cart-summary-secondary d-flex justify-content-between">
+                    <span>Междинна сума (с ДДС):</span>
+                    <span>{formatMoney(subtotal)}</span>
                 </div>
-                <div className="d-flex justify-content-between mb-2">
-                    <span className="text-light">ДДС: </span>
-                    <span className="text-light">{formatMoney(tax)}</span>
+                <div className="cart-summary-secondary d-flex justify-content-between">
+                    <span>ДДС:</span>
+                    <span>{formatMoney(tax)}</span>
                 </div>
                 {loyaltyDiscounts && loyaltyDiscountAmount > 0 && (
-                    <div className="d-flex justify-content-between mb-2">
-                        <span className="text-success">🎯 Лоялна отстъпка:</span>
-                        <span className="text-success">-{formatMoney(loyaltyDiscountAmount)}</span>
+                    <div className="cart-summary-secondary d-flex justify-content-between text-success">
+                        <span>Лоялна отстъпка:</span>
+                        <span>-{formatMoney(loyaltyDiscountAmount)}</span>
                     </div>
                 )}
-                <div className="d-flex justify-content-between mb-4">
-                    <span className="text-light">Крайна сума за плащане:</span>
-                    <span className="text-light">{formatMoney(grandTotal)}</span>
+                <div className="cart-summary-total d-flex justify-content-between align-items-baseline">
+                    <span className="cart-summary-total-label">За плащане</span>
+                    <span className="cart-summary-total-value">{formatMoney(grandTotal)}</span>
                 </div>
             </div>
 
-            <div className="d-flex gap-3">
-                <button className="btn btn-success flex-grow-1"
-                    onClick={() => completePayment("cash")}
-                        disabled={isProcessing || !!orderDetails}
+            <div className="mt-2">
+                <button
+                    type="button"
+                    className="btn btn-success w-100 cart-pay-btn"
+                    onClick={openPaymentModal}
+                    disabled={isProcessing || cartItems.length === 0 || !!orderDetails}
                 >
-                    {isProcessing ? "Обработка...": "В брой"}
-                </button>
-                {/*}
-                <button className="btn btn-primary flex-grow-1"
-                        onClick={() => completePayment("upi")}
-                        disabled={isProcessing}
-                >
-                    {isProcessing ? "Обработка...": "UPI"}
-                </button>
-                */}
-                <button className="btn btn-info flex-grow-1"
-                        onClick={() => completePayment("card")}
-                        disabled={isProcessing || !!orderDetails}
-                >
-                    {isProcessing ? "Обработка...": "Карта"}
-                </button>
-                <button className="btn btn-secondary flex-grow-1"
-                        onClick={() => completePayment("split")}
-                        disabled={isProcessing || !!orderDetails}
-                >
-                    {isProcessing ? "Обработка...": "Съвместно"}
+                    {isProcessing ? "Обработка..." : "Плащане"}
                 </button>
             </div>
-            <div className="d-flex gap-3 mt-3">
-                <button className="btn btn-warning flex-grow-1"
-                    onClick={placeOrder}
-                    disabled={isProcessing || !orderDetails}
-                >
-                    Разпечатай бележка
-                </button>
-            </div>
+
+            {paymentModal}
+
             {
                 showPopup && orderDetails && (
                     <ReceiptPopup
                         orderDetails={{
                             ...orderDetails,
                             items: orderDetails.items || [],
-                            razorpayOrderId: orderDetails.paymentDetails?.razorpayOrderId,
-                            razorpayPaymentId: orderDetails.paymentDetails?.razorpayPaymentId,
                         }}
                         onClose={closeReceipt}
                         onPrint={handlePrintReceipt}

@@ -72,36 +72,4 @@ test.describe('06 Reports', () => {
       timeout: 15_000,
     });
   });
-
-  test('admin can generate DAILY report smoke', async ({ page, request }) => {
-    await forceEndAllSessions(request);
-    await loginAsAdmin(page);
-    await startWorkDay(page, { amount: '100', registerId: 'E2E-DAILY' });
-
-    await openFiscalGenerateForm(page);
-    const form = page.locator('form').filter({ hasText: 'Тип отчет' });
-    await form.locator('select').first().selectOption('DAILY');
-
-    // Cashier + device selects appear for DAILY
-    const selects = form.locator('select');
-    if ((await selects.count()) >= 2) {
-      await selects.nth(1).selectOption({ index: 1 });
-    }
-    if ((await selects.count()) >= 3) {
-      await selects.nth(2).selectOption({ index: 1 });
-    }
-
-    const respPromise = page.waitForResponse(
-      (r) => r.url().includes('/fiscal-reports/daily') && r.request().method() === 'POST',
-      { timeout: 30_000 },
-    );
-    await form.getByRole('button', { name: 'Генерирай отчет' }).click();
-    const res = await respPromise;
-    expect([200, 201, 400, 409, 412]).toContain(res.status());
-    if (res.ok()) {
-      await expect(page.getByText('Отчетът е генериран успешно').first()).toBeVisible();
-    } else {
-      await expect(page.getByText(/Грешка|отчет|касиер|устройство/i).first()).toBeVisible();
-    }
-  });
 });

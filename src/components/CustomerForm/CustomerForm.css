@@ -1,15 +1,22 @@
-/* CustomerForm styles */
-.customer-form-container input::placeholder {
-    color: #6c757d;
-    font-style: italic;
-    font-size: 0.875rem;
+.customer-form-compact {
+    padding: 0.25rem 0;
 }
 
-.customer-form-container input:focus::placeholder {
-    color: #adb5bd;
+.customer-form-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
 }
 
-/* Make placeholder text more visible */
-.customer-form-container input[type="text"]::placeholder {
-    opacity: 0.7;
+.customer-form-loyalty-only {
+    justify-content: flex-start;
+}
+
+.loyalty-chip {
+    max-width: 100%;
+}
+
+.loyalty-chip .badge {
+    max-width: 160px;
 }

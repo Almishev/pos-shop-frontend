@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { AppContext } from '../../context/AppContext';
 import InventoryService from '../../Service/InventoryService';
 import { formatMoney } from '../../util/formatMoney.js';
+import { formatStockWithUnit, formatUnitLabel } from '../../util/unitOfMeasure.js';
 import './InventoryManagement.css';
 
 const InventoryManagement = () => {
@@ -56,25 +57,32 @@ const InventoryManagement = () => {
     const loadInventoryData = async () => {
         try {
             setLoading(true);
-            
-            const [summaryData, lowStockData, outOfStockData, transactionsData, alertsData] = await Promise.all([
+
+            const results = await Promise.allSettled([
                 InventoryService.getInventorySummary(),
                 InventoryService.getLowStockItems(),
                 InventoryService.getOutOfStockItems(),
                 InventoryService.getRecentTransactions(),
                 InventoryService.getActiveAlerts()
             ]);
-            
-            setSummary(summaryData);
-            setLowStockItems(lowStockData);
-            setOutOfStockItems(outOfStockItems);
+
+            const [summaryRes, lowStockRes, outOfStockRes, transactionsRes, alertsRes] = results;
+            const failed = results.filter(r => r.status === 'rejected');
+            if (failed.length) {
+                console.error('Partial inventory load failures:', failed.map(f => f.reason?.response?.data || f.reason));
+                if (failed.length === results.length) {
+                    toast.error('Грешка при зареждане на складовите данни');
+                }
+            }
+
+            if (summaryRes.status === 'fulfilled') setSummary(summaryRes.value);
+            if (lowStockRes.status === 'fulfilled') setLowStockItems(lowStockRes.value);
+            if (outOfStockRes.status === 'fulfilled') setOutOfStockItems(outOfStockRes.value);
             setAllItems(itemsData); // Use itemsData from AppContext
-            setRecentTransactions(transactionsData);
-            setActiveAlerts(alertsData);
+            if (transactionsRes.status === 'fulfilled') setRecentTransactions(transactionsRes.value);
+            if (alertsRes.status === 'fulfilled') setActiveAlerts(alertsRes.value);
         } catch (error) {
             console.error('Error loading inventory data:', error);
-            console.error('Error details:', error.response?.data);
-            console.error('Error status:', error.response?.status);
             toast.error('Грешка при зареждане на складовите данни');
         } finally {
             setLoading(false);
@@ -84,8 +92,8 @@ const InventoryManagement = () => {
     const loadInventoryDataDirectly = async () => {
         try {
             setLoading(true);
-            
-            const [summaryData, lowStockData, outOfStockData, allItemsData, transactionsData, alertsData] = await Promise.all([
+
+            const results = await Promise.allSettled([
                 InventoryService.getInventorySummary(),
                 InventoryService.getLowStockItems(),
                 InventoryService.getOutOfStockItems(),
@@ -93,17 +101,24 @@ const InventoryManagement = () => {
                 InventoryService.getRecentTransactions(),
                 InventoryService.getActiveAlerts()
             ]);
-            
-            setSummary(summaryData);
-            setLowStockItems(lowStockData);
-            setOutOfStockItems(outOfStockData);
-            setAllItems(allItemsData); // Use data from API
-            setRecentTransactions(transactionsData);
-            setActiveAlerts(alertsData);
+
+            const [summaryRes, lowStockRes, outOfStockRes, allItemsRes, transactionsRes, alertsRes] = results;
+            const failed = results.filter(r => r.status === 'rejected');
+            if (failed.length) {
+                console.error('Partial inventory load failures:', failed.map(f => f.reason?.response?.data || f.reason));
+                if (failed.length === results.length) {
+                    toast.error('Грешка при зареждане на складовите данни');
+                }
+            }
+
+            if (summaryRes.status === 'fulfilled') setSummary(summaryRes.value);
+            if (lowStockRes.status === 'fulfilled') setLowStockItems(lowStockRes.value);
+            if (outOfStockRes.status === 'fulfilled') setOutOfStockItems(outOfStockRes.value);
+            if (allItemsRes.status === 'fulfilled') setAllItems(allItemsRes.value);
+            if (transactionsRes.status === 'fulfilled') setRecentTransactions(transactionsRes.value);
+            if (alertsRes.status === 'fulfilled') setActiveAlerts(alertsRes.value);
         } catch (error) {
             console.error('Error loading inventory data directly:', error);
-            console.error('Error details:', error.response?.data);
-            console.error('Error status:', error.response?.status);
             toast.error('Грешка при зареждане на складовите данни');
         } finally {
             setLoading(false);
@@ -211,34 +226,69 @@ const InventoryManagement = () => {
         setShowStockForm(false);
     };
 
+    const resolveCostPrice = (item) => {
+        if (!item) return '';
+        const cost = item.costPrice;
+        if (cost === null || cost === undefined || cost === '') return '';
+        return cost;
+    };
+
+    const openStockForm = (item = null) => {
+        if (item) {
+            setSelectedItem(item);
+            setFormData(prev => ({
+                ...prev,
+                unitPrice: resolveCostPrice(item)
+            }));
+        }
+        setShowStockForm(true);
+        setTimeout(() => {
+            document.getElementById('stock-operation-form')?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 50);
+    };
+
     const handleStockOperation = async (operation) => {
         if (!selectedItem) {
             toast.error('Моля, първо изберете артикул');
             return;
         }
 
+        const quantity = parseInt(formData.quantity, 10);
+        if (!quantity || quantity <= 0) {
+            toast.error('Количеството трябва да е по-голямо от 0');
+            return;
+        }
+
+        const unitPrice = parseFloat(formData.unitPrice);
+        if (operation === 'add' && (!unitPrice || unitPrice <= 0)) {
+            toast.error('Въведете доставна цена за тази операция');
+            return;
+        }
+
         try {
             const request = {
                 itemId: selectedItem.itemId,
-                itemName: selectedItem.name,
-                quantity: parseInt(formData.quantity),
-                unitPrice: parseFloat(formData.unitPrice),
+                itemName: selectedItem.name || selectedItem.itemName,
+                quantity,
+                unitPrice: Number.isFinite(unitPrice) ? unitPrice : null,
                 notes: formData.notes,
-                createdBy: 'Admin', // You can get this from context
+                createdBy: 'Admin',
                 adjustmentType: formData.adjustmentType,
                 reason: formData.reason
             };
 
-            let result;
             switch (operation) {
                 case 'add':
-                    result = await InventoryService.addStock(request);
+                    await InventoryService.addStock(request);
                     break;
                 case 'remove':
-                    result = await InventoryService.removeStock(request);
+                    await InventoryService.removeStock(request);
                     break;
                 case 'adjust':
-                    result = await InventoryService.adjustStock(request);
+                    await InventoryService.adjustStock(request);
                     break;
                 default:
                     toast.error('Невалидна операция');
@@ -308,60 +358,8 @@ const InventoryManagement = () => {
                             <h2>Склад</h2>
                             <div className="d-flex gap-2">
                                 <button 
-                                    className="btn btn-info"
-                                    onClick={async () => {
-                                        try {
-                                            const response = await fetch('/api/items/debug/all', {
-                                                headers: {
-                                                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                                                    'Content-Type': 'application/json'
-                                                }
-                                            });
-                                            if (response.ok) {
-                                                const data = await response.json();
-                                                alert('Debug данните са заредени! Проверете конзолата (F12)');
-                                                toast.success('Debug данните са заредени в конзолата');
-                                            } else {
-                                                toast.error('Грешка при зареждане на debug данните');
-                                            }
-                                        } catch (error) {
-                                            console.error('Error getting debug data:', error);
-                                            toast.error('Грешка при зареждане на debug данните');
-                                        }
-                                    }}
-                                >
-                                    <i className="bi bi-bug me-2"></i>
-                                    Debug данни
-                                </button>
-                                <button 
-                                    className="btn btn-warning"
-                                    onClick={async () => {
-                                        try {
-                                            const response = await fetch('/api/admin/items/generate-missing-ids', {
-                                                method: 'POST',
-                                                headers: {
-                                                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                                                    'Content-Type': 'application/json'
-                                                }
-                                            });
-                                            if (response.ok) {
-                                                toast.success('Липсващите ID-та са генерирани успешно');
-                                                loadInventoryDataDirectly();
-                                            } else {
-                                                toast.error('Грешка при генериране на ID-та');
-                                            }
-                                        } catch (error) {
-                                            console.error('Error generating missing IDs:', error);
-                                            toast.error('Грешка при генериране на ID-та');
-                                        }
-                                    }}
-                                >
-                                    <i className="bi bi-tools me-2"></i>
-                                    Генерирай липсващи ID-та
-                                </button>
-                                <button 
                                     className="btn btn-primary"
-                                    onClick={() => setShowStockForm(true)}
+                                    onClick={() => openStockForm()}
                                 >
                                     <i className="bi bi-plus-circle me-2"></i>
                                     Складова операция
@@ -562,7 +560,7 @@ const InventoryManagement = () => {
                                                                 <td>
                                                                     <div className="d-flex align-items-center">
                                                                         <strong className={stock === 0 ? 'text-danger' : stock <= reorderPoint ? 'text-warning' : 'text-success'}>
-                                                                            {stock} бр
+                                                                            {formatStockWithUnit(stock, item.unitOfMeasure)}
                                                                         </strong>
                                                                         {stock <= reorderPoint && stock > 0 && (
                                                                             <small className="text-muted ms-2">
@@ -577,10 +575,7 @@ const InventoryManagement = () => {
                                                                     <div className="d-flex gap-1">
                                                                         <button
                                                                             className="btn btn-sm btn-outline-primary"
-                                                                            onClick={() => {
-                                                                                setSelectedItem(item);
-                                                                                setShowStockForm(true);
-                                                                            }}
+                                                                            onClick={() => openStockForm(item)}
                                                                             title="Складова операция"
                                                                         >
                                                                             <i className="bi bi-gear"></i>
@@ -632,7 +627,7 @@ const InventoryManagement = () => {
 
                         {/* Stock Operation Form */}
                         {showStockForm && (
-                            <div className="card mb-4">
+                            <div className="card mb-4 stock-operation-card" id="stock-operation-form">
                                 <div className="card-header">
                                     <h5>Складова операция</h5>
                                 </div>
@@ -645,13 +640,17 @@ const InventoryManagement = () => {
                                                 value={selectedItem?.itemId || ''}
                                                 onChange={(e) => {
                                                     const item = allItems.find(i => i.itemId === e.target.value);
-                                                    setSelectedItem(item);
+                                                    setSelectedItem(item || null);
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        unitPrice: resolveCostPrice(item)
+                                                    }));
                                                 }}
                                             >
                                                 <option value="">Изберете артикул</option>
                                                 {allItems.map((item) => (
                                                     <option key={item.itemId} value={item.itemId}>
-                                                        {item.name} - Наличност: {item.stockQuantity || 0} бр
+                                                        {item.name} - Наличност: {formatStockWithUnit(item.stockQuantity || 0, item.unitOfMeasure)}
                                                     </option>
                                                 ))}
                                             </select>
@@ -688,16 +687,18 @@ const InventoryManagement = () => {
                                             />
                                         </div>
                                         <div className="col-md-4 mb-3">
-                                            <label className="form-label">Единична цена</label>
+                                            <label className="form-label">Доставна цена за тази операция (€)</label>
                                             <input
                                                 type="number"
                                                 step="0.01"
+                                                min="0"
                                                 className="form-control"
                                                 name="unitPrice"
                                                 value={formData.unitPrice}
                                                 onChange={handleInputChange}
-                                                placeholder="Въведете единична цена"
+                                                placeholder="Цена на доставката"
                                             />
+                                            <small className="text-muted">Задължителна при Добави; може да се различава при всяко зареждане</small>
                                         </div>
                                         <div className="col-md-4 mb-3">
                                             <label className="form-label">Причина</label>
@@ -788,9 +789,9 @@ const InventoryManagement = () => {
                                                         <td>{item.itemName || item.name}</td>
                                                         <td>{item.barcode}</td>
                                                         <td>
-                                                            <strong>{(item.currentStock ?? item.stockQuantity ?? 0)} бр</strong>
+                                                            <strong>{formatStockWithUnit(item.currentStock ?? item.stockQuantity ?? 0, item.unitOfMeasure)}</strong>
                                                         </td>
-                                                        <td>{item.reorderPoint} бр</td>
+                                                        <td>{item.reorderPoint} {formatUnitLabel(item.unitOfMeasure)}</td>
                                                         <td>{getStockStatusBadge(item.stockStatus)}</td>
                                                         <td>
                                                             {item.needsReorder ? (
@@ -802,10 +803,7 @@ const InventoryManagement = () => {
                                                         <td>
                                                             <button
                                                                 className="btn btn-sm btn-outline-primary"
-                                                                onClick={() => {
-                                                                    setSelectedItem(item);
-                                                                    setShowStockForm(true);
-                                                                }}
+                                                                onClick={() => openStockForm(item)}
                                                             >
                                                                 <i className="bi bi-plus-circle"></i> Добави
                                                             </button>

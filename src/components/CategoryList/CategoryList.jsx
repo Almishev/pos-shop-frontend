@@ -3,9 +3,8 @@ import {useContext, useState} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
 import {deleteCategory} from "../../Service/CategoryService.js";
 import toast from "react-hot-toast";
-import {assets} from "../../assets/assets.js";
 
-const CategoryList = () => {
+const CategoryList = ({onEditCategory}) => {
     const {categories, setCategories} = useContext(AppContext);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -25,7 +24,12 @@ const CategoryList = () => {
             }
         } catch (error) {
             console.error(error);
-            toast.error("Неуспешно изтриване на категория");
+            const msg = error.response?.data?.message || error.message || "";
+            if (msg.includes("foreign key") || msg.includes("tbl_items") || msg.includes("referenced") || msg.includes("existing items")) {
+                toast.error("Категорията има артикули — преместете/изтрийте ги първо");
+            } else {
+                toast.error("Неуспешно изтриване на категория");
+            }
         }
     }
 
@@ -51,16 +55,23 @@ const CategoryList = () => {
                     <div key={index} className="col-12">
                         <div className="card p-3 category-card" style={{backgroundColor: category.bgColor}}>
                             <div className="d-flex align-items-center">
-                                <div style={{marginRight: '15px'}}>
-                                    <img src={category.imgUrl || assets.upload} alt={category.name} className="category-image" />
-                                </div>
                                 <div className="flex-grow-1">
                                     <h5 className="mb-1 text-white">{category.name}</h5>
                                     <p className="mb-0 text-white">{category.items} артикула</p>
                                 </div>
-                                <div>
-                                    <button className="btn btn-danger btn-sm"
-                                    onClick={() => deleteByCategoryId(category.categoryId)}>
+                                <div className="d-flex gap-2">
+                                    <button
+                                        className="btn btn-warning btn-sm"
+                                        onClick={() => onEditCategory?.(category)}
+                                        title="Редактирай категория"
+                                    >
+                                        <i className="bi bi-pencil"></i>
+                                    </button>
+                                    <button
+                                        className="btn btn-danger btn-sm"
+                                        onClick={() => deleteByCategoryId(category.categoryId)}
+                                        title="Изтрий"
+                                    >
                                         <i className="bi bi-trash"></i>
                                     </button>
                                 </div>
