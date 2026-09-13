@@ -47,15 +47,25 @@ export const AppContextProvider = (props) => {
         setCartItems([]);
     }
 
+    // Restore session from localStorage on first mount
+    useEffect(() => {
+        if (localStorage.getItem("token") && localStorage.getItem("role")) {
+            setAuthData(
+                localStorage.getItem("token"),
+                localStorage.getItem("role"),
+                localStorage.getItem("email"),
+                localStorage.getItem("name")
+            );
+        }
+    }, []);
+
+    // Load catalog whenever auth token becomes available (login / page refresh)
     useEffect(() => {
         async function loadData() {
-            if (localStorage.getItem("token") && localStorage.getItem("role")) {
-                setAuthData(
-                    localStorage.getItem("token"),
-                    localStorage.getItem("role"),
-                    localStorage.getItem("email"),
-                    localStorage.getItem("name")
-                );
+            if (!auth.token) {
+                setCategories([]);
+                setItemsData([]);
+                return;
             }
             try {
                 const response = await fetchCategories();
@@ -109,10 +119,9 @@ export const AppContextProvider = (props) => {
                 setCategories([]);
                 setItemsData([]);
             }
-
         }
         loadData();
-    }, []);
+    }, [auth.token]);
 
     const authContextValue = useMemo(
         () => ({ auth, setAuthData }),

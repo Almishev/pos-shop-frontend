@@ -536,6 +536,8 @@ const InventoryManagement = () => {
                                                         <th>Баркод</th>
                                                         <th>Наличност</th>
                                                         <th>Цена</th>
+                                                        <th>Последна доставна цена (€)</th>
+                                                        <th>ДДС ставка</th>
                                                         <th>Статус</th>
                                                         <th>Действия</th>
                                                     </tr>
@@ -570,6 +572,16 @@ const InventoryManagement = () => {
                                                                     </div>
                                                                 </td>
                                                                 <td>{formatCurrency(item.price)}</td>
+                                                                <td>
+                                                                    {item.costPrice != null && item.costPrice !== ''
+                                                                        ? formatCurrency(item.costPrice)
+                                                                        : <span className="text-muted">—</span>}
+                                                                </td>
+                                                                <td>
+                                                                    {item.vatRate != null && item.vatRate !== ''
+                                                                        ? `${(Number(item.vatRate) * 100).toLocaleString('bg-BG', { maximumFractionDigits: 2 })}%`
+                                                                        : <span className="text-muted">—</span>}
+                                                                </td>
                                                                 <td>{getStockStatusBadge(item.stockStatus)}</td>
                                                                 <td>
                                                                     <div className="d-flex gap-1">
