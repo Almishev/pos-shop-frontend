@@ -5,7 +5,7 @@ export const UNIT_OF_MEASURE_OPTIONS = [
     { value: 'l', label: 'Литър (л)' },
 ];
 
-/** Short label for stock displays */
+/** Short labels: бр. / кг / л */
 export function formatUnitLabel(unitOfMeasure) {
     const unit = (unitOfMeasure || 'pcs').toString().trim().toLowerCase();
     switch (unit) {
@@ -19,11 +19,17 @@ export function formatUnitLabel(unitOfMeasure) {
         case 'pcs':
         case 'pc':
         case 'бр':
+        case 'бр.':
         case 'брой':
         case 'бройка':
         default:
-            return 'бр';
+            return 'бр.';
     }
+}
+
+/** @deprecated use formatUnitLabel — same short forms */
+export function formatUnitFullLabel(unitOfMeasure) {
+    return formatUnitLabel(unitOfMeasure);
 }
 
 export function formatStockWithUnit(quantity, unitOfMeasure) {

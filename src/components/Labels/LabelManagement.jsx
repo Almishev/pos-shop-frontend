@@ -253,18 +253,44 @@ const LabelManagement = () => {
     };
 
     const bulkPrintAll = async () => {
+        if (!itemsData || itemsData.length === 0) {
+            toast.error('Няма продукти за печат');
+            return;
+        }
         try {
             setLoading(true);
-            const result = await LabelService.bulkPrintAllItems();
-            if (result.success) {
-                toast.success(result.message);
-                // Генериране на HTML за всички продукти
-                const htmlContent = result.labels.map(label => label.html).join('');
-                LabelService.printLabels(htmlContent, 'всички продукти');
-            }
+            // Client-side labels so EAN-13 stripes are embedded (scannable)
+            const htmlContent = itemsData.map((item) =>
+                LabelService.generatePriceLabelHTML(item)
+            ).join('');
+            LabelService.printLabels(htmlContent, 'всички продукти');
+            toast.success(`Масов печат на ${itemsData.length} етикета`);
         } catch (error) {
             console.error('Error in bulk print:', error);
             toast.error('Грешка при масов печат');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const downloadLabelsFile = () => {
+        const source =
+            selectedLabelType === 'price' && selectedItems.length > 0
+                ? selectedItems
+                : itemsData;
+        if (!source || source.length === 0) {
+            toast.error('Няма продукти за файл');
+            return;
+        }
+        try {
+            setLoading(true);
+            const result = LabelService.downloadLabelsFile(source, {
+                title: 'Етикети — продукти'
+            });
+            toast.success(`Свален файл с ${result.count} етикета`);
+        } catch (error) {
+            console.error('Error downloading labels file:', error);
+            toast.error(error.message || 'Грешка при сваляне на файла');
         } finally {
             setLoading(false);
         }
@@ -588,6 +614,15 @@ const LabelManagement = () => {
                 >
                     <i className="bi bi-collection me-2"></i>
                     Масов печат (всички продукти)
+                </button>
+                <button
+                    className="btn label-btn-white"
+                    onClick={downloadLabelsFile}
+                    disabled={loading || !itemsData || itemsData.length === 0}
+                    title="Сваля HTML файл с име, цена, мерна единица, баркод номер и графика"
+                >
+                    <i className="bi bi-download me-2"></i>
+                    Изтегли файл (етикети)
                 </button>
             </div>
 
