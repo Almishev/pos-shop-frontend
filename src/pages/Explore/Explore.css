@@ -31,6 +31,43 @@
     font-size: 0.875rem;
 }
 
+/* Always-on USB barcode wedge capture (visually hidden, stays focusable) */
+.explore-barcode-capture {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.explore-scan-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    white-space: nowrap;
+}
+
+.explore-scan-status.active {
+    color: #1b1b1b;
+    background: #ffc107;
+    border-color: #ffc107;
+    font-weight: 600;
+}
+
+.explore-scan-status.paused {
+    color: #ddd;
+    background: transparent;
+}
+
+.explore-scan-status.btn.paused:hover {
+    color: #fff;
+    border-color: #ffc107;
+}
+
 .horizontal-line {
     margin: 10px 0;
     border: 0;
