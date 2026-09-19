@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { AppContext } from '../../context/AppContext';
@@ -7,16 +7,24 @@ import { formatMoney } from '../../util/formatMoney.js';
 import { formatStockWithUnit, formatUnitLabel } from '../../util/unitOfMeasure.js';
 import './InventoryManagement.css';
 
+const SORT_FIELD_MAP = {
+    name: 'name',
+    stock: 'stockQuantity',
+    price: 'price',
+    category: 'category.name'
+};
+
 const InventoryManagement = () => {
     const navigate = useNavigate();
-    const { itemsData } = useContext(AppContext);
+    const { itemsData, categories } = useContext(AppContext);
     const [summary, setSummary] = useState(null);
     const [lowStockItems, setLowStockItems] = useState([]);
     const [outOfStockItems, setOutOfStockItems] = useState([]);
-    const [allItems, setAllItems] = useState([]);
+    const [pagedItems, setPagedItems] = useState([]);
     const [recentTransactions, setRecentTransactions] = useState([]);
     const [activeAlerts, setActiveAlerts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [tableLoading, setTableLoading] = useState(false);
     const [showStockForm, setShowStockForm] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [formData, setFormData] = useState({
@@ -28,36 +36,32 @@ const InventoryManagement = () => {
     });
 
     // Search and filter states
-    const [filteredItems, setFilteredItems] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [searchBy, setSearchBy] = useState('name');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [sortBy, setSortBy] = useState('name');
     const [sortOrder, setSortOrder] = useState('asc');
-    const [showAllItems, setShowAllItems] = useState(false);
+    const [showAllItems, setShowAllItems] = useState(true);
+    const [page, setPage] = useState(0);
+    const [pageSize, setPageSize] = useState(20);
+    const [totalElements, setTotalElements] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const pageRequestId = useRef(0);
 
-    // Initial load
+    // Debounce search input
     useEffect(() => {
-        loadInventoryDataDirectly();
-    }, []);
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm.trim());
+            setPage(0);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
 
-    // Reload when itemsData changes
-    useEffect(() => {
-        if (itemsData && itemsData.length > 0) {
-            loadInventoryData();
-        }
-    }, [itemsData]); // Reload when itemsData changes
-
-    // Filter and sort items when dependencies change
-    useEffect(() => {
-        filterAndSortItems();
-    }, [allItems, searchTerm, searchBy, categoryFilter, statusFilter, sortBy, sortOrder]);
-
-    const loadInventoryData = async () => {
+    const loadDashboard = useCallback(async () => {
         try {
             setLoading(true);
-
             const results = await Promise.allSettled([
                 InventoryService.getInventorySummary(),
                 InventoryService.getLowStockItems(),
@@ -78,7 +82,6 @@ const InventoryManagement = () => {
             if (summaryRes.status === 'fulfilled') setSummary(summaryRes.value);
             if (lowStockRes.status === 'fulfilled') setLowStockItems(lowStockRes.value);
             if (outOfStockRes.status === 'fulfilled') setOutOfStockItems(outOfStockRes.value);
-            setAllItems(itemsData); // Use itemsData from AppContext
             if (transactionsRes.status === 'fulfilled') setRecentTransactions(transactionsRes.value);
             if (alertsRes.status === 'fulfilled') setActiveAlerts(alertsRes.value);
         } catch (error) {
@@ -87,124 +90,68 @@ const InventoryManagement = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const loadInventoryDataDirectly = async () => {
+    const loadPagedItems = useCallback(async () => {
+        const requestId = ++pageRequestId.current;
         try {
-            setLoading(true);
-
-            const results = await Promise.allSettled([
-                InventoryService.getInventorySummary(),
-                InventoryService.getLowStockItems(),
-                InventoryService.getOutOfStockItems(),
-                InventoryService.getAllItems(),
-                InventoryService.getRecentTransactions(),
-                InventoryService.getActiveAlerts()
-            ]);
-
-            const [summaryRes, lowStockRes, outOfStockRes, allItemsRes, transactionsRes, alertsRes] = results;
-            const failed = results.filter(r => r.status === 'rejected');
-            if (failed.length) {
-                console.error('Partial inventory load failures:', failed.map(f => f.reason?.response?.data || f.reason));
-                if (failed.length === results.length) {
-                    toast.error('Грешка при зареждане на складовите данни');
-                }
-            }
-
-            if (summaryRes.status === 'fulfilled') setSummary(summaryRes.value);
-            if (lowStockRes.status === 'fulfilled') setLowStockItems(lowStockRes.value);
-            if (outOfStockRes.status === 'fulfilled') setOutOfStockItems(outOfStockRes.value);
-            if (allItemsRes.status === 'fulfilled') setAllItems(allItemsRes.value);
-            if (transactionsRes.status === 'fulfilled') setRecentTransactions(transactionsRes.value);
-            if (alertsRes.status === 'fulfilled') setActiveAlerts(alertsRes.value);
-        } catch (error) {
-            console.error('Error loading inventory data directly:', error);
-            toast.error('Грешка при зареждане на складовите данни');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const filterAndSortItems = () => {
-        let filtered = [...allItems];
-
-        // Apply search filter
-        if (searchTerm) {
-            filtered = filtered.filter(item => {
-                if (searchBy === 'name') {
-                    return item.name?.toLowerCase().includes(searchTerm.toLowerCase());
-                } else if (searchBy === 'barcode') {
-                    return item.barcode?.toLowerCase().includes(searchTerm.toLowerCase());
-                }
-                return true;
+            setTableLoading(true);
+            const sortField = SORT_FIELD_MAP[sortBy] || 'name';
+            const pageData = await InventoryService.getItemsPage({
+                page,
+                size: pageSize,
+                search: debouncedSearch,
+                searchBy,
+                category: categoryFilter,
+                status: statusFilter,
+                sort: `${sortField},${sortOrder}`
             });
-        }
-
-        // Apply category filter
-        if (categoryFilter) {
-            filtered = filtered.filter(item => 
-                item.categoryName === categoryFilter
-            );
-        }
-
-        // Apply status filter
-        if (statusFilter) {
-            filtered = filtered.filter(item => 
-                item.stockStatus === statusFilter
-            );
-        }
-
-        // Apply sorting
-        filtered.sort((a, b) => {
-            let aValue, bValue;
-            
-            switch (sortBy) {
-                case 'name':
-                    aValue = a.name || '';
-                    bValue = b.name || '';
-                    break;
-                case 'stock':
-                    aValue = a.stockQuantity || 0;
-                    bValue = b.stockQuantity || 0;
-                    break;
-                case 'price':
-                    aValue = a.price || 0;
-                    bValue = b.price || 0;
-                    break;
-                case 'category':
-                    aValue = a.categoryName || '';
-                    bValue = b.categoryName || '';
-                    break;
-                default:
-                    aValue = a.name || '';
-                    bValue = b.name || '';
+            if (requestId !== pageRequestId.current) return;
+            setPagedItems(pageData.content || []);
+            setTotalElements(pageData.totalElements ?? 0);
+            setTotalPages(pageData.totalPages ?? 0);
+        } catch (error) {
+            if (requestId !== pageRequestId.current) return;
+            console.error('Error loading paged items:', error);
+            toast.error('Грешка при зареждане на артикулите');
+            setPagedItems([]);
+            setTotalElements(0);
+            setTotalPages(0);
+        } finally {
+            if (requestId === pageRequestId.current) {
+                setTableLoading(false);
             }
+        }
+    }, [page, pageSize, debouncedSearch, searchBy, categoryFilter, statusFilter, sortBy, sortOrder]);
 
-            if (sortOrder === 'asc') {
-                return aValue > bValue ? 1 : -1;
-            } else {
-                return aValue < bValue ? 1 : -1;
-            }
-        });
+    useEffect(() => {
+        loadDashboard();
+    }, [loadDashboard]);
 
-        setFilteredItems(filtered);
-    };
-
-    const getUniqueCategories = () => {
-        const categories = allItems
-            .map(item => item.categoryName)
-            .filter(Boolean)
-            .filter((value, index, self) => self.indexOf(value) === index);
-        return categories.sort();
-    };
+    useEffect(() => {
+        loadPagedItems();
+    }, [loadPagedItems]);
 
     const clearFilters = () => {
         setSearchTerm('');
+        setDebouncedSearch('');
         setCategoryFilter('');
         setStatusFilter('');
         setSortBy('name');
         setSortOrder('asc');
+        setPage(0);
     };
+
+    const prevPage = () => {
+        if (page > 0) setPage(page - 1);
+    };
+
+    const nextPage = () => {
+        if (page + 1 < totalPages) setPage(page + 1);
+    };
+
+    const rangeFrom = totalElements === 0 ? 0 : page * pageSize + 1;
+    const rangeTo = Math.min((page + 1) * pageSize, totalElements);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -297,7 +244,7 @@ const InventoryManagement = () => {
             
             toast.success('Операцията е изпълнена успешно');
             resetForm();
-            loadInventoryData();
+            await Promise.all([loadDashboard(), loadPagedItems()]);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Грешка при изпълнение на операцията');
             console.error(`Error performing ${operation} operation:`, error);
@@ -418,7 +365,10 @@ const InventoryManagement = () => {
                                             <select 
                                                 className="form-select"
                                                 value={searchBy}
-                                                onChange={(e) => setSearchBy(e.target.value)}
+                                                onChange={(e) => {
+                                                    setSearchBy(e.target.value);
+                                                    setPage(0);
+                                                }}
                                             >
                                                 <option value="name">По име</option>
                                                 <option value="barcode">По баркод</option>
@@ -437,14 +387,21 @@ const InventoryManagement = () => {
                                         <select
                                             className="form-select"
                                             value={categoryFilter}
-                                            onChange={(e) => setCategoryFilter(e.target.value)}
+                                            onChange={(e) => {
+                                                setCategoryFilter(e.target.value);
+                                                setPage(0);
+                                            }}
                                         >
                                             <option value="">Всички категории</option>
-                                            {getUniqueCategories().map(category => (
-                                                <option key={category} value={category}>
-                                                    {category}
-                                                </option>
-                                            ))}
+                                            {(categories || [])
+                                                .map(c => c.name)
+                                                .filter(Boolean)
+                                                .sort((a, b) => a.localeCompare(b, 'bg'))
+                                                .map(category => (
+                                                    <option key={category} value={category}>
+                                                        {category}
+                                                    </option>
+                                                ))}
                                         </select>
                                     </div>
                                     <div className="col-md-2 mb-3">
@@ -452,7 +409,10 @@ const InventoryManagement = () => {
                                         <select
                                             className="form-select"
                                             value={statusFilter}
-                                            onChange={(e) => setStatusFilter(e.target.value)}
+                                            onChange={(e) => {
+                                                setStatusFilter(e.target.value);
+                                                setPage(0);
+                                            }}
                                         >
                                             <option value="">Всички статуси</option>
                                             <option value="OUT_OF_STOCK">Изчерпани</option>
@@ -466,7 +426,10 @@ const InventoryManagement = () => {
                                         <select
                                             className="form-select"
                                             value={sortBy}
-                                            onChange={(e) => setSortBy(e.target.value)}
+                                            onChange={(e) => {
+                                                setSortBy(e.target.value);
+                                                setPage(0);
+                                            }}
                                         >
                                             <option value="name">По име</option>
                                             <option value="stock">По наличност</option>
@@ -479,13 +442,19 @@ const InventoryManagement = () => {
                                         <div className="d-flex gap-2">
                                             <button
                                                 className={`btn btn-sm ${sortOrder === 'asc' ? 'btn-primary' : 'btn-outline-primary'}`}
-                                                onClick={() => setSortOrder('asc')}
+                                                onClick={() => {
+                                                    setSortOrder('asc');
+                                                    setPage(0);
+                                                }}
                                             >
                                                 ↑
                                             </button>
                                             <button
                                                 className={`btn btn-sm ${sortOrder === 'desc' ? 'btn-primary' : 'btn-outline-primary'}`}
-                                                onClick={() => setSortOrder('desc')}
+                                                onClick={() => {
+                                                    setSortOrder('desc');
+                                                    setPage(0);
+                                                }}
                                             >
                                                 ↓
                                             </button>
@@ -493,13 +462,30 @@ const InventoryManagement = () => {
                                     </div>
                                 </div>
                                 
-                                <div className="d-flex justify-content-between align-items-center">
+                                <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
                                     <div>
                                         <span className="text-muted">
-                                            Показани {filteredItems.length} от {allItems.length} артикула
+                                            {totalElements === 0
+                                                ? 'Няма артикули'
+                                                : `Показани ${rangeFrom}–${rangeTo} от ${totalElements} артикула`}
                                         </span>
                                     </div>
-                                    <div className="d-flex gap-2">
+                                    <div className="d-flex gap-2 align-items-center flex-wrap">
+                                        <select
+                                            className="form-select form-select-sm"
+                                            style={{ width: 'auto' }}
+                                            value={pageSize}
+                                            onChange={(e) => {
+                                                setPageSize(Number(e.target.value));
+                                                setPage(0);
+                                            }}
+                                            title="Артикули на страница"
+                                        >
+                                            <option value={10}>10 / стр.</option>
+                                            <option value={20}>20 / стр.</option>
+                                            <option value={50}>50 / стр.</option>
+                                            <option value={100}>100 / стр.</option>
+                                        </select>
                                         <button
                                             className="btn btn-sm btn-outline-secondary"
                                             onClick={clearFilters}
@@ -510,7 +496,7 @@ const InventoryManagement = () => {
                                             className={`btn btn-sm ${showAllItems ? 'btn-primary' : 'btn-outline-primary'}`}
                                             onClick={() => setShowAllItems(!showAllItems)}
                                         >
-                                            {showAllItems ? 'Скрий всички' : 'Покажи всички артикули'}
+                                            {showAllItems ? 'Скрий списъка' : 'Покажи артикулите'}
                                         </button>
                                     </div>
                                 </div>
@@ -520,14 +506,18 @@ const InventoryManagement = () => {
                         {/* All Items Table */}
                         {showAllItems && (
                             <div className="card mb-4 all-items-card">
-                                <div className="card-header">
-                                    <h5>📋 Всички артикули ({filteredItems.length})</h5>
+                                <div className="card-header d-flex justify-content-between align-items-center">
+                                    <h5 className="mb-0">📋 Всички артикули ({totalElements})</h5>
+                                    {tableLoading && (
+                                        <span className="text-muted small">Зареждане...</span>
+                                    )}
                                 </div>
                                 <div className="card-body">
-                                    {filteredItems.length === 0 ? (
+                                    {pagedItems.length === 0 && !tableLoading ? (
                                         <p className="text-muted">Няма артикули, отговарящи на филтрите.</p>
                                     ) : (
-                                        <div className="table-responsive">
+                                        <>
+                                        <div className={`table-responsive ${tableLoading ? 'opacity-50' : ''}`}>
                                             <table className="table table-hover">
                                                 <thead>
                                                     <tr>
@@ -543,7 +533,7 @@ const InventoryManagement = () => {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {filteredItems.map((item) => {
+                                                    {pagedItems.map((item) => {
                                                         const stock = item.stockQuantity || 0;
                                                         const reorderPoint = item.reorderPoint || 0;
                                                         return (
@@ -595,7 +585,6 @@ const InventoryManagement = () => {
                                                                         <button
                                                                             className="btn btn-sm btn-outline-success"
                                                                             onClick={() => {
-                                                                                // Try to use itemId first, fallback to numeric id
                                                                                 let itemIdToUse = item.itemId;
                                                                                 
                                                                                 if (!itemIdToUse || itemIdToUse === 'undefined' || itemIdToUse === 'null' || itemIdToUse.trim() === '') {
@@ -617,7 +606,6 @@ const InventoryManagement = () => {
                                                                         <button
                                                                             className="btn btn-sm btn-outline-info"
                                                                             onClick={() => {
-                                                                                // TODO: Show item details modal
                                                                                 toast.success('Детайли за артикула');
                                                                             }}
                                                                             title="Детайли"
@@ -632,6 +620,28 @@ const InventoryManagement = () => {
                                                 </tbody>
                                             </table>
                                         </div>
+                                        <div className="inventory-pagination d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+                                            <div>
+                                                <button
+                                                    className="btn btn-outline-secondary btn-sm me-2"
+                                                    onClick={prevPage}
+                                                    disabled={page === 0 || tableLoading}
+                                                >
+                                                    <i className="bi bi-chevron-left"></i> Предишна
+                                                </button>
+                                                <button
+                                                    className="btn btn-outline-secondary btn-sm"
+                                                    onClick={nextPage}
+                                                    disabled={page + 1 >= totalPages || tableLoading}
+                                                >
+                                                    Следваща <i className="bi bi-chevron-right"></i>
+                                                </button>
+                                            </div>
+                                            <div className="text-muted small">
+                                                Страница {totalPages === 0 ? 0 : page + 1} от {totalPages || 1}
+                                            </div>
+                                        </div>
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -651,7 +661,9 @@ const InventoryManagement = () => {
                                                 className="form-select"
                                                 value={selectedItem?.itemId || ''}
                                                 onChange={(e) => {
-                                                    const item = allItems.find(i => i.itemId === e.target.value);
+                                                    const catalog = itemsData?.length ? itemsData : pagedItems;
+                                                    const item = catalog.find(i => i.itemId === e.target.value)
+                                                        || pagedItems.find(i => i.itemId === e.target.value);
                                                     setSelectedItem(item || null);
                                                     setFormData(prev => ({
                                                         ...prev,
@@ -660,7 +672,7 @@ const InventoryManagement = () => {
                                                 }}
                                             >
                                                 <option value="">Изберете артикул</option>
-                                                {allItems.map((item) => (
+                                                {(itemsData?.length ? itemsData : pagedItems).map((item) => (
                                                     <option key={item.itemId} value={item.itemId}>
                                                         {item.name} - Наличност: {formatStockWithUnit(item.stockQuantity || 0, item.unitOfMeasure)}
                                                     </option>

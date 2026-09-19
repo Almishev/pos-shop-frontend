@@ -74,6 +74,35 @@ const InventoryService = {
         return response.data;
     },
 
+    /**
+     * Server-side paginated items for inventory table.
+     * @param {{ page?: number, size?: number, search?: string, searchBy?: string, category?: string, status?: string, sort?: string }} params
+     */
+    getItemsPage: async (params = {}) => {
+        const instance = createAuthInstance();
+        const {
+            page = 0,
+            size = 20,
+            search = '',
+            searchBy = 'name',
+            category = '',
+            status = '',
+            sort = 'name,asc'
+        } = params;
+        const response = await instance.get('/items/paged', {
+            params: {
+                page,
+                size,
+                sort,
+                ...(search ? { search } : {}),
+                ...(searchBy ? { searchBy } : {}),
+                ...(category ? { category } : {}),
+                ...(status ? { status } : {})
+            }
+        });
+        return response.data;
+    },
+
     // Transaction history
     getItemTransactionHistory: async (itemId) => {
         const instance = createAuthInstance();
