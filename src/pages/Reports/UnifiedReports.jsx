@@ -2,6 +2,11 @@ import React, { useState, useEffect, useContext } from 'react';
 import { toast } from 'react-hot-toast';
 import { exportOrdersReport, getCashierSummaries } from "../../Service/ReportService.js";
 import { archiveOrders } from "../../Service/OrderService.js";
+import {
+    createDatabaseBackup,
+    listDatabaseBackups,
+    downloadDatabaseBackup
+} from "../../Service/BackupService.js";
 import FiscalService from '../../Service/FiscalService';
 import CashDrawerService from '../../Service/CashDrawerService';
 import { fetchUsers } from '../../Service/UserService.js';
@@ -50,6 +55,9 @@ const UnifiedReports = () => {
     const [existingMonthlyReports, setExistingMonthlyReports] = useState([]);
     const [archivingReports, setArchivingReports] = useState(false);
     const [reportArchiveYears, setReportArchiveYears] = useState(5);
+    const [backingUp, setBackingUp] = useState(false);
+    const [backupFiles, setBackupFiles] = useState([]);
+    const [backupListLoading, setBackupListLoading] = useState(false);
 
     // When role is USER, prefill cashierName with logged-in email
     useEffect(() => {
@@ -78,6 +86,66 @@ const UnifiedReports = () => {
             loadCashierSummaries();
         }
     }, [activeTab, dateFrom, dateTo]);
+
+    useEffect(() => {
+        if (isAdmin && activeTab === 'export') {
+            loadBackupList();
+        }
+    }, [isAdmin, activeTab]);
+
+    const loadBackupList = async () => {
+        try {
+            setBackupListLoading(true);
+            const res = await listDatabaseBackups();
+            setBackupFiles(res.data || []);
+        } catch (e) {
+            console.error('Failed to list backups', e);
+            setBackupFiles([]);
+        } finally {
+            setBackupListLoading(false);
+        }
+    };
+
+    const handleDatabaseBackup = async (destination = 'local') => {
+        const destLabel = destination === 's3' ? 'AWS S3' : 'локален диск';
+        if (!window.confirm(
+            `Създаване на пълен backup на базата данни?\n\nДестинация: ${destLabel}.\nДанните в PostgreSQL НЕ се изтриват.`
+        )) {
+            return;
+        }
+        try {
+            setBackingUp(true);
+            const response = await createDatabaseBackup(destination);
+            const location = response.data?.location || response.data;
+            toast.success(`Backup готов: ${location}`);
+            await loadBackupList();
+        } catch (error) {
+            const msg = error.response?.data?.message
+                || error.response?.data
+                || 'Грешка при създаване на backup';
+            toast.error(typeof msg === 'string' ? msg : 'Грешка при създаване на backup');
+            console.error('Backup error:', error);
+        } finally {
+            setBackingUp(false);
+        }
+    };
+
+    const handleDownloadBackup = async (filename) => {
+        try {
+            await downloadDatabaseBackup(filename);
+            toast.success(`Изтегляне: ${filename}`);
+        } catch (error) {
+            toast.error('Грешка при изтегляне на backup');
+            console.error('Download backup error:', error);
+        }
+    };
+
+    const formatBackupSize = (bytes) => {
+        if (bytes == null) return '—';
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    };
 
     // Проверка за съществуващи месечни отчети при промяна на датата или типа отчет
     useEffect(() => {
@@ -862,7 +930,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                 ) : (
                                     <>
                                         <i className="bi bi-hdd me-2"></i>
-                                        Експорт CSV (локално)
+                                        Експорт поръчки CSV (локално)
                                     </>
                                 )}
                             </button>
@@ -872,7 +940,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                 disabled={exporting}
                             >
                                 <i className="bi bi-cloud-upload me-2"></i>
-                                Експорт CSV (AWS)
+                                Експорт поръчки CSV (AWS)
                             </button>
                         </div>
                         <ul className="list-unstyled">
@@ -881,6 +949,89 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                             <li><i className="bi bi-check-circle text-success me-2"></i>AWS: bucket <code>pos-reports-supermarket</code></li>
                             <li><i className="bi bi-check-circle text-success me-2"></i>Включват всички поръчки за избрания период</li>
                         </ul>
+
+                        <div className="mt-4 pt-3 border-top border-secondary">
+                            <h6 className="text-success">💾 Backup на базата</h6>
+                            <p className="text-muted small mb-3">
+                                Пълен dump на PostgreSQL (артикули, поръчки, клиенти, настройки и т.н.).
+                                Данните <strong className="text-light">не се изтриват</strong>. Нощен локален backup в 03:00; ако PC е бил изключен — при следващо пускане се прави catch-up. Пазят се последните 7 файла.
+                            </p>
+                            <div className="mb-3 d-flex flex-wrap gap-2">
+                                <button
+                                    className="btn btn-success"
+                                    onClick={() => handleDatabaseBackup('local')}
+                                    disabled={backingUp}
+                                >
+                                    {backingUp ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                            Backup...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="bi bi-hdd me-2"></i>
+                                            Backup локално
+                                        </>
+                                    )}
+                                </button>
+                                <button
+                                    className="btn btn-outline-success"
+                                    onClick={() => handleDatabaseBackup('s3')}
+                                    disabled={backingUp}
+                                >
+                                    <i className="bi bi-cloud-upload me-2"></i>
+                                    Backup в AWS
+                                </button>
+                            </div>
+                            <ul className="list-unstyled mb-3">
+                                <li><i className="bi bi-info-circle text-info me-2"></i>Локално: <code>archives/db-backups</code></li>
+                                <li><i className="bi bi-info-circle text-info me-2"></i>AWS prefix: <code>db-backups/</code></li>
+                                <li><i className="bi bi-info-circle text-info me-2"></i>Формат: <code>.sql.gz</code></li>
+                                <li><i className="bi bi-check-circle text-success me-2"></i>Изтеглете файл на USB за защита при бедствие</li>
+                            </ul>
+                            <div className="table-responsive">
+                                <table className="table table-sm table-dark table-striped mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Файл</th>
+                                            <th>Размер</th>
+                                            <th>Създаден</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {backupListLoading ? (
+                                            <tr>
+                                                <td colSpan="4" className="text-muted">Зареждане...</td>
+                                            </tr>
+                                        ) : backupFiles.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="4" className="text-muted">Няма локални backup файлове още</td>
+                                            </tr>
+                                        ) : (
+                                            backupFiles.map((f) => (
+                                                <tr key={f.filename}>
+                                                    <td><code>{f.filename}</code></td>
+                                                    <td>{formatBackupSize(f.sizeBytes)}</td>
+                                                    <td>{f.createdAt}</td>
+                                                    <td>
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-sm btn-outline-light"
+                                                            onClick={() => handleDownloadBackup(f.filename)}
+                                                        >
+                                                            <i className="bi bi-download me-1"></i>
+                                                            Изтегли
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                         <div className="mt-4">
                             <h6 className="text-warning">📦 Архивиране на поръчки</h6>
                             <div className="mb-3">
@@ -942,7 +1093,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                     ) : (
                                         <>
                                             <i className="bi bi-hdd me-2"></i>
-                                            Архивирай локално
+                                            Архивирай поръчки локално
                                         </>
                                     )}
                                 </button>
@@ -952,7 +1103,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                     disabled={archiving}
                                 >
                                     <i className="bi bi-cloud-upload me-2"></i>
-                                    Архивирай в AWS
+                                    Архивирай поръчки в AWS
                                 </button>
                             </div>
                             <ul className="list-unstyled">
@@ -998,7 +1149,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                     ) : (
                                         <>
                                             <i className="bi bi-hdd me-2"></i>
-                                            Архивирай локално
+                                            Архивирай отчети локално
                                         </>
                                     )}
                                 </button>
@@ -1008,7 +1159,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                     disabled={archivingReports}
                                 >
                                     <i className="bi bi-cloud-upload me-2"></i>
-                                    Архивирай в AWS
+                                    Архивирай отчети в AWS
                                 </button>
                             </div>
                             <ul className="list-unstyled mt-3 mb-0">
