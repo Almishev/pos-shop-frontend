@@ -52,7 +52,23 @@ const Login = () => {
             }
         } catch (error) {
             console.error(error);
-            toast.error("Невалиден имейл/парола");
+            const status = error.response?.status;
+            const raw = error.response?.data;
+            let msg = "Невалиден имейл/парола";
+            if (status === 403) {
+                if (typeof raw === "string" && raw.trim()) {
+                    msg = raw;
+                } else if (raw?.message) {
+                    msg = raw.message;
+                } else {
+                    msg = "Абонаментът не е активен. Свържете се с доставчика на софтуера.";
+                }
+            } else if (typeof raw === "string" && raw.trim()) {
+                msg = raw;
+            } else if (raw?.message) {
+                msg = raw.message;
+            }
+            toast.error(msg);
         } finally {
             setLoading(false);
         }
