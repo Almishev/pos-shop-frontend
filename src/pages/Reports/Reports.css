@@ -31,6 +31,40 @@
     max-width: 100% !important;
 }
 
+.reports-container .cashier-history-details {
+    overflow: hidden;
+}
+
+.reports-container .cashier-history-summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.5rem;
+    user-select: none;
+}
+
+.reports-container .cashier-history-summary::-webkit-details-marker {
+    display: none;
+}
+
+.reports-container .cashier-history-summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 0.5rem;
+    color: #ffc107;
+    transition: transform 0.15s ease;
+}
+
+.reports-container .cashier-history-details[open] > .cashier-history-summary::before {
+    transform: rotate(90deg);
+}
+
+.reports-container .cashier-close-shift-card .fw-semibold {
+    color: #fff;
+}
+
 .filters-bar {
     width: 100%;
     background: #1f2426;

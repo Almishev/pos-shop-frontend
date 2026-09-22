@@ -51,6 +51,9 @@ const UnifiedReports = () => {
         deviceSerialNumber: '',
         notes: ''
     });
+    const [cashierNotes, setCashierNotes] = useState('');
+    const [closingShift, setClosingShift] = useState(false);
+    const [cashierHistoryOpen, setCashierHistoryOpen] = useState(false);
     const [activeSession, setActiveSession] = useState(null);
     const [existingMonthlyReports, setExistingMonthlyReports] = useState([]);
     const [archivingReports, setArchivingReports] = useState(false);
@@ -372,80 +375,152 @@ const UnifiedReports = () => {
         setShowGenerateForm(false);
     };
 
-    const generateFiscalReport = async (e) => {
+    const todayIso = () => new Date().toISOString().split('T')[0];
+
+    const handleFiscalGenerateError = (error) => {
+        const status = error.response?.status;
+        const data = error.response?.data;
+        const errorMessage = (typeof data === 'string'
+            ? data
+            : (data?.message || data?.detail || data?.title || data?.error || '')) || '';
+
+        if (status === 409) {
+            toast.error(
+                errorMessage ||
+                'Не може общ дневен отчет: има неприключени смени. Първо всеки касиер трябва да генерира сменен отчет.',
+                { duration: 8000 }
+            );
+        } else if (status === 403) {
+            toast.error('Нямате права за генериране на този тип отчет или има проблем с авторизацията.', { duration: 5000 });
+        } else if (status === 412) {
+            toast.error(
+                errorMessage ||
+                'За да затворите смяната, първо започнете работен ден от „Контрол на касата“ в менюто.',
+                { duration: 6000 }
+            );
+        } else {
+            toast.error(errorMessage || 'Грешка при генериране на отчет');
+        }
+        console.error('Error generating report:', error);
+    };
+
+    const closeCashierShift = async (e) => {
         e.preventDefault();
-        
-        if (!selectedReportType) {
-            toast.error('Моля, изберете тип отчет');
+        if (!activeSession?.deviceSerialNumber) {
+            toast.error(
+                'Няма активна каса. Първо започнете работен ден от „Контрол на касата“ в менюто.',
+                { duration: 6000 }
+            );
             return;
         }
-
         try {
-            let result;
-            if (auth.role !== 'ROLE_ADMIN') {
-                if (selectedReportType !== 'SHIFT') {
-                    toast.error('Само сменен отчет е разрешен за касиер');
-                    return;
-                }
-                const payload = { ...formData, cashierName: undefined };
-                result = await FiscalService.generateShiftReport(payload);
-            } else {
-                if (selectedReportType === 'SHIFT') {
-                    toast.error('Влезте с потребител касиер за сменен отчет, контрол на касата и продажби.', { duration: 5000 });
-                    return;
-                }
-                switch (selectedReportType) {
-                    case 'STORE_DAILY':
-                        result = await FiscalService.generateStoreDailyReport(formData);
-                        break;
-                    case 'MONTHLY':
-                        result = await FiscalService.generateMonthlyReport(formData);
-                        break;
-                    case 'YEARLY':
-                        result = await FiscalService.generateYearlyReport(formData);
-                        break;
-                    default:
-                        toast.error('Невалиден тип отчет');
-                        return;
-                }
-            }
-            
-            toast.success('Отчетът е генериран успешно');
-            resetForm();
+            setClosingShift(true);
+            const result = await FiscalService.generateShiftReport({
+                deviceSerialNumber: activeSession.deviceSerialNumber,
+                notes: cashierNotes || undefined
+            });
+            toast.success('Смяната е затворена. Сменният отчет е готов.');
+            setCashierNotes('');
+            setCashierHistoryOpen(true);
             setReportsPage(0);
             await loadFiscalData();
-            // Immediately open view/print for the cashier (and admin)
+            await preloadActiveSession();
             if (result) {
                 setSelectedReport(result);
                 setShowReportDetails(true);
             }
         } catch (error) {
-            const status = error.response?.status;
-            const data = error.response?.data;
-            const errorMessage = (typeof data === 'string'
-                ? data
-                : (data?.message || data?.detail || data?.title || data?.error || '')) || '';
-
-            if (status === 409) {
-                toast.error(
-                    errorMessage ||
-                    'Не може общ дневен отчет: има неприключени смени. Първо всеки касиер трябва да генерира сменен отчет.',
-                    { duration: 8000 }
-                );
-            } else if (status === 403) {
-                toast.error('Нямате права за генериране на този тип отчет или има проблем с авторизацията.', { duration: 5000 });
-            } else if (status === 412) {
-                toast.error(
-                    errorMessage ||
-                    'За да генерирате сменен отчет, трябва първо да започнете работен ден (Контрол на касата).',
-                    { duration: 6000 }
-                );
-            } else {
-                toast.error(errorMessage || 'Грешка при генериране на отчет');
-            }
-            console.error('Error generating report:', error);
+            handleFiscalGenerateError(error);
+        } finally {
+            setClosingShift(false);
         }
     };
+
+    const generateFiscalReport = async (e) => {
+        e.preventDefault();
+
+        if (!isAdmin) {
+            return;
+        }
+
+        if (!selectedReportType) {
+            toast.error('Моля, изберете тип отчет');
+            return;
+        }
+
+        if (selectedReportType === 'SHIFT') {
+            toast.error('Влезте с потребител касиер за сменен отчет, контрол на касата и продажби.', { duration: 5000 });
+            return;
+        }
+
+        try {
+            let result;
+            switch (selectedReportType) {
+                case 'STORE_DAILY':
+                    result = await FiscalService.generateStoreDailyReport(formData);
+                    break;
+                case 'MONTHLY':
+                    result = await FiscalService.generateMonthlyReport(formData);
+                    break;
+                case 'YEARLY':
+                    result = await FiscalService.generateYearlyReport(formData);
+                    break;
+                default:
+                    toast.error('Невалиден тип отчет');
+                    return;
+            }
+
+            toast.success('Отчетът е създаден успешно');
+            resetForm();
+            setReportsPage(0);
+            await loadFiscalData();
+            if (result) {
+                setSelectedReport(result);
+                setShowReportDetails(true);
+            }
+        } catch (error) {
+            handleFiscalGenerateError(error);
+        }
+    };
+
+    const renderReportActions = (report) => (
+        <div className="btn-group" role="group">
+            {report.status === 'GENERATED' && isAdmin && (
+                <button
+                    className="btn btn-sm btn-outline-success"
+                    onClick={() => sendReportToNAF(report.id)}
+                    title="Изпрати към НАП"
+                >
+                    <i className="bi bi-send"></i>
+                </button>
+            )}
+            <button
+                className="btn btn-sm btn-outline-info"
+                title="Детайли"
+                onClick={() => showReportDetailsModal(report)}
+            >
+                <i className="bi bi-eye"></i>
+            </button>
+            <button
+                className="btn btn-sm btn-outline-success"
+                title="Принтирай"
+                onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    printReport(report);
+                }}
+            >
+                <i className="bi bi-printer"></i>
+            </button>
+            <button
+                className="btn btn-sm btn-outline-secondary"
+                title="Свали"
+                onClick={() => downloadReport(report)}
+            >
+                <i className="bi bi-download"></i>
+            </button>
+        </div>
+    );
 
     const sendReportToNAF = async (reportId) => {
         if (window.confirm('Сигурни ли сте, че искате да изпратите този отчет към НАП?')) {
@@ -1231,23 +1306,153 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                 <span className="visually-hidden">Loading...</span>
                             </div>
                         </div>
+                    ) : !isAdmin ? (
+                        <>
+                            <div className="card mb-4 w-100 cashier-close-shift-card">
+                                <div className="card-header">
+                                    <h5 className="mb-0">Затвори смяната</h5>
+                                </div>
+                                <div className="card-body">
+                                    <p className="text-muted mb-3">
+                                        Сменен отчет за смяната от Контрол на касата. Без избор на дата —
+                                        едно действие в края на работния ден (препоръчително преди 00:00).
+                                    </p>
+                                    <div className="row mb-3">
+                                        <div className="col-md-4 mb-2">
+                                            <div className="form-label mb-1">Дата на смяната</div>
+                                            <div className="fw-semibold">
+                                                {activeSession?.sessionDate
+                                                    ? new Date(activeSession.sessionDate + 'T00:00:00').toLocaleDateString('bg-BG')
+                                                    : '—'}
+                                            </div>
+                                            {activeSession?.sessionDate && activeSession.sessionDate !== todayIso() && (
+                                                <small className="text-warning d-block mt-1">
+                                                    Затваряте смяна от {new Date(activeSession.sessionDate + 'T00:00:00').toLocaleDateString('bg-BG')} — ОК е ОК.
+                                                </small>
+                                            )}
+                                        </div>
+                                        <div className="col-md-4 mb-2">
+                                            <div className="form-label mb-1">Касиер</div>
+                                            <div className="fw-semibold">{auth.name || '—'}</div>
+                                        </div>
+                                        <div className="col-md-4 mb-2">
+                                            <div className="form-label mb-1">Фискално устройство</div>
+                                            <div className="fw-semibold">
+                                                {activeSession?.deviceSerialNumber || 'Няма активна каса'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {!activeSession?.deviceSerialNumber && (
+                                        <div className="alert alert-warning">
+                                            Няма активна каса. Първо започнете работен ден от бутона
+                                            {' '}<strong>Контрол на касата</strong> в менюто горе.
+                                        </div>
+                                    )}
+                                    <form onSubmit={closeCashierShift}>
+                                        <div className="mb-3">
+                                            <label className="form-label">Бележки (по желание)</label>
+                                            <textarea
+                                                className="form-control"
+                                                value={cashierNotes}
+                                                onChange={(e) => setCashierNotes(e.target.value)}
+                                                rows="2"
+                                                placeholder="Опционално"
+                                            />
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            className="btn btn-primary btn-lg"
+                                            disabled={closingShift || !activeSession?.deviceSerialNumber}
+                                        >
+                                            {closingShift ? 'Затваряне…' : 'Затвори смяната'}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <details
+                                className="card w-100 cashier-history-details"
+                                open={cashierHistoryOpen}
+                                onToggle={(e) => setCashierHistoryOpen(e.target.open)}
+                            >
+                                <summary className="card-header cashier-history-summary">
+                                    <span className="h5 mb-0">Твоите последни отчети</span>
+                                    <span className="text-muted small ms-2">(последните 14 дни — преглед и печат)</span>
+                                </summary>
+                                <div className="card-body">
+                                    {reports.length === 0 ? (
+                                        <p className="text-muted mb-0">Все още няма сменни отчети.</p>
+                                    ) : (
+                                        <>
+                                        <div className="table-responsive">
+                                            <table className="table table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Номер</th>
+                                                        <th>Дата</th>
+                                                        <th>Брой бележки</th>
+                                                        <th>Общо продажби</th>
+                                                        <th>Статус</th>
+                                                        <th>Действия</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {reports.map((report) => (
+                                                        <tr key={report.id}>
+                                                            <td><strong>{report.reportNumber}</strong></td>
+                                                            <td>{new Date(report.reportDate).toLocaleDateString()}</td>
+                                                            <td>{report.totalReceipts || 0}</td>
+                                                            <td>{formatCurrency(report.totalSales)}</td>
+                                                            <td>{getStatusBadge(report.status)}</td>
+                                                            <td>{renderReportActions(report)}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div className="d-flex justify-content-between align-items-center mt-3">
+                                            <div>
+                                                <button
+                                                    className="btn btn-outline-secondary btn-sm me-2"
+                                                    disabled={reportsPage <= 0}
+                                                    onClick={() => setReportsPage(p => Math.max(0, p - 1))}
+                                                >
+                                                    <i className="bi bi-chevron-left"></i> Предишна
+                                                </button>
+                                                <button
+                                                    className="btn btn-outline-secondary btn-sm"
+                                                    disabled={reportsPage + 1 >= reportsTotalPages}
+                                                    onClick={() => setReportsPage(p => p + 1)}
+                                                >
+                                                    Следваща <i className="bi bi-chevron-right"></i>
+                                                </button>
+                                            </div>
+                                            <div className="text-muted small">
+                                                Страница {reportsPage + 1} от {reportsTotalPages || 1}
+                                            </div>
+                                        </div>
+                                        </>
+                                    )}
+                                </div>
+                            </details>
+                        </>
                     ) : (
                         <>
                             <div className="d-flex justify-content-between align-items-center mb-4">
-                                <h5>🏪 Фискални отчети</h5>
-                                <button 
+                                <h5>Фискални отчети</h5>
+                                <button
                                     className="btn btn-primary"
                                     onClick={() => setShowGenerateForm(true)}
                                 >
                                     <i className="bi bi-plus-circle me-2"></i>
-                                    Генерирай отчет
+                                    Нов отчет
                                 </button>
                             </div>
 
                             {showGenerateForm && (
                                 <div className="card mb-4 w-100">
                                     <div className="card-header">
-                                        <h5>Генерирай нов фискален отчет</h5>
+                                        <h5>Нов фискален отчет</h5>
                                     </div>
                                     <div className="card-body">
                                         <form onSubmit={generateFiscalReport}>
@@ -1261,16 +1466,13 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                                         required
                                                     >
                                                         <option value="">Изберете тип</option>
-                                                        {auth.role === 'ROLE_ADMIN' && <option value="STORE_DAILY">🏪 Общ дневен отчет за магазина</option>}
-                                                        {auth.role !== 'ROLE_ADMIN' && <option value="SHIFT">Сменен отчет</option>}
-                                                        {auth.role === 'ROLE_ADMIN' && <option value="MONTHLY">Месечен отчет</option>}
-                                                        {auth.role === 'ROLE_ADMIN' && <option value="YEARLY">Годишен отчет</option>}
+                                                        <option value="STORE_DAILY">Общ дневен отчет за магазина</option>
+                                                        <option value="MONTHLY">Месечен отчет</option>
+                                                        <option value="YEARLY">Годишен отчет</option>
                                                     </select>
-                                                    {auth.role === 'ROLE_ADMIN' && (
-                                                        <small className="text-muted d-block mt-1">
-                                                            Сменен отчет, контрол на касата и продажби се правят с потребител касиер.
-                                                        </small>
-                                                    )}
+                                                    <small className="text-muted d-block mt-1">
+                                                        Сменен отчет се прави от потребител касиер.
+                                                    </small>
                                                 </div>
                                                 <div className="col-md-3 mb-3">
                                                     <label className="form-label">Дата на отчет *</label>
@@ -1283,74 +1485,6 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                                         required
                                                     />
                                                 </div>
-                                                {auth.role === 'ROLE_ADMIN' && selectedReportType !== 'STORE_DAILY' && selectedReportType !== 'MONTHLY' ? (
-                                                    <div className="col-md-3 mb-3">
-                                                        <label className="form-label">Касиер</label>
-                                                        <select
-                                                            className="form-select"
-                                                            name="cashierName"
-                                                            value={formData.cashierName}
-                                                            onChange={handleInputChange}
-                                                        >
-                                                            <option value="">Изберете касиер</option>
-                                                            {loading ? (
-                                                                <option value="" disabled>Зареждане на потребители...</option>
-                                                            ) : users.length > 0 ? (
-                                                                users.map((user) => (
-                                                                    <option key={user.userId} value={user.name}>
-                                                                        {user.name} ({user.role === 'ROLE_ADMIN' ? 'Админ' : 'Касиер'})
-                                                                    </option>
-                                                                ))
-                                                            ) : (
-                                                                <option value="" disabled>Няма налични потребители</option>
-                                                            )}
-                                                        </select>
-                                                    </div>
-                                                ) : auth.role !== 'ROLE_ADMIN' ? (
-                                                    <div className="col-md-3 mb-3">
-                                                        <label className="form-label">Касиер</label>
-                                                        <select
-                                                            className="form-select"
-                                                            name="cashierName"
-                                                            value={formData.cashierName || auth.name || ''}
-                                                            onChange={handleInputChange}
-                                                            disabled
-                                                        >
-                                                            <option value={auth.name || ''}>{auth.name || 'Липсва потребител'}</option>
-                                                        </select>
-                                                    </div>
-                                                ) : null}
-                                                {auth.role === 'ROLE_ADMIN' && selectedReportType !== 'STORE_DAILY' && selectedReportType !== 'MONTHLY' ? (
-                                                    <div className="col-md-3 mb-3">
-                                                        <label className="form-label">Фискално устройство</label>
-                                                        <select
-                                                            className="form-select"
-                                                            name="deviceSerialNumber"
-                                                            value={formData.deviceSerialNumber}
-                                                            onChange={handleInputChange}
-                                                        >
-                                                            <option value="">Изберете устройство</option>
-                                                            {devices.map((device) => (
-                                                                <option key={device.id} value={device.serialNumber}>
-                                                                    {device.serialNumber} - {device.location || device.model}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                ) : auth.role !== 'ROLE_ADMIN' ? (
-                                                    <div className="col-md-3 mb-3">
-                                                        <label className="form-label">Фискално устройство</label>
-                                                        <input
-                                                            type="text"
-                                                            className="form-control"
-                                                            value={activeSession?.deviceSerialNumber || formData.deviceSerialNumber || 'Няма активна каса'}
-                                                            readOnly
-                                                        />
-                                                        {!activeSession?.deviceSerialNumber && (
-                                                            <small className="text-warning">Няма активна каса – първо започнете работен ден</small>
-                                                        )}
-                                                    </div>
-                                                ) : null}
                                             </div>
 
                                             {selectedReportType === 'STORE_DAILY' && (
@@ -1358,24 +1492,20 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                                     <i className="bi bi-info-circle me-2"></i>
                                                     <strong>Общ дневен отчет за магазина:</strong> Възможен е само след като
                                                     всички касиери са генерирали сменен отчет (няма отворени касови сесии).
-                                                    Включва данни от всички каси за избраната дата.
-                                                    <br />
-                                                    <span className="small">
-                                                        При продажба след затваряне: нова каса → сменен отчет → нов общ дневен
-                                                        (само продажбите след предишния общ дневен).
-                                                    </span>
+                                                    Отчита продажбите по <strong>календарен ден 00:00–23:59</strong> (като НАП / час на бона).
+                                                    Продажби след полунощ от нощна смяна влизат в дневния за <strong>следващия</strong> ден.
                                                 </div>
                                             )}
                                             {selectedReportType === 'MONTHLY' && (
                                                 <>
                                                     <div className="alert alert-info mb-3">
                                                         <i className="bi bi-info-circle me-2"></i>
-                                                        <strong>Месечен отчет за магазина:</strong> Този отчет включва данни от всички каси и всички фискални устройства в магазина за целия месец. Включва разбивка по касиери и плащания.
+                                                        <strong>Месечен отчет за магазина:</strong> Този отчет включва данни от всички каси и всички фискални устройства в магазина за целия месец.
                                                     </div>
                                                     {existingMonthlyReports.length > 0 && (
                                                         <div className="alert alert-warning mb-3">
                                                             <i className="bi bi-exclamation-triangle me-2"></i>
-                                                            <strong>Забележка:</strong> Вече има {existingMonthlyReports.length} генериран{existingMonthlyReports.length > 1 ? 'и' : ''} месечен{existingMonthlyReports.length > 1 ? 'и' : ''} отчет{existingMonthlyReports.length > 1 ? 'и' : ''} за този месец. Можете да генерирате допълнителен отчет, когато е необходимо (например за корекции или преглед). Срокът за подаване към НАП е от 1-во до 15-то число на следващия месец.
+                                                            <strong>Забележка:</strong> Вече има {existingMonthlyReports.length} генериран{existingMonthlyReports.length > 1 ? 'и' : ''} месечен{existingMonthlyReports.length > 1 ? 'и' : ''} отчет{existingMonthlyReports.length > 1 ? 'и' : ''} за този месец.
                                                         </div>
                                                     )}
                                                 </>
@@ -1394,10 +1524,10 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
 
                                             <div className="d-flex gap-2">
                                                 <button type="submit" className="btn btn-primary">
-                                                    Генерирай отчет
+                                                    Създай отчет
                                                 </button>
-                                                <button 
-                                                    type="button" 
+                                                <button
+                                                    type="button"
                                                     className="btn btn-secondary"
                                                     onClick={resetForm}
                                                 >
@@ -1412,61 +1542,54 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                             <div className="card w-100">
                                 <div className="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                                     <div>
-                                        <h5 className="mb-0">Генерирани отчети</h5>
-                                        {!isAdmin && (
-                                            <small className="text-muted">
-                                                Вашите сменни отчети (последните 14 дни). Използвайте окото / принтера за преглед и печат.
-                                            </small>
-                                        )}
+                                        <h5 className="mb-0">История на отчетите</h5>
                                     </div>
                                     <div className="text-muted small">Общо: {reportsTotalElements}</div>
                                 </div>
                                 <div className="card-body">
-                                    {isAdmin && (
-                                        <div className="row g-2 mb-3">
-                                            <div className="col-md-3">
-                                                <label className="form-label">Тип</label>
-                                                <select
-                                                    className="form-select"
-                                                    value={reportTypeFilter}
-                                                    onChange={(e) => { setReportsPage(0); setReportTypeFilter(e.target.value); }}
-                                                >
-                                                    <option value="">Всички</option>
-                                                    <option value="SHIFT">Сменен</option>
-                                                    <option value="STORE_DAILY">Дневен магазин</option>
-                                                    <option value="MONTHLY">Месечен</option>
-                                                    <option value="YEARLY">Годишен</option>
-                                                </select>
-                                            </div>
-                                            <div className="col-md-3">
-                                                <label className="form-label">От дата</label>
-                                                <input
-                                                    type="date"
-                                                    className="form-control"
-                                                    value={reportDateFrom}
-                                                    onChange={(e) => { setReportsPage(0); setReportDateFrom(e.target.value); }}
-                                                />
-                                            </div>
-                                            <div className="col-md-3">
-                                                <label className="form-label">До дата</label>
-                                                <input
-                                                    type="date"
-                                                    className="form-control"
-                                                    value={reportDateTo}
-                                                    onChange={(e) => { setReportsPage(0); setReportDateTo(e.target.value); }}
-                                                />
-                                            </div>
+                                    <div className="row g-2 mb-3">
+                                        <div className="col-md-3">
+                                            <label className="form-label">Филтър: тип</label>
+                                            <select
+                                                className="form-select"
+                                                value={reportTypeFilter}
+                                                onChange={(e) => { setReportsPage(0); setReportTypeFilter(e.target.value); }}
+                                            >
+                                                <option value="">Всички</option>
+                                                <option value="SHIFT">Сменен</option>
+                                                <option value="STORE_DAILY">Дневен магазин</option>
+                                                <option value="MONTHLY">Месечен</option>
+                                                <option value="YEARLY">Годишен</option>
+                                            </select>
                                         </div>
-                                    )}
+                                        <div className="col-md-3">
+                                            <label className="form-label">Филтър: от дата</label>
+                                            <input
+                                                type="date"
+                                                className="form-control"
+                                                value={reportDateFrom}
+                                                onChange={(e) => { setReportsPage(0); setReportDateFrom(e.target.value); }}
+                                            />
+                                        </div>
+                                        <div className="col-md-3">
+                                            <label className="form-label">Филтър: до дата</label>
+                                            <input
+                                                type="date"
+                                                className="form-control"
+                                                value={reportDateTo}
+                                                onChange={(e) => { setReportsPage(0); setReportDateTo(e.target.value); }}
+                                            />
+                                        </div>
+                                    </div>
                                     {reports.length === 0 ? (
                                         <div className="text-center py-4">
                                             <i className="bi bi-file-earmark-text display-1 text-muted"></i>
-                                            <p className="mt-3 text-muted">Няма генерирани фискални отчети.</p>
-                                            <button 
+                                            <p className="mt-3 text-muted">Няма отчети за избраните филтри.</p>
+                                            <button
                                                 className="btn btn-primary"
                                                 onClick={() => setShowGenerateForm(true)}
                                             >
-                                                Генерирай първи отчет
+                                                Нов отчет
                                             </button>
                                         </div>
                                     ) : (
@@ -1501,44 +1624,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                                             <td>
                                                                 {new Date(report.generatedAt).toLocaleString()}
                                                             </td>
-                                                            <td>
-                                                                <div className="btn-group" role="group">
-                                                                    {report.status === 'GENERATED' && auth.role === 'ROLE_ADMIN' && (
-                                                                        <button
-                                                                            className="btn btn-sm btn-outline-success"
-                                                                            onClick={() => sendReportToNAF(report.id)}
-                                                                            title="Изпрати към НАП"
-                                                                        >
-                                                                            <i className="bi bi-send"></i>
-                                                                        </button>
-                                                                    )}
-                                                                    <button
-                                                                        className="btn btn-sm btn-outline-info"
-                                                                        title="Детайли"
-                                                                        onClick={() => showReportDetailsModal(report)}
-                                                                    >
-                                                                        <i className="bi bi-eye"></i>
-                                                                    </button>
-                                                                    <button
-                                                                        className="btn btn-sm btn-outline-success"
-                                                                        title="Принтирай"
-                                                                        onClick={(e) => {
-                                                                            e.preventDefault();
-                                                                            e.stopPropagation();
-                                                                            printReport(report);
-                                                                        }}
-                                                                    >
-                                                                        <i className="bi bi-printer"></i>
-                                                                    </button>
-                                                                    <button
-                                                                        className="btn btn-sm btn-outline-secondary"
-                                                                        title="Свали"
-                                                                        onClick={() => downloadReport(report)}
-                                                                    >
-                                                                        <i className="bi bi-download"></i>
-                                                                    </button>
-                                                                </div>
-                                                            </td>
+                                                            <td>{renderReportActions(report)}</td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
