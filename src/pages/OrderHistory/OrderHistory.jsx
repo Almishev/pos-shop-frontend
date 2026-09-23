@@ -227,6 +227,7 @@ const OrderHistory = () => {
         }
         setRefundSubmitting(true);
         try {
+            // Software refund only — fiscal device storno TODO after purchasing FU printer
             await refundOrder(refundOrderData.orderId, {
                 reason: refundReason || 'Връщане от клиент',
                 refundMethod,

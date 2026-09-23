@@ -41,6 +41,13 @@
 }
 
 .explore-scan-status {
+    pointer-events: none;
+    cursor: default;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 600;
+}
     display: inline-flex;
     align-items: center;
     gap: 6px;

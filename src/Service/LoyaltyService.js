@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const baseURL = '/api';
+const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const getAuthHeaders = () => ({
     'Authorization': `Bearer ${localStorage.getItem('token')}`

@@ -1,0 +1,153 @@
+.qty-numpad-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.65);
+}
+
+.qty-numpad-modal {
+    width: 100%;
+    max-width: 320px;
+    background: #212529;
+    color: #f8f9fa;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 1rem 1.1rem 1.1rem;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.qty-numpad-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.qty-numpad-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #f8f9fa;
+    line-height: 1.3;
+}
+
+.qty-numpad-close {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: #adb5bd;
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 0 0.15rem;
+    cursor: pointer;
+}
+
+.qty-numpad-close:hover,
+.qty-numpad-close:focus-visible {
+    color: #f8f9fa;
+    outline: none;
+}
+
+.qty-numpad-display {
+    background: #1f2426;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.85rem;
+    font-weight: 700;
+    text-align: right;
+    letter-spacing: 0.02em;
+    color: #ffc107;
+    min-height: 3rem;
+}
+
+.qty-numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.45rem;
+}
+
+.qty-numpad-key {
+    appearance: none;
+    background: #2c3335;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #f8f9fa;
+    font-size: 1.4rem;
+    font-weight: 700;
+    min-height: 3.1rem;
+    border-radius: 8px;
+    touch-action: manipulation;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.qty-numpad-key:hover,
+.qty-numpad-key:focus-visible {
+    background: #3a4245;
+    color: #ffffff;
+    border-color: rgba(255, 193, 7, 0.45);
+    outline: none;
+}
+
+.qty-numpad-key:active {
+    background: #495057;
+    color: #ffc107;
+}
+
+.qty-numpad-clear {
+    grid-column: 1 / -1;
+    font-size: 1rem;
+    background: rgba(220, 53, 69, 0.15);
+    border-color: rgba(220, 53, 69, 0.4);
+    color: #f8d7da;
+}
+
+.qty-numpad-clear:hover,
+.qty-numpad-clear:focus-visible {
+    background: rgba(220, 53, 69, 0.28);
+    color: #ffffff;
+    border-color: rgba(220, 53, 69, 0.55);
+}
+
+.qty-numpad-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+}
+
+.qty-numpad-action {
+    flex: 1;
+    font-weight: 600;
+}
+
+.split-numpad-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: -0.25rem 0 0.75rem;
+    font-size: 0.9rem;
+    color: #adb5bd;
+}
+
+.split-numpad-meta strong {
+    color: #f8f9fa;
+    font-weight: 600;
+}
+
+.split-numpad-quick {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.split-numpad-quick .btn {
+    flex: 1;
+    font-size: 0.85rem;
+    font-weight: 600;
+}

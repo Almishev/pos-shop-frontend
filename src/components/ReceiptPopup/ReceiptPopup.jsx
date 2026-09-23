@@ -62,7 +62,10 @@ const escapeHtml = (value) => String(value ?? '')
 export const buildReceiptPrintHtml = (orderDetails) => {
     const items = orderDetails?.items || [];
     const vatGroups = groupByVat(items);
-    const taxTotal = sumVatFromGroups(vatGroups);
+    const taxFromGroups = sumVatFromGroups(vatGroups);
+    const taxTotal = orderDetails?.tax != null && orderDetails.tax !== ''
+        ? round2(orderDetails.tax)
+        : taxFromGroups;
     const name = (orderDetails.customerName || '').trim();
     const phone = (orderDetails.phoneNumber || '').trim();
     const showName = name && name !== 'Случаен клиент';
@@ -150,7 +153,11 @@ export const printReceiptInNewWindow = (orderDetails) => {
 
 const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
     const vatGroups = groupByVat(orderDetails?.items || []);
-    const taxTotal = sumVatFromGroups(vatGroups);
+    const taxFromGroups = sumVatFromGroups(vatGroups);
+    // Prefer server/order tax (already after loyalty) over recompute from lines
+    const taxTotal = orderDetails?.tax != null && orderDetails.tax !== ''
+        ? round2(orderDetails.tax)
+        : taxFromGroups;
 
     const handlePrintClick = () => {
         try {

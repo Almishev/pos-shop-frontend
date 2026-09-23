@@ -16,12 +16,11 @@ const MIN_BARCODE_LENGTH = 4;
 const SCAN_GAP_MS = 120;
 
 const Explore = () => {
-    const {categories, addToCart} = useContext(AppContext);
+    const {categories, addToCart, itemsData} = useContext(AppContext);
     const [selectedCategory, setSelectedCategory] = useState("");
     const [loyaltyCustomer, setLoyaltyCustomer] = useState(null);
     const [showLoyaltyScanner, setShowLoyaltyScanner] = useState(false);
     const [scanBusy, setScanBusy] = useState(false);
-    const [scanArmed, setScanArmed] = useState(true);
 
     const scanInputRef = useRef(null);
     const scanBusyRef = useRef(false);
@@ -45,7 +44,9 @@ const Explore = () => {
     const shouldPauseProductScan = useCallback(() => {
         if (showLoyaltyRef.current) return true;
         if (document.querySelector('.payment-modal-overlay')) return true;
+        if (document.querySelector('.qty-numpad-overlay')) return true;
         if (document.querySelector('.barcode-scanner-overlay')) return true;
+        if (document.querySelector('.receipt-popup-overlay')) return true;
         if (isTypingInOtherField()) return true;
         return false;
     }, [isTypingInOtherField]);
@@ -54,9 +55,9 @@ const Explore = () => {
         if (shouldPauseProductScan()) return;
         const el = scanInputRef.current;
         if (!el || el.disabled) return;
+        if (document.activeElement === el) return;
         try {
             el.focus({preventScroll: true});
-            setScanArmed(true);
         } catch (_) {
             /* ignore */
         }
@@ -74,7 +75,21 @@ const Explore = () => {
             const response = await findItemByBarcode(code);
             const item = response.data;
             if (addToCart) {
-                addToCart(item);
+                const fromCatalog = (itemsData || []).find(
+                    (it) => it.itemId === item.itemId || (item.barcode && it.barcode === item.barcode)
+                );
+                const unitPrice = fromCatalog?.isPromo && fromCatalog?.effectivePrice != null
+                    ? fromCatalog.effectivePrice
+                    : (fromCatalog?.effectivePrice != null
+                        ? fromCatalog.effectivePrice
+                        : (item.effectivePrice != null ? item.effectivePrice : item.price));
+                addToCart({
+                    ...item,
+                    ...(fromCatalog || {}),
+                    price: unitPrice,
+                    quantity: 1,
+                    vatRate: item.vatRate ?? fromCatalog?.vatRate ?? 0.20
+                });
             }
             toast.success(item.name);
         } catch (error) {
@@ -86,16 +101,29 @@ const Explore = () => {
             if (scanInputRef.current) {
                 scanInputRef.current.value = '';
             }
+            // Always re-arm after a scan — no button needed
+            setTimeout(focusScanInput, 50);
         }
-    }, [addToCart]);
+    }, [addToCart, itemsData, focusScanInput]);
 
-    // Re-arm focus after busy ends (must wait for React to re-enable / settle toast)
+    // Re-arm focus after busy / loyalty modal ends
     useEffect(() => {
         if (scanBusy) return;
         if (showLoyaltyScanner) return;
         const t = setTimeout(focusScanInput, 80);
         return () => clearTimeout(t);
     }, [scanBusy, showLoyaltyScanner, focusScanInput]);
+
+    // Keep scanner ready continuously while cashier is on Explore (except real fields/modals)
+    useEffect(() => {
+        focusScanInput();
+        const tick = setInterval(() => {
+            if (!shouldPauseProductScan() && !scanBusyRef.current) {
+                focusScanInput();
+            }
+        }, 400);
+        return () => clearInterval(tick);
+    }, [focusScanInput, shouldPauseProductScan]);
 
     // Document-level wedge listener — works even if hidden input briefly loses focus
     useEffect(() => {
@@ -155,13 +183,11 @@ const Explore = () => {
 
     // Restore focus after UI clicks (categories / products), not when typing in fields
     useEffect(() => {
-        focusScanInput();
-
         const onPointerDown = (e) => {
             const target = e.target;
             if (!(target instanceof Element)) return;
             if (target.closest('input, textarea, select, [contenteditable="true"]')) return;
-            if (target.closest('.barcode-scanner-overlay, .payment-modal-overlay')) return;
+            if (target.closest('.barcode-scanner-overlay, .payment-modal-overlay, .qty-numpad-overlay, .receipt-popup-overlay')) return;
             setTimeout(focusScanInput, 50);
         };
 
@@ -201,14 +227,8 @@ const Explore = () => {
         setLoyaltyCustomer(null);
     };
 
-    const armScanner = () => {
-        bufferRef.current = '';
-        if (scanInputRef.current) scanInputRef.current.value = '';
-        focusScanInput();
-        toast.success('Скенерът е активен');
-    };
-
-    const scannerPaused = showLoyaltyScanner || scanBusy || !scanArmed;
+    // Status only — scanning works via document listener without clicking
+    const scannerPaused = showLoyaltyScanner || scanBusy || shouldPauseProductScan();
 
     return (
         <div className="explore-container text-light">
@@ -223,17 +243,7 @@ const Explore = () => {
                 spellCheck={false}
                 // Never disable for scanBusy — disabling drops focus permanently until next click
                 disabled={showLoyaltyScanner}
-                onFocus={() => setScanArmed(true)}
-                onBlur={() => {
-                    // If blur is not into another real field / modal, re-arm shortly
-                    setTimeout(() => {
-                        if (!shouldPauseProductScan()) {
-                            focusScanInput();
-                        } else {
-                            setScanArmed(false);
-                        }
-                    }, 100);
-                }}
+                tabIndex={0}
             />
 
             <div className="left-column">
@@ -241,21 +251,21 @@ const Explore = () => {
                     <div className="d-flex justify-content-between align-items-center mb-3">
                         <h5><i className="bi bi-grid"></i> Категории</h5>
                         <div className="d-flex align-items-center gap-2">
-                            <button
-                                type="button"
+                            <span
                                 className={`explore-scan-status btn btn-sm ${scannerPaused ? 'paused' : 'active'}`}
-                                onClick={armScanner}
-                                title="Кликни за да върнеш фокуса към скенера"
+                                title={scannerPaused
+                                    ? 'Скенерът е на пауза (модал / поле за писане)'
+                                    : 'Скенерът е винаги готов — сканирай директно'}
                             >
                                 <i className="bi bi-upc-scan"></i>
                                 {showLoyaltyScanner
                                     ? 'Скенер на пауза'
                                     : scanBusy
                                         ? 'Обработка…'
-                                        : scanArmed
-                                            ? 'Скенер активен'
-                                            : 'Активирай скенер'}
-                            </button>
+                                        : scannerPaused
+                                            ? 'Скенер на пауза'
+                                            : 'Скенер активен'}
+                            </span>
                             <button
                                 className="btn btn-outline-light btn-sm"
                                 onClick={() => window.location.reload()}

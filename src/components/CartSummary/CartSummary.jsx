@@ -1,5 +1,6 @@
 import './CartSummary.css';
-import {useContext, useState, useEffect} from "react";
+import '../shared/QtyNumpad.css';
+import {useContext, useState, useEffect, useRef} from "react";
 import {createPortal} from "react-dom";
 import {AppContext} from "../../context/AppContext.jsx";
 import ReceiptPopup from "../ReceiptPopup/ReceiptPopup.jsx";
@@ -18,6 +19,9 @@ const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
     const [orderDetails, setOrderDetails] = useState(null);
     const [showPopup, setShowPopup] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [showSplitModal, setShowSplitModal] = useState(false);
+    const [splitCashDraft, setSplitCashDraft] = useState('');
+    const replaceSplitKeyRef = useRef(true);
     const [loyaltyDiscounts, setLoyaltyDiscounts] = useState(null);
 
     const getItemVatRate = (item) => {
@@ -27,19 +31,46 @@ const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
 
     const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 
-    // Bulgarian VAT (ДДС) — prices are VAT-inclusive (gross); sum rounded per line to 2dp
+    const vatFromGross = (gross, rate) => {
+        if (!rate || rate <= 0 || gross <= 0) return 0;
+        const base = gross / (1 + rate);
+        return round2(gross - base);
+    };
+
+    // Bulgarian VAT (ДДС) — prices are VAT-inclusive (gross); per-line, after loyalty discounts
     const subtotal = round2(cartItems.reduce((total, item) => total + (item.price * item.quantity), 0));
+    const loyaltyDiscountAmount = Number(loyaltyDiscounts?.totalDiscount) || 0;
+
+    const discountByItemId = {};
+    for (const d of loyaltyDiscounts?.appliedDiscounts || []) {
+        if (!d?.itemId) continue;
+        const amt = Number(d.discountAmount) || 0;
+        discountByItemId[d.itemId] = (discountByItemId[d.itemId] || 0) + amt;
+    }
+    const allocatedItemDiscount = Object.values(discountByItemId).reduce((s, v) => s + v, 0);
+    // Cart-level (AMOUNT) discounts have no itemId — spread by line share of subtotal
+    const leftoverDiscount = Math.max(0, loyaltyDiscountAmount - allocatedItemDiscount);
+
     const tax = round2(cartItems.reduce((total, item) => {
-        const rate = getItemVatRate(item);
-        const lineTotal = (item.price || 0) * (item.quantity || 0);
-        if (rate <= 0) return total;
-        const base = lineTotal / (1 + rate);
-        const vatAmount = round2(lineTotal - base);
-        return total + vatAmount;
+        const lineGross = (item.price || 0) * (item.quantity || 0);
+        let lineDiscount = discountByItemId[item.itemId] || 0;
+        if (leftoverDiscount > 0 && subtotal > 0) {
+            lineDiscount += leftoverDiscount * (lineGross / subtotal);
+        }
+        const netGross = Math.max(0, lineGross - lineDiscount);
+        return total + vatFromGross(netGross, getItemVatRate(item));
     }, 0));
-    const loyaltyDiscountAmount = loyaltyDiscounts?.totalDiscount || 0;
+
     // Grand total must NOT add VAT again because subtotal already includes VAT
     const grandTotal = round2(subtotal - loyaltyDiscountAmount);
+
+    const parsedSplitCash = (() => {
+        const n = parseFloat((splitCashDraft || '').toString().replace(',', '.'));
+        return Number.isFinite(n) ? round2(n) : NaN;
+    })();
+    const splitCardPreview = Number.isFinite(parsedSplitCash)
+        ? round2(grandTotal - parsedSplitCash)
+        : round2(grandTotal);
 
     // Calculate loyalty discounts when cart items or loyalty customer changes
     useEffect(() => {
@@ -104,6 +135,7 @@ const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
     /** Open receipt modal; cart is cleared when the modal closes/prints. */
     const openReceipt = (data) => {
         setShowPaymentModal(false);
+        setShowSplitModal(false);
         setOrderDetails(data);
         setShowPopup(true);
     }
@@ -116,7 +148,118 @@ const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
         setShowPaymentModal(true);
     }
 
+    const openSplitModal = () => {
+        setShowPaymentModal(false);
+        setSplitCashDraft(String(grandTotal.toFixed(2)));
+        replaceSplitKeyRef.current = true;
+        setShowSplitModal(true);
+    };
+
+    const closeSplitModal = () => {
+        setShowSplitModal(false);
+        setSplitCashDraft('');
+        replaceSplitKeyRef.current = true;
+    };
+
+    const isValidMoneyDraft = (value) => /^\d*(?:\.\d{0,2})?$/.test(value);
+
+    const appendSplitKey = (key) => {
+        setSplitCashDraft((prev) => {
+            const current = (prev ?? '').toString();
+            if (key === 'C') {
+                replaceSplitKeyRef.current = false;
+                return '';
+            }
+            if (key === '⌫') {
+                replaceSplitKeyRef.current = false;
+                return current.slice(0, -1);
+            }
+            if (key === '.') {
+                const replace = replaceSplitKeyRef.current;
+                replaceSplitKeyRef.current = false;
+                if (replace) return '0.';
+                if (current.includes('.')) return current;
+                return current === '' ? '0.' : `${current}.`;
+            }
+            if (replaceSplitKeyRef.current) {
+                replaceSplitKeyRef.current = false;
+                return key;
+            }
+            if (current === '0') return key;
+            const next = `${current}${key}`;
+            return isValidMoneyDraft(next) ? next : current;
+        });
+    };
+
+    const confirmSplitPayment = () => {
+        const cashAmount = parsedSplitCash;
+        if (!Number.isFinite(cashAmount) || cashAmount < 0) {
+            toast.error("Невалидна сума в брой");
+            return;
+        }
+        const cardAmount = round2(grandTotal - cashAmount);
+        if (cardAmount < 0) {
+            toast.error("Сумата с карта не може да е отрицателна");
+            return;
+        }
+        if (round2(cashAmount + cardAmount) !== round2(grandTotal)) {
+            toast.error("Сборът на суми не съвпада с крайната сума");
+            return;
+        }
+        setShowSplitModal(false);
+        completePayment("split", { cashAmount, cardAmount });
+    };
+
+    // Physical keyboard → same as on-screen split numpad
+    useEffect(() => {
+        if (!showSplitModal || isProcessing) return;
+        const onKeyDown = (e) => {
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                closeSplitModal();
+                return;
+            }
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                confirmSplitPayment();
+                return;
+            }
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                e.stopPropagation();
+                appendSplitKey('⌫');
+                return;
+            }
+            if (e.key === 'Delete') {
+                e.preventDefault();
+                e.stopPropagation();
+                appendSplitKey('C');
+                return;
+            }
+            if (e.key === '.' || e.key === ',') {
+                e.preventDefault();
+                e.stopPropagation();
+                appendSplitKey('.');
+                return;
+            }
+            if (/^[0-9]$/.test(e.key)) {
+                e.preventDefault();
+                e.stopPropagation();
+                appendSplitKey(e.key);
+            }
+        };
+        document.addEventListener('keydown', onKeyDown, true);
+        return () => document.removeEventListener('keydown', onKeyDown, true);
+    }, [showSplitModal, isProcessing, splitCashDraft, grandTotal]);
+
     const selectPaymentMethod = (paymentMode) => {
+        if (paymentMode === "split") {
+            openSplitModal();
+            return;
+        }
         setShowPaymentModal(false);
         completePayment(paymentMode);
     }
@@ -130,7 +273,7 @@ const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
         }
     }
 
-    const completePayment = async (paymentMode) => {
+    const completePayment = async (paymentMode, splitAmounts = null) => {
         // НАП изискване: Проверка за активна cash drawer session преди създаване на поръчка
         let activeSession;
         try {
@@ -163,18 +306,33 @@ const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
             toast.error("Количката е празна");
             return;
         }
-        const orderData = {
-            customerName: finalCustomerName,
-            phoneNumber: finalMobileNumber,
-            cartItems: cartItems.map(item => ({
+
+        // Line prices after loyalty (net gross) so order/fiscal/receipt stay consistent
+        const netCartItems = cartItems.map(item => {
+            const lineGross = (item.price || 0) * (item.quantity || 0);
+            let lineDiscount = discountByItemId[item.itemId] || 0;
+            if (leftoverDiscount > 0 && subtotal > 0) {
+                lineDiscount += leftoverDiscount * (lineGross / subtotal);
+            }
+            const netGross = Math.max(0, lineGross - lineDiscount);
+            const qty = item.quantity || 0;
+            const unitPrice = qty > 0 ? round2(netGross / qty) : round2(item.price || 0);
+            return {
                 itemId: item.itemId,
                 name: item.name,
                 barcode: item.barcode,
-                price: item.price,
+                price: unitPrice,
                 quantity: item.quantity,
                 vatRate: getItemVatRate(item)
-            })),
-            subtotal: subtotal,
+            };
+        });
+        const netSubtotal = grandTotal;
+
+        const orderData = {
+            customerName: finalCustomerName,
+            phoneNumber: finalMobileNumber,
+            cartItems: netCartItems,
+            subtotal: netSubtotal,
             tax,
             grandTotal,
             paymentMethod: paymentMode.toUpperCase()
@@ -182,20 +340,17 @@ const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
         let splitCashAmount = 0;
         let splitCardAmount = 0;
         if (paymentMode === "split") {
-            const cashInput = window.prompt("Въведете сума в брой:", String(grandTotal.toFixed(2)));
-            const cashAmount = parseFloat(cashInput || '0');
-            const cardAmount = parseFloat((grandTotal - (isNaN(cashAmount) ? 0 : cashAmount)).toFixed(2));
-            if (isNaN(cashAmount) || cashAmount < 0) {
+            const cashAmount = Number(splitAmounts?.cashAmount);
+            const cardAmount = Number(splitAmounts?.cardAmount);
+            if (!Number.isFinite(cashAmount) || cashAmount < 0) {
                 toast.error("Невалидна сума в брой");
                 return;
             }
-            if (cardAmount < 0) {
+            if (!Number.isFinite(cardAmount) || cardAmount < 0) {
                 toast.error("Сумата с карта не може да е отрицателна");
                 return;
             }
-            const totalCheck = parseFloat((cashAmount + cardAmount).toFixed(2));
-            const grandCheck = parseFloat(grandTotal.toFixed(2));
-            if (totalCheck !== grandCheck) {
+            if (round2(cashAmount + cardAmount) !== round2(grandTotal)) {
                 toast.error("Сборът на суми не съвпада с крайната сума");
                 return;
             }
@@ -213,15 +368,55 @@ const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
             confirmText = `Потвърждавате съвместно плащане?\nВ брой: ${formatMoney(splitCashAmount)}\nКарта: ${formatMoney(splitCardAmount)}\nОбщо: ${formatMoney(grandTotal)}`;
         }
         if (!window.confirm(confirmText)) {
+            if (paymentMode === 'split') {
+                setShowSplitModal(true);
+            }
             return;
         }
         setIsProcessing(true);
         try {
+            // Card / split-with-card: approve POS before order + fiscal (sim order for real POS later)
+            let cardPaymentDetails = null;
+            if (paymentMode === "card" || (paymentMode === "split" && splitCardAmount > 0)) {
+                const amount = paymentMode === "card" ? grandTotal : splitCardAmount;
+                try {
+                    // Temporary order id for POS sim — real terminal will use pre-auth / then create order
+                    const initResp = await initiatePosPayment({
+                        orderId: `PENDING-${Date.now()}`,
+                        amount,
+                        currency: SHOP_CURRENCY
+                    });
+                    const result = initResp.data;
+                    if (result.status !== 'APPROVED') {
+                        toast.error(paymentMode === "card" ? "Картово плащане отказано" : "Картова част: отказана");
+                        return;
+                    }
+                    cardPaymentDetails = {
+                        posTransactionId: result.transactionId,
+                        authCode: result.authCode,
+                        status: result.status,
+                        ...(paymentMode === "split" ? { cashAmount: splitCashAmount, cardAmount: splitCardAmount } : {})
+                    };
+                    if (paymentMode === "card") {
+                        toast.success("Картово плащане одобрено");
+                    } else {
+                        toast.success("Картова част: одобрена");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    toast.error(paymentMode === "card" ? "Грешка при картово плащане" : "Грешка при картовата част");
+                    return;
+                }
+            }
+
+            if (paymentMode === "split" && splitCashAmount > 0) {
+                toast.success(`Прието в брой: ${formatMoney(splitCashAmount)}`);
+            }
 
             const response = await createOrder(orderData);
             const savedData = response.data;
             
-            // Фискализация задължителна — при неуспех отменяме продажбата
+            // Фискализация след одобрение (при карта) — при неуспех отменяме продажбата
             try {
                 await sendToFiscalDevice(savedData, activeSession.deviceSerialNumber);
             } catch (fiscalError) {
@@ -234,79 +429,26 @@ const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
                 return;
             }
             
-            // Inventory is now updated server-side inside OrderServiceImpl#createOrder.
-            // We skip the client-side inventory call to avoid duplicate updates and 403s.
-            
             if (response.status === 201 && paymentMode === "cash") {
                 toast.success("Плащане в брой прието");
                 openReceipt(savedData);
             } else if (response.status === 201 && paymentMode === "card") {
-                try {
-                    const initResp = await initiatePosPayment({
-                        orderId: savedData.orderId,
-                        amount: grandTotal,
-                        currency: SHOP_CURRENCY
-                    });
-                    const result = initResp.data;
-                    if (result.status === 'APPROVED') {
-                        toast.success("Картово плащане одобрено");
-                        openReceipt({
-                            ...savedData,
-                            paymentDetails: {
-                                posTransactionId: result.transactionId,
-                                authCode: result.authCode,
-                                status: result.status
-                            }
-                        });
-                    } else {
-                        await deleteOrderOnFailure(savedData.orderId);
-                        toast.error("Картово плащане отказано");
-                    }
-                } catch (err) {
-                    await deleteOrderOnFailure(savedData.orderId);
-                    console.error(err);
-                    toast.error("Грешка при картово плащане");
-                }
+                openReceipt({
+                    ...savedData,
+                    paymentDetails: cardPaymentDetails
+                });
             } else if (response.status === 201 && paymentMode === "split") {
-                try {
-                    // приемаме кеш частта на място
-                    if (splitCashAmount > 0) {
-                        toast.success(`Прието в брой: ${formatMoney(splitCashAmount)}`);
+                openReceipt({
+                    ...savedData,
+                    paymentMethod: 'SPLIT',
+                    paymentDetails: {
+                        ...(savedData.paymentDetails || {}),
+                        status: cardPaymentDetails?.status || 'COMPLETED',
+                        ...(cardPaymentDetails || {}),
+                        cashAmount: splitCashAmount,
+                        cardAmount: splitCardAmount
                     }
-                    if (splitCardAmount > 0) {
-                        const initResp = await initiatePosPayment({
-                            orderId: savedData.orderId,
-                            amount: splitCardAmount,
-                            currency: SHOP_CURRENCY
-                        });
-                        const result = initResp.data;
-                        if (result.status === 'APPROVED') {
-                            toast.success("Картова част: одобрена");
-                            openReceipt({
-                                ...savedData,
-                                paymentDetails: {
-                                    ...savedData.paymentDetails,
-                                    posTransactionId: result.transactionId,
-                                    authCode: result.authCode,
-                                    status: result.status,
-                                    cashAmount: splitCashAmount,
-                                    cardAmount: splitCardAmount
-                                },
-                                paymentMethod: 'SPLIT'
-                            });
-                        } else {
-                            await deleteOrderOnFailure(savedData.orderId);
-                            toast.error("Картова част: отказана");
-                        }
-                    } else {
-                        // изцяло кеш
-                        openReceipt({ ...savedData, paymentMethod: 'SPLIT' });
-                    }
-                } catch (err) {
-                    await deleteOrderOnFailure(savedData.orderId);
-                    console.error(err);
-                    toast.error("Грешка при картовата част");
-                }
+                });
             }
         }catch(error) {
             console.error(error);
@@ -334,7 +476,7 @@ const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
                     barcode: item.barcode || '',
                     unitPrice: item.price,
                     quantity: item.quantity,
-                    totalPrice: item.price * item.quantity,
+                    totalPrice: round2((item.price || 0) * (item.quantity || 0)),
                     vatRate: Math.round(((item.vatRate ?? 0.20) * 100) * 100) / 100
                 }))
             };
@@ -408,6 +550,105 @@ const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
         document.body
     );
 
+    const splitModal = showSplitModal && createPortal(
+        <div
+            className="qty-numpad-overlay"
+            role="presentation"
+            onClick={() => !isProcessing && closeSplitModal()}
+        >
+            <div
+                className="qty-numpad-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="split-numpad-title"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="qty-numpad-header">
+                    <h6 id="split-numpad-title" className="qty-numpad-title">
+                        Съвместно плащане — сума в брой
+                    </h6>
+                    <button
+                        type="button"
+                        className="qty-numpad-close"
+                        onClick={closeSplitModal}
+                        aria-label="Затвори"
+                        disabled={isProcessing}
+                    >
+                        ×
+                    </button>
+                </div>
+                <div className="split-numpad-meta">
+                    <span>Общо: <strong>{formatMoney(grandTotal)}</strong></span>
+                    <span>Карта: <strong>{formatMoney(Math.max(0, splitCardPreview))}</strong></span>
+                </div>
+                <div className="qty-numpad-display" aria-live="polite">
+                    {splitCashDraft === '' ? '0' : splitCashDraft}
+                </div>
+                <div className="split-numpad-quick">
+                    <button
+                        type="button"
+                        className="btn btn-outline-warning"
+                        onClick={() => {
+                            setSplitCashDraft(String(grandTotal.toFixed(2)));
+                            replaceSplitKeyRef.current = true;
+                        }}
+                        disabled={isProcessing}
+                    >
+                        Всичко в брой
+                    </button>
+                    <button
+                        type="button"
+                        className="btn btn-outline-light"
+                        onClick={() => appendSplitKey('C')}
+                        disabled={isProcessing}
+                    >
+                        Изчисти
+                    </button>
+                </div>
+                <div className="qty-numpad" role="group" aria-label="Цифрова клавиатура за сума в брой">
+                    {['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', '⌫'].map((key) => (
+                        <button
+                            key={key}
+                            type="button"
+                            className="qty-numpad-key"
+                            onClick={() => appendSplitKey(key)}
+                            disabled={isProcessing}
+                        >
+                            {key}
+                        </button>
+                    ))}
+                    <button
+                        type="button"
+                        className="qty-numpad-key qty-numpad-clear"
+                        onClick={() => appendSplitKey('C')}
+                        disabled={isProcessing}
+                    >
+                        Изчисти
+                    </button>
+                </div>
+                <div className="qty-numpad-actions">
+                    <button
+                        type="button"
+                        className="btn btn-outline-light qty-numpad-action"
+                        onClick={closeSplitModal}
+                        disabled={isProcessing}
+                    >
+                        Отказ
+                    </button>
+                    <button
+                        type="button"
+                        className="btn btn-warning qty-numpad-action"
+                        onClick={confirmSplitPayment}
+                        disabled={isProcessing}
+                    >
+                        Потвърди
+                    </button>
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+
     return (
         <div className="cart-summary mt-1">
             <div className="cart-summary-details">
@@ -443,6 +684,7 @@ const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
             </div>
 
             {paymentModal}
+            {splitModal}
 
             {
                 showPopup && orderDetails && (

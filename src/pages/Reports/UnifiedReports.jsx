@@ -14,6 +14,15 @@ import { AppContext } from '../../context/AppContext.jsx';
 import { formatMoney } from '../../util/formatMoney.js';
 import './Reports.css';
 
+/** Local calendar YYYY-MM-DD (avoids UTC day shift near midnight in BG). */
+const toLocalYmd = (date = new Date()) => {
+    const d = date instanceof Date ? date : new Date(date);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+};
+
 const UnifiedReports = () => {
     const { auth } = useContext(AppContext);
     const isAdmin = (auth?.role || '').toUpperCase() === 'ROLE_ADMIN';
@@ -46,7 +55,7 @@ const UnifiedReports = () => {
     const [showReportDetails, setShowReportDetails] = useState(false);
     const [selectedReport, setSelectedReport] = useState(null);
     const [formData, setFormData] = useState({
-        reportDate: new Date().toISOString().split('T')[0],
+        reportDate: toLocalYmd(),
         cashierName: '',
         deviceSerialNumber: '',
         notes: ''
@@ -161,7 +170,7 @@ const UnifiedReports = () => {
                 const reportDate = new Date(formData.reportDate);
                 const startOfMonth = new Date(reportDate.getFullYear(), reportDate.getMonth(), 1);
                 const endOfMonth = new Date(reportDate.getFullYear(), reportDate.getMonth() + 1, 0);
-                const toIso = (d) => d.toISOString().split('T')[0];
+                const toIso = (d) => toLocalYmd(d);
                 const page = await FiscalService.getReports({
                     page: 0,
                     size: 50,
@@ -290,7 +299,7 @@ const UnifiedReports = () => {
                 periodDescription = 'по-стари от 6 месеца';
         }
         
-        const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+        const cutoffDateStr = toLocalYmd(cutoffDate);
         const destLabel = destination === 's3' ? 'AWS S3' : 'локален диск';
         const confirmMessage = `Сигурни ли сте, че искате да архивирате поръчки ${periodDescription}?\n\nДестинация: ${destLabel}.\nПоръчките се изтриват от базата данни след успешен запис.\n\nCutoff дата: ${cutoffDateStr}`;
         
@@ -315,7 +324,7 @@ const UnifiedReports = () => {
         const years = Number(reportArchiveYears) || 5;
         const cutoffDate = new Date();
         cutoffDate.setFullYear(cutoffDate.getFullYear() - years);
-        const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+        const cutoffDateStr = toLocalYmd(cutoffDate);
         const destLabel = destination === 's3' ? 'AWS S3' : 'локален диск';
         const confirmMessage =
             `Сигурни ли сте, че искате да архивирате фискални отчети по-стари от ${years} години?\n\n` +
@@ -366,7 +375,7 @@ const UnifiedReports = () => {
 
     const resetForm = () => {
         setFormData({
-            reportDate: new Date().toISOString().split('T')[0],
+            reportDate: toLocalYmd(),
             cashierName: '',
             deviceSerialNumber: '',
             notes: ''
@@ -375,7 +384,7 @@ const UnifiedReports = () => {
         setShowGenerateForm(false);
     };
 
-    const todayIso = () => new Date().toISOString().split('T')[0];
+    const todayIso = () => toLocalYmd();
 
     const handleFiscalGenerateError = (error) => {
         const status = error.response?.status;
@@ -550,7 +559,7 @@ const UnifiedReports = () => {
                 YEARLY: 'Годишен отчет',
                 STORE_DAILY: 'Общ дневен отчет',
                 Z_REPORT: 'Z-отчет',
-                X_REPORT: 'X-отчет'
+                X_REPORT: 'X-отчет (софтуерен)'
             };
             const statusToBg = {
                 GENERATED: 'ГЕНЕРИРАН',
@@ -664,7 +673,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                 YEARLY: 'Годишен отчет',
                 STORE_DAILY: 'Общ дневен отчет',
                 Z_REPORT: 'Z-отчет',
-                X_REPORT: 'X-отчет'
+                X_REPORT: 'X-отчет (софтуерен)'
             };
             const statusToBg = {
                 GENERATED: 'ГЕНЕРИРАН',
@@ -748,8 +757,31 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                     <div class="section">
                         <h3>Данъчни групи</h3>
                         <table>
-                            <tr><td class="label">Ставка 20% (А):</td><td>Основа ${formatCurrency((report.totalNetSales) || 0)} | ДДС ${formatCurrency((report.totalVAT) || 0)}</td></tr>
-                            ${report.taxGroupBBase ? `<tr><td class="label">Ставка 9% (Б):</td><td>Основа ${formatCurrency(report.taxGroupBBase)} | ДДС ${formatCurrency(report.taxGroupBVat)}</td></tr>` : ''}
+                            ${(() => {
+                                let groups = null;
+                                try {
+                                    if (report.taxBreakdown) {
+                                        groups = typeof report.taxBreakdown === 'string'
+                                            ? JSON.parse(report.taxBreakdown)
+                                            : report.taxBreakdown;
+                                    }
+                                } catch (e) { groups = null; }
+                                if (groups && typeof groups === 'object' && Object.keys(groups).length > 0) {
+                                    const labelFor = (pct) => {
+                                        if (String(pct) === '20') return 'Ставка 20% (А)';
+                                        if (String(pct) === '9') return 'Ставка 9% (Б)';
+                                        if (String(pct) === '0') return 'Ставка 0% (В)';
+                                        return 'Ставка ' + pct + '%';
+                                    };
+                                    return Object.keys(groups)
+                                        .sort((a, b) => Number(b) - Number(a))
+                                        .map((pct) => {
+                                            const g = groups[pct] || {};
+                                            return '<tr><td class="label">' + labelFor(pct) + ':</td><td>Основа ' + formatCurrency(g.base || 0) + ' | ДДС ' + formatCurrency(g.vat || 0) + '</td></tr>';
+                                        }).join('');
+                                }
+                                return '<tr><td class="label">Общо ДДС:</td><td>Основа ' + formatCurrency((report.totalNetSales) || 0) + ' | ДДС ' + formatCurrency((report.totalVAT) || 0) + '</td></tr>';
+                            })()}
                         </table>
                     </div>
 
@@ -974,7 +1006,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                         <button 
                             className="btn btn-outline-light"
                             onClick={() => {
-                                const today = new Date().toISOString().split('T')[0];
+                                const today = toLocalYmd();
                                 setDateFrom(today);
                                 setDateTo(today);
                             }}
@@ -1471,7 +1503,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                                         <option value="YEARLY">Годишен отчет</option>
                                                     </select>
                                                     <small className="text-muted d-block mt-1">
-                                                        Сменен отчет се прави от потребител касиер.
+                                                        Сменен отчет се прави от касиер или админ. Софтуерните отчети тук не са реален X/Z на фискално устройство — реалният Z е на принтера след покупка.
                                                     </small>
                                                 </div>
                                                 <div className="col-md-3 mb-3">

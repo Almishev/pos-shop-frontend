@@ -1,4 +1,5 @@
 import './CartItems.css';
+import '../shared/QtyNumpad.css';
 import {useContext, useEffect, useRef, useState} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
 import { formatMoney } from "../../util/formatMoney.js";
@@ -11,6 +12,7 @@ const CartItems = () => {
     const [showQtyModal, setShowQtyModal] = useState(false);
     const [activeItem, setActiveItem] = useState(null);
     const [tempQty, setTempQty] = useState('1');
+    const replaceOnNextKeyRef = useRef(true);
 
     useEffect(() => {
         const prev = prevCartRef.current;
@@ -45,6 +47,7 @@ const CartItems = () => {
     const openQtyModal = (item) => {
         setActiveItem(item);
         setTempQty(String(item.quantity ?? 1));
+        replaceOnNextKeyRef.current = true;
         setShowQtyModal(true);
     };
 
@@ -52,11 +55,87 @@ const CartItems = () => {
         setShowQtyModal(false);
         setActiveItem(null);
         setTempQty('1');
+        replaceOnNextKeyRef.current = true;
     };
+
+    const isValidQtyDraft = (value) => /^\d*(?:\.\d{0,2})?$/.test(value);
+
+    const appendQtyKey = (key) => {
+        setTempQty((prev) => {
+            const current = (prev ?? '').toString();
+            if (key === 'C') {
+                replaceOnNextKeyRef.current = false;
+                return '';
+            }
+            if (key === '⌫') {
+                replaceOnNextKeyRef.current = false;
+                return current.slice(0, -1);
+            }
+            if (key === '.') {
+                const replace = replaceOnNextKeyRef.current;
+                replaceOnNextKeyRef.current = false;
+                if (replace) return '0.';
+                if (current.includes('.')) return current;
+                return current === '' ? '0.' : `${current}.`;
+            }
+            if (replaceOnNextKeyRef.current) {
+                replaceOnNextKeyRef.current = false;
+                return key;
+            }
+            if (current === '0') return key;
+            const next = `${current}${key}`;
+            return isValidQtyDraft(next) ? next : current;
+        });
+    };
+
+    // Physical keyboard → same as on-screen numpad
+    useEffect(() => {
+        if (!showQtyModal) return;
+        const onKeyDown = (e) => {
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                closeQtyModal();
+                return;
+            }
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                saveQty();
+                return;
+            }
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                e.stopPropagation();
+                appendQtyKey('⌫');
+                return;
+            }
+            if (e.key === 'Delete') {
+                e.preventDefault();
+                e.stopPropagation();
+                appendQtyKey('C');
+                return;
+            }
+            if (e.key === '.' || e.key === ',') {
+                e.preventDefault();
+                e.stopPropagation();
+                appendQtyKey('.');
+                return;
+            }
+            if (/^[0-9]$/.test(e.key)) {
+                e.preventDefault();
+                e.stopPropagation();
+                appendQtyKey(e.key);
+            }
+        };
+        document.addEventListener('keydown', onKeyDown, true);
+        return () => document.removeEventListener('keydown', onKeyDown, true);
+    }, [showQtyModal, tempQty, activeItem]);
 
     const saveQty = () => {
         const normalized = (tempQty || '').toString().replace(',', '.').trim();
-        if (!/^\d*(?:\.\d{0,2})?$/.test(normalized) || normalized === '') {
+        if (!isValidQtyDraft(normalized) || normalized === '' || normalized === '.') {
             return alert('Невалидно количество. Пример: 1, 2.5, 0.25');
         }
         const value = parseFloat(normalized);
@@ -102,7 +181,14 @@ const CartItems = () => {
                                 >
                                     <i className="bi bi-dash"></i>
                                 </button>
-                                <span className="cart-qty-value">{item.quantity}</span>
+                                <button
+                                    type="button"
+                                    className="cart-qty-value cart-qty-value-btn"
+                                    title="Задай количество"
+                                    onClick={() => openQtyModal(item)}
+                                >
+                                    {item.quantity}
+                                </button>
                                 <button
                                     className="btn btn-outline-light btn-sm cart-qty-btn"
                                     onClick={() => updateQuantity(item.itemId, item.quantity + 1)}
@@ -111,8 +197,8 @@ const CartItems = () => {
                                     <i className="bi bi-plus"></i>
                                 </button>
                                 <button
-                                    className="btn btn-outline-warning btn-sm cart-qty-btn"
-                                    title="Задай количество"
+                                    className="btn btn-outline-warning btn-sm cart-qty-btn cart-qty-btn-keyboard"
+                                    title="Цифрова клавиатура"
                                     onClick={() => openQtyModal(item)}
                                 >
                                     <i className="bi bi-keyboard"></i>
@@ -131,30 +217,51 @@ const CartItems = () => {
             )}
 
             {showQtyModal && (
-                <div className="modal d-block" tabIndex="-1" style={{background: 'rgba(0,0,0,0.6)'}}>
-                    <div className="modal-dialog modal-sm modal-dialog-centered">
-                        <div className="modal-content bg-dark text-light">
-                            <div className="modal-header border-secondary">
-                                <h6 className="modal-title">Задаване на количество</h6>
-                                <button type="button" className="btn-close btn-close-white" onClick={closeQtyModal}></button>
-                            </div>
-                            <div className="modal-body">
-                                <label className="text-light d-block mb-1">Количество (до 2 десетични знака)</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0.01"
-                                    className="form-control"
-                                    value={tempQty}
-                                    onChange={(e) => setTempQty(e.target.value)}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveQty(); } }}
-                                    autoFocus
-                                />
-                            </div>
-                            <div className="modal-footer border-secondary">
-                                <button type="button" className="btn btn-secondary" onClick={closeQtyModal}>Отказ</button>
-                                <button type="button" className="btn btn-primary" onClick={saveQty}>Запази</button>
-                            </div>
+                <div className="qty-numpad-overlay" role="presentation" onClick={closeQtyModal}>
+                    <div
+                        className="qty-numpad-modal"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="qty-numpad-title"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="qty-numpad-header">
+                            <h6 id="qty-numpad-title" className="qty-numpad-title">
+                                Количество{activeItem?.name ? `: ${activeItem.name}` : ''}
+                            </h6>
+                            <button type="button" className="qty-numpad-close" onClick={closeQtyModal} aria-label="Затвори">
+                                ×
+                            </button>
+                        </div>
+                        <div className="qty-numpad-display" aria-live="polite">
+                            {tempQty === '' ? '0' : tempQty}
+                        </div>
+                        <div className="qty-numpad" role="group" aria-label="Цифрова клавиатура">
+                            {['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', '⌫'].map((key) => (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    className="qty-numpad-key"
+                                    onClick={() => appendQtyKey(key)}
+                                >
+                                    {key}
+                                </button>
+                            ))}
+                            <button
+                                type="button"
+                                className="qty-numpad-key qty-numpad-clear"
+                                onClick={() => appendQtyKey('C')}
+                            >
+                                Изчисти
+                            </button>
+                        </div>
+                        <div className="qty-numpad-actions">
+                            <button type="button" className="btn btn-outline-light qty-numpad-action" onClick={closeQtyModal}>
+                                Отказ
+                            </button>
+                            <button type="button" className="btn btn-warning qty-numpad-action" onClick={saveQty}>
+                                Запази
+                            </button>
                         </div>
                     </div>
                 </div>

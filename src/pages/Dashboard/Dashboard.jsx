@@ -2,7 +2,6 @@ import './Dashboard.css';
 import {useEffect, useState, useContext} from "react";
 import {fetchDashboardData} from "../../Service/Dashboard.js";
 import toast from "react-hot-toast";
-import FiscalService from "../../Service/FiscalService.js";
 import CashDrawerService from "../../Service/CashDrawerService.js";
 import { AppContext } from "../../context/AppContext.jsx";
 import { formatMoney } from "../../util/formatMoney.js";
@@ -11,15 +10,13 @@ const Dashboard = () => {
     const { auth } = useContext(AppContext);
     const isAdmin = (auth?.role || '').toUpperCase() === 'ROLE_ADMIN';
     const [data, setData] = useState(null);
-    const [fiscalStats, setFiscalStats] = useState(null);
     const [loading, setLoading] = useState(true);
     
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [dashboardResponse, fiscalData, activeSession] = await Promise.all([
+                const [dashboardResponse, activeSession] = await Promise.all([
                     fetchDashboardData(),
-                    loadFiscalStats(),
                     (async () => { try { return await CashDrawerService.getActiveSession(); } catch { return null; } })()
                 ]);
                 const resp = dashboardResponse?.data || {};
@@ -33,21 +30,21 @@ const Dashboard = () => {
                         .filter(Boolean)
                         .map(v => String(v).trim().toLowerCase());
                     filteredRecent = allRecent.filter(o => {
-                        // date filter
                         const created = o?.createdAt ? new Date(o.createdAt) : null;
                         if (!created || !isSameLocalDate(created)) return false;
-                        // cashier filter
                         const cashier = String(o?.cashierUsername || '').trim().toLowerCase();
                         return userKeys.length > 0 && userKeys.includes(cashier);
                     });
                 }
-                const safeData = {
+                setData({
                     todaySales: resp.todaySales || 0,
                     todayOrderCount: resp.todayOrderCount || 0,
+                    todayVAT: resp.todayVAT || 0,
+                    todayFiscalReceipts: resp.todayFiscalReceipts || 0,
+                    activeDevices: resp.activeDevices || 0,
+                    totalDevices: resp.totalDevices || 0,
                     recentOrders: filteredRecent
-                };
-                setData(safeData);
-                setFiscalStats(fiscalData);
+                });
             } catch (error) {
                 console.error(error);
                 toast.error("Неуспешно зареждане на данните");
@@ -56,36 +53,7 @@ const Dashboard = () => {
             }
         }
         loadData();
-    }, []);
-
-    const loadFiscalStats = async () => {
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            const [sales, vat, receipts, devices] = await Promise.all([
-                FiscalService.getSalesForDate(today),
-                FiscalService.getVATForDate(today),
-                FiscalService.getReceiptsForDate(today),
-                FiscalService.getAllDevices()
-            ]);
-            
-            return {
-                todaySales: sales || 0,
-                todayVAT: vat || 0,
-                todayReceipts: receipts || 0,
-                activeDevices: (Array.isArray(devices) ? devices : []).filter(d => d?.status === 'ACTIVE').length,
-                totalDevices: (Array.isArray(devices) ? devices : []).length
-            };
-        } catch (error) {
-            console.error('Error loading fiscal stats:', error);
-            return {
-                todaySales: 0,
-                todayVAT: 0,
-                todayReceipts: 0,
-                activeDevices: 0,
-                totalDevices: 0
-            };
-        }
-    };
+    }, [auth?.name, auth?.email, isAdmin]);
 
     if (loading) {
         return <div className="loading">Зареждане на таблото...</div>
@@ -121,47 +89,33 @@ const Dashboard = () => {
 
                     <div className="stat-card">
                         <div className="stat-icon">
-                            <i className="bi bi-upc-scan"></i>
+                            <i className="bi bi-calculator"></i>
                         </div>
                         <div className="stat-content">
-                            <h3>Сканирания</h3>
-                            <p>{data.recentOrders.length}</p>
+                            <h3>ДДС днес</h3>
+                            <p>{formatMoney(data.todayVAT)}</p>
                         </div>
                     </div>
 
-                    {fiscalStats && (
-                        <>
-                            <div className="stat-card">
-                                <div className="stat-icon">
-                                    <i className="bi bi-printer"></i>
-                                </div>
-                                <div className="stat-content">
-                                    <h3>Фискални бонове</h3>
-                                    <p>{fiscalStats.todayReceipts}</p>
-                                </div>
-                            </div>
+                    <div className="stat-card">
+                        <div className="stat-icon">
+                            <i className="bi bi-printer"></i>
+                        </div>
+                        <div className="stat-content">
+                            <h3>Фискални бонове</h3>
+                            <p>{data.todayFiscalReceipts}</p>
+                        </div>
+                    </div>
 
-                            <div className="stat-card">
-                                <div className="stat-icon">
-                                    <i className="bi bi-calculator"></i>
-                                </div>
-                                <div className="stat-content">
-                                    <h3>ДДС днес</h3>
-                                    <p>{formatMoney(fiscalStats.todayVAT)}</p>
-                                </div>
-                            </div>
-
-                            <div className="stat-card">
-                                <div className="stat-icon">
-                                    <i className="bi bi-wifi"></i>
-                                </div>
-                                <div className="stat-content">
-                                    <h3>Активни устройства</h3>
-                                    <p>{fiscalStats.activeDevices}/{fiscalStats.totalDevices}</p>
-                                </div>
-                            </div>
-                        </>
-                    )}
+                    <div className="stat-card">
+                        <div className="stat-icon">
+                            <i className="bi bi-wifi"></i>
+                        </div>
+                        <div className="stat-content">
+                            <h3>Активни устройства</h3>
+                            <p>{data.activeDevices}/{data.totalDevices}</p>
+                        </div>
+                    </div>
                 </div>
                 <div className="recent-orders-card">
                     <h3 className="recent-orders-title">
@@ -192,9 +146,24 @@ const Dashboard = () => {
                                         </span>
                                     </td>
                                     <td>
-                                        <span className={`status-badge ${order.paymentDetails?.status?.toLowerCase() || 'pending'}`}>
-                                            {order.paymentDetails?.status === 'COMPLETED' ? 'ЗАВЪРШЕНО' : (order.paymentDetails?.status || 'ИЗЧАКВАНЕ')}
-                                        </span>
+                                        {(() => {
+                                            const method = (order.paymentMethod || '').toUpperCase();
+                                            const status = order.paymentDetails?.status;
+                                            // Cash / completed sales without POS status are done, not pending
+                                            const label = status === 'COMPLETED' || status === 'APPROVED'
+                                                ? 'ЗАВЪРШЕНО'
+                                                : status
+                                                    ? status
+                                                    : (method === 'CASH' || method === 'SPLIT' || method === 'CARD')
+                                                        ? 'ЗАВЪРШЕНО'
+                                                        : 'ИЗЧАКВАНЕ';
+                                            const badgeClass = (status || (label === 'ЗАВЪРШЕНО' ? 'completed' : 'pending')).toLowerCase();
+                                            return (
+                                                <span className={`status-badge ${badgeClass}`}>
+                                                    {label}
+                                                </span>
+                                            );
+                                        })()}
                                     </td>
                                     <td>
                                         {new Date(order.createdAt).toLocaleDateString('bg-BG', {

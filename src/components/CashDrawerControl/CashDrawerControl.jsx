@@ -11,10 +11,8 @@ const CashDrawerControl = () => {
     const [activeSession, setActiveSession] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showStartForm, setShowStartForm] = useState(false);
-    const [showEndForm, setShowEndForm] = useState(false);
     const [formData, setFormData] = useState({
         startAmount: '',
-        endAmount: '',
         notes: '',
         deviceSerialNumber: '',
         registerId: ''
@@ -98,7 +96,7 @@ const CashDrawerControl = () => {
                     localStorage.setItem(prefKey, formData.deviceSerialNumber);
                 }
             } catch (e) {}
-            setFormData({ startAmount: '', endAmount: '', notes: '', deviceSerialNumber: '', registerId: '' });
+            setFormData({ startAmount: '', notes: '', deviceSerialNumber: '', registerId: '' });
             toast.success('Работният ден е започнат успешно!');
         } catch (error) {
             console.error('Error starting work day:', error);
@@ -106,31 +104,6 @@ const CashDrawerControl = () => {
             console.error('Error status:', error.response?.status);
             console.error('Error data:', error.response?.data);
             toast.error(error.response?.data?.message || 'Грешка при започване на работния ден');
-        }
-    };
-
-    const handleEndWorkDay = async (e) => {
-        e.preventDefault();
-        
-        if (!formData.endAmount || parseFloat(formData.endAmount) < 0) {
-            toast.error('Моля, въведете валидна крайна сума');
-            return;
-        }
-
-        try {
-            const response = await CashDrawerService.endWorkDay(
-                activeSession.id,
-                parseFloat(formData.endAmount), 
-                formData.notes
-            );
-            
-            setActiveSession(null);
-            setShowEndForm(false);
-            setFormData({ startAmount: '', endAmount: '', notes: '' });
-            toast.success('Работният ден е приключен успешно!');
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Грешка при приключване на работния ден');
-            console.error('Error ending work day:', error);
         }
     };
 
