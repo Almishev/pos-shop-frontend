@@ -119,7 +119,7 @@ const UnifiedReports = () => {
     };
 
     const handleDatabaseBackup = async (destination = 'local') => {
-        const destLabel = destination === 's3' ? 'AWS S3' : 'локален диск';
+        const destLabel = destination === 's3' ? 'AWS S3' : 'външен диск / USB (BACKUP_HOST_PATH)';
         if (!window.confirm(
             `Създаване на пълен backup на базата данни?\n\nДестинация: ${destLabel}.\nДанните в PostgreSQL НЕ се изтриват.`
         )) {
@@ -1061,7 +1061,9 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                             <h6 className="text-success">💾 Backup на базата</h6>
                             <p className="text-muted small mb-3">
                                 Пълен dump на PostgreSQL (артикули, поръчки, клиенти, настройки и т.н.).
-                                Данните <strong className="text-light">не се изтриват</strong>. Нощен локален backup в 03:00; ако PC е бил изключен — при следващо пускане се прави catch-up. Пазят се последните 7 файла.
+                                Данните <strong className="text-light">не се изтриват</strong>.
+                                Нощен backup в 03:00 върху външния диск/флашката (ако PC е бил изключен — catch-up при следващо пускане).
+                                Пазят се файловете от последните <strong className="text-light">30 дни</strong>.
                             </p>
                             <div className="mb-3 d-flex flex-wrap gap-2">
                                 <button
@@ -1077,7 +1079,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                     ) : (
                                         <>
                                             <i className="bi bi-hdd me-2"></i>
-                                            Backup локално
+                                            Backup на диск/USB
                                         </>
                                     )}
                                 </button>
@@ -1091,10 +1093,10 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                 </button>
                             </div>
                             <ul className="list-unstyled mb-3">
-                                <li><i className="bi bi-info-circle text-info me-2"></i>Локално: <code>archives/db-backups</code></li>
+                                <li><i className="bi bi-info-circle text-info me-2"></i>Локално: външен диск/флашка (<code>BACKUP_HOST_PATH</code>, напр. <code>/mnt/pos-backup/shop-backups</code>)</li>
                                 <li><i className="bi bi-info-circle text-info me-2"></i>AWS prefix: <code>db-backups/</code></li>
                                 <li><i className="bi bi-info-circle text-info me-2"></i>Формат: <code>.sql.gz</code></li>
-                                <li><i className="bi bi-check-circle text-success me-2"></i>Изтеглете файл на USB за защита при бедствие</li>
+                                <li><i className="bi bi-check-circle text-success me-2"></i>Не се записва втори копие на системния диск — само на конфигурирания път</li>
                             </ul>
                             <div className="table-responsive">
                                 <table className="table table-sm table-dark table-striped mb-0">
