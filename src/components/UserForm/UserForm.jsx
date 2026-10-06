@@ -12,13 +12,20 @@ const UserForm = ({setUsers}) => {
     });
 
     const onChangeHandler = (e) => {
-        const value = e.target.value;
         const name = e.target.name;
+        let value = e.target.value;
+        if (name === "password") {
+            value = value.replace(/\D/g, "").slice(0, 12);
+        }
         setData((data) => ({ ...data, [name]: value }));
     }
 
     const onSubmitHandler = async (e) => {
         e.preventDefault();
+        if (!/^\d{4,12}$/.test(data.password)) {
+            toast.error("Паролата трябва да е само цифри (4–12)");
+            return;
+        }
         setLoading(true);
         try {
             const response = await addUser(data);
@@ -69,12 +76,15 @@ const UserForm = ({setUsers}) => {
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="password" className="form-label">Парола</label>
+                                <label htmlFor="password" className="form-label">Парола (само цифри)</label>
                                 <input type="password"
                                        name="password"
                                        id="password"
                                        className="form-control"
-                                       placeholder="**************"
+                                       placeholder="напр. 555555"
+                                       inputMode="numeric"
+                                       pattern="[0-9]*"
+                                       maxLength={12}
                                        onChange={onChangeHandler}
                                        value={data.password}
                                        required

@@ -11,14 +11,73 @@
     background-position: center;
 }
 
-.login-background .card {
+.login-background .login-card {
     background-color: white;
     width: 100%;
-    max-width: 480px;
+    max-width: 420px;
     border: none;
+    border-radius: 12px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
 }
 
 .login-background .card-body {
-    padding: 2rem;
+    padding: 1.75rem;
+}
+
+.login-password-display {
+    letter-spacing: 0.35rem;
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+    caret-color: #111;
+}
+
+.login-numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.65rem;
+    margin-top: 0.25rem;
+}
+
+.login-numpad-key {
+    min-height: 3.4rem;
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+    background: #f8f9fb;
+    color: #111;
+    font-size: 1.45rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+}
+
+.login-numpad-key:hover,
+.login-numpad-key:focus-visible {
+    background: #eef1f6;
+    outline: none;
+}
+
+.login-numpad-key:active {
+    transform: scale(0.98);
+}
+
+.login-numpad-key:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.login-numpad-key-action {
+    background: #e9ecef;
+    font-size: 1.15rem;
+}
+
+@media (max-width: 480px) {
+    .login-background .card-body {
+        padding: 1.25rem;
+    }
+
+    .login-numpad-key {
+        min-height: 3.1rem;
+        font-size: 1.3rem;
+    }
 }

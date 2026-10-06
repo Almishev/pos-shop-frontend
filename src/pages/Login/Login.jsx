@@ -5,43 +5,89 @@ import {login} from "../../Service/AuthService.js";
 import {useNavigate} from "react-router-dom";
 import {AppContext} from "../../context/AppContext.jsx";
 
+const NUMPAD_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "⌫"];
+const MIN_PIN_LENGTH = 4;
+const MAX_PIN_LENGTH = 12;
+
+const maskPin = (pin) => {
+    if (!pin) return "";
+    if (pin.length === 1) return pin;
+    return "•".repeat(pin.length - 1) + pin.slice(-1);
+};
+
 const Login = () => {
     const {setAuthData} = useContext(AppContext);
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const [data, setData] = useState({
-        email: "",
-        password: "",
-    });
+    const [password, setPassword] = useState("");
 
-    const onChangeHandler = (e) => {
-        const name = e.target.name;
-        const value = e.target.value;
-        setData((data) => ({...data, [name]: value}));
-    }
+    const setDigitPassword = (next) => {
+        const digitsOnly = String(next).replace(/\D/g, "").slice(0, MAX_PIN_LENGTH);
+        setPassword(digitsOnly);
+    };
+
+    const onNumpadPress = (key) => {
+        if (key === "C") {
+            setDigitPassword("");
+            return;
+        }
+        if (key === "⌫") {
+            setDigitPassword(password.slice(0, -1));
+            return;
+        }
+        setDigitPassword(password + key);
+    };
+
+    const onPasswordKeyDown = (e) => {
+        if (e.key === "Backspace") {
+            e.preventDefault();
+            setDigitPassword(password.slice(0, -1));
+            return;
+        }
+        if (e.key === "Enter") {
+            return;
+        }
+        if (/^\d$/.test(e.key)) {
+            e.preventDefault();
+            setDigitPassword(password + e.key);
+            return;
+        }
+        if (e.key.length === 1) {
+            e.preventDefault();
+        }
+    };
+
+    const onPasswordPaste = (e) => {
+        e.preventDefault();
+        const pasted = e.clipboardData?.getData("text") ?? "";
+        setDigitPassword(password + pasted);
+    };
 
     const onSubmitHandler = async (e) => {
         e.preventDefault();
+        if (!/^\d+$/.test(password)) {
+            toast.error("Въведете цифрова парола");
+            return;
+        }
+        if (password.length < MIN_PIN_LENGTH) {
+            toast.error(`Паролата трябва да е поне ${MIN_PIN_LENGTH} цифри`);
+            return;
+        }
         setLoading(true);
         try {
-            const response = await login(data);
+            const response = await login({password});
             if (response.status === 200) {
-                toast.success("Успешен вход");
-                // Първо изчистваме ВСИЧКИ стари данни (ако има такива от предишен потребител)
-                // Използваме clear() за да гарантираме пълно изчистване
+                toast.success(`Успешен вход: ${response.data.name}`);
                 localStorage.removeItem("token");
                 localStorage.removeItem("role");
                 localStorage.removeItem("email");
                 localStorage.removeItem("name");
-                // Допълнително изчистване на всички други възможни ключове
                 Object.keys(localStorage).forEach(key => {
                     if (key.startsWith('auth') || key.startsWith('user') || key.startsWith('session')) {
                         localStorage.removeItem(key);
                     }
                 });
-                // Малка забавяне за да гарантираме, че изчистването е завършено
                 await new Promise(resolve => setTimeout(resolve, 100));
-                // След това записваме новите данни
                 localStorage.setItem("token", response.data.token);
                 localStorage.setItem("role", response.data.role);
                 localStorage.setItem("email", response.data.email);
@@ -54,7 +100,7 @@ const Login = () => {
             console.error(error);
             const status = error.response?.status;
             const raw = error.response?.data;
-            let msg = "Невалиден имейл/парола";
+            let msg = "Невалидна парола";
             if (status === 403) {
                 if (typeof raw === "string" && raw.trim()) {
                     msg = raw;
@@ -76,30 +122,55 @@ const Login = () => {
 
     return (
         <div className="bg-light d-flex align-items-center justify-content-center vh-100 login-background">
-            <div className="card shoadow-lg w-100" style={{maxWidth: '480px'}}>
+            <div className="card shadow-lg w-100 login-card">
                 <div className="card-body">
                     <div className="text-center">
                         <h1 className="card-title">Вход</h1>
-                        <p className="card-text text-muted">
-                            Влезте, за да достъпите профила си
-                        </p>
+                       
                     </div>
                     <div className="mt-4">
                         <form onSubmit={onSubmitHandler}>
-                            <div className="mb-4">
-                                <label htmlFor="email" className="form-label text-muted">
-                                    Имейл адрес
-                                </label>
-                                <input type="text" name="email" id="email" placeholder="yourname@example.com" className="form-control" onChange={onChangeHandler} value={data.email} />
+                            <div className="mb-3">
+                                
+                                <input
+                                    type="text"
+                                    name="password"
+                                    id="password"
+                                    inputMode="numeric"
+                                    autoComplete="off"
+                                    autoCorrect="off"
+                                    spellCheck={false}
+                                    placeholder={"•".repeat(MIN_PIN_LENGTH)}
+                                    className="form-control form-control-lg text-center login-password-display"
+                                    onKeyDown={onPasswordKeyDown}
+                                    onPaste={onPasswordPaste}
+                                    onChange={() => {}}
+                                    value={maskPin(password)}
+                                    maxLength={MAX_PIN_LENGTH}
+                                    aria-label="Цифрова парола"
+                                />
                             </div>
-                            <div className="mb-4">
-                                <label htmlFor="password" className="form-label text-muted">
-                                    Парола
-                                </label>
-                                <input type="password" name="password" id="password" placeholder="**********" className="form-control" onChange={onChangeHandler} value={data.password} />
+
+                            <div className="login-numpad" role="group" aria-label="Цифрова клавиатура за парола">
+                                {NUMPAD_KEYS.map((key) => (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        className={`login-numpad-key${key === "C" || key === "⌫" ? " login-numpad-key-action" : ""}`}
+                                        onClick={() => onNumpadPress(key)}
+                                        disabled={loading}
+                                    >
+                                        {key}
+                                    </button>
+                                ))}
                             </div>
-                            <div className="d-grid">
-                                <button type="sumbit" className="btn btn-dark btn-lg" disabled={loading}>
+
+                            <div className="d-grid mt-3">
+                                <button
+                                    type="submit"
+                                    className="btn btn-dark btn-lg"
+                                    disabled={loading || password.length < MIN_PIN_LENGTH}
+                                >
                                     {loading ? "Зареждане..." : "Вход"}
                                 </button>
                             </div>
