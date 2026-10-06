@@ -1,0 +1,193 @@
+body.customer-display-active {
+    overflow: hidden;
+    background: #0f1419;
+}
+
+.cfd {
+    --cfd-yellow: #ffc107;
+    --cfd-yellow-soft: rgba(255, 193, 7, 0.18);
+    height: 100vh;
+    max-height: 100vh;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 2rem 2.5rem 2.5rem;
+    overflow: hidden;
+    background:
+        radial-gradient(ellipse at top right, rgba(255, 193, 7, 0.14), transparent 42%),
+        radial-gradient(ellipse at top, rgba(40, 70, 110, 0.35), transparent 55%),
+        linear-gradient(160deg, #121820 0%, #0f1419 45%, #1a222d 100%);
+    color: #f4f6f8;
+    display: flex;
+    flex-direction: column;
+    font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+.cfd-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--cfd-yellow-soft);
+    padding-bottom: 0.85rem;
+    flex-shrink: 0;
+}
+
+.cfd-brand {
+    font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--cfd-yellow);
+}
+
+.cfd-clock {
+    font-size: clamp(1rem, 2vw, 1.35rem);
+    opacity: 0.7;
+    font-variant-numeric: tabular-nums;
+}
+
+.cfd-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.cfd-idle,
+.cfd-payment,
+.cfd-thanks {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 0.75rem;
+}
+
+.cfd-welcome {
+    font-size: clamp(2.5rem, 7vw, 4.5rem);
+    font-weight: 700;
+    margin: 0;
+    color: var(--cfd-yellow);
+}
+
+.cfd-hint {
+    font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+    opacity: 0.65;
+    margin: 0;
+}
+
+.cfd-last-item {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-left: 3px solid rgba(255, 193, 7, 0.55);
+    border-radius: 12px;
+    padding: 1.1rem 1.35rem;
+    margin-bottom: 1rem;
+    flex-shrink: 0;
+}
+
+.cfd-last-name {
+    font-size: clamp(1.05rem, 2.2vw, 1.45rem);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.cfd-last-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: clamp(1.05rem, 2.2vw, 1.45rem);
+    opacity: 0.9;
+    font-variant-numeric: tabular-nums;
+}
+
+.cfd-lines {
+    list-style: none;
+    margin: 0;
+    padding: 0 0.25rem 0 0;
+    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.cfd-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: clamp(1.05rem, 2.2vw, 1.45rem);
+    padding-bottom: 0.55rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+.cfd-line-name {
+    flex: 1;
+    min-width: 0;
+}
+
+.cfd-line-qty {
+    opacity: 0.65;
+    white-space: nowrap;
+}
+
+.cfd-line-price {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.cfd-totals {
+    margin-top: 0.75rem;
+    padding-top: 1rem;
+    border-top: 2px solid rgba(255, 193, 7, 0.35);
+    flex-shrink: 0;
+    background: linear-gradient(180deg, transparent, #0f1419 18%);
+}
+
+.cfd-total-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: clamp(1.2rem, 2.5vw, 1.7rem);
+    margin-top: 0.35rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.cfd-discount {
+    color: #8fd19e;
+}
+
+.cfd-grand {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 800;
+    margin-top: 0.5rem;
+    color: var(--cfd-yellow);
+}
+
+.cfd-payment-label,
+.cfd-thanks-title {
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    margin: 0;
+    opacity: 0.85;
+}
+
+.cfd-payment-amount {
+    font-size: clamp(3rem, 10vw, 6rem);
+    font-weight: 800;
+    margin: 0.25rem 0;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    color: var(--cfd-yellow);
+}
+
+.cfd-payment-discount,
+.cfd-payment-method {
+    font-size: clamp(1.2rem, 2.5vw, 1.7rem);
+    margin: 0;
+    opacity: 0.75;
+}
+
+.cfd-thanks-title {
+    font-weight: 700;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    color: var(--cfd-yellow);
+}

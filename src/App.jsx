@@ -17,6 +17,7 @@ import Login from "./pages/Login/Login.jsx";
 import OrderHistory from "./pages/OrderHistory/OrderHistory.jsx";
 import UnifiedReports from "./pages/Reports/UnifiedReports.jsx";
 import LabelManagement from "./components/Labels/LabelManagement.jsx";
+import CustomerDisplay from "./pages/CustomerDisplay/CustomerDisplay.jsx";
 import {useContext} from "react";
 import {AuthContext} from "./context/AppContext.jsx";
 import NotFound from "./pages/NotFound/NotFound.jsx";
@@ -55,9 +56,14 @@ const App = () => {
         return React.cloneElement(element, params);
     }
 
+    const hideChrome =
+        location.pathname === "/login"
+        || location.pathname === "/"
+        || location.pathname === "/customer-display";
+
     return (
         <div>
-            {location.pathname !== "/login" && location.pathname !== '/' && <Menubar />}
+            {!hideChrome && <Menubar />}
             <Toaster />
             <Routes>
                 <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['ROLE_ADMIN']} />} />
@@ -74,6 +80,7 @@ const App = () => {
                 <Route path="/excel-import" element={<ProtectedRoute element={<ExcelImportPage />} allowedRoles={["ROLE_ADMIN"]} />} />
                 <Route path="/labels" element={<ProtectedRoute element={<LabelManagement />} allowedRoles={["ROLE_ADMIN"]} />} />
 
+                <Route path="/customer-display" element={<CustomerDisplay />} />
                 <Route path="/login" element={<LoginRoute element={<Login />} />} />
                 <Route path="/orders" element={<ProtectedRoute element={<OrderHistory />} allowedRoles={['ROLE_USER', 'ROLE_ADMIN']} />} />
                 <Route path="/reports" element={<ProtectedRoute element={<UnifiedReports />} allowedRoles={["ROLE_USER", "ROLE_ADMIN"]} />} />

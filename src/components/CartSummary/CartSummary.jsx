@@ -11,6 +11,7 @@ import FiscalService from "../../Service/FiscalService.js";
 import LoyaltyService from "../../Service/LoyaltyService.js";
 import CashDrawerService from "../../Service/CashDrawerService.js";
 import { formatMoney, SHOP_CURRENCY } from "../../util/formatMoney.js";
+import {useCustomerDisplayPublisher} from "../../hooks/useCustomerDisplayPublisher.js";
 
 const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
     const {cartItems, clearCart} = useContext(AppContext);
@@ -23,6 +24,7 @@ const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
     const [splitCashDraft, setSplitCashDraft] = useState('');
     const replaceSplitKeyRef = useRef(true);
     const [loyaltyDiscounts, setLoyaltyDiscounts] = useState(null);
+    const [thankYouDisplay, setThankYouDisplay] = useState(null);
 
     const getItemVatRate = (item) => {
         const r = Number(item.vatRate);
@@ -63,6 +65,17 @@ const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
 
     // Grand total must NOT add VAT again because subtotal already includes VAT
     const grandTotal = round2(subtotal - loyaltyDiscountAmount);
+
+    useCustomerDisplayPublisher({
+        cartItems,
+        subtotal,
+        tax,
+        grandTotal,
+        loyaltyDiscount: loyaltyDiscountAmount,
+        paymentOpen: showPaymentModal || showSplitModal,
+        isProcessing,
+        thankYou: thankYouDisplay,
+    });
 
     const parsedSplitCash = (() => {
         const n = parseFloat((splitCashDraft || '').toString().replace(',', '.'));
@@ -115,6 +128,7 @@ const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
     const closeReceipt = () => {
         setShowPopup(false);
         setOrderDetails(null);
+        setThankYouDisplay(null);
         clearAll();
     }
 
@@ -136,6 +150,14 @@ const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
     const openReceipt = (data) => {
         setShowPaymentModal(false);
         setShowSplitModal(false);
+        setThankYouDisplay({
+            cartItems,
+            subtotal: data?.subtotal ?? subtotal,
+            tax: data?.tax ?? tax,
+            grandTotal: data?.grandTotal ?? grandTotal,
+            loyaltyDiscount: loyaltyDiscountAmount,
+            paymentMethod: data?.paymentMethod || null,
+        });
         setOrderDetails(data);
         setShowPopup(true);
     }

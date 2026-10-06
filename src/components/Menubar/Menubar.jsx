@@ -4,6 +4,8 @@ import {Link, useLocation, useNavigate} from "react-router-dom";
 import {useContext, useState} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
 import CashDrawerControl from "../CashDrawerControl/CashDrawerControl.jsx";
+import {openCustomerDisplayWindow} from "../../util/customerDisplaySync.js";
+import toast from "react-hot-toast";
 
 const Menubar = () => {
     const navigate = useNavigate();
@@ -188,7 +190,27 @@ const Menubar = () => {
                 </ul>
                 {/* Right actions — cash drawer is cashier-only */}
                 {!isAdmin && (
-                <ul className="navbar-nav me-3">
+                <ul className="navbar-nav me-3 gap-2 flex-row align-items-center">
+                    <li className="nav-item">
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-outline-light"
+                            onClick={() => {
+                                const ok = openCustomerDisplayWindow();
+                                if (!ok) {
+                                    toast.error("Разрешете изскачащи прозорци, после опитайте пак");
+                                    return;
+                                }
+                                toast.success("Плъзнете прозореца на клиентския монитор и натиснете F11", {
+                                    duration: 5000,
+                                });
+                            }}
+                            title="Отвори екран за клиенти (втори монитор)"
+                        >
+                            <i className="bi bi-display me-1"></i>
+                            Екран клиент
+                        </button>
+                    </li>
                     <li className="nav-item">
                         <button
                             type="button"
