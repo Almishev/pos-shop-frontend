@@ -1097,6 +1097,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                 <li><i className="bi bi-info-circle text-info me-2"></i>AWS prefix: <code>db-backups/</code></li>
                                 <li><i className="bi bi-info-circle text-info me-2"></i>Формат: <code>.sql.gz</code></li>
                                 <li><i className="bi bi-check-circle text-success me-2"></i>Не се записва втори копие на системния диск — само на конфигурирания път</li>
+                                <li><i className="bi bi-check-circle text-success me-2"></i>Заедно с dump-а се обновява и <code>pos-client.env</code> (копие на `.env`)</li>
                             </ul>
                             <div className="table-responsive">
                                 <table className="table table-sm table-dark table-striped mb-0">
