@@ -7,6 +7,7 @@ import {fetchUsers} from "../../Service/UserService.js";
 
 const ManageUsers = () => {
     const [users, setUsers] = useState([]);
+    const [editing, setEditing] = useState(null);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -28,10 +29,10 @@ const ManageUsers = () => {
     return (
         <div className="users-container text-light">
             <div className="left-column">
-                <UserForm setUsers={setUsers} />
+                <UserForm setUsers={setUsers} editing={editing} onClearEdit={() => setEditing(null)} />
             </div>
             <div className="right-column">
-                <UsersList users={users} setUsers={setUsers} />
+                <UsersList users={users} setUsers={setUsers} onEdit={setEditing} />
             </div>
         </div>
     )

@@ -146,12 +146,6 @@ const FiscalService = {
         const url = `/admin/fiscal-reports/archive/run${params.toString() ? '?' + params.toString() : ''}`;
         const response = await instance.post(url);
         return response.data;
-    },
-
-    sendReportToNAF: async (reportId) => {
-        const instance = createAuthInstance();
-        const response = await instance.post(`/admin/fiscal-reports/${reportId}/send-to-naf`);
-        return response.data;
     }
 };
 

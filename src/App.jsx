@@ -20,6 +20,8 @@ import LabelManagement from "./components/Labels/LabelManagement.jsx";
 import CustomerDisplay from "./pages/CustomerDisplay/CustomerDisplay.jsx";
 import {useContext} from "react";
 import {AuthContext} from "./context/AppContext.jsx";
+import AuditJournal from "./pages/AuditJournal/AuditJournal.jsx";
+import AnnexExport from "./pages/AnnexExport/AnnexExport.jsx";
 import NotFound from "./pages/NotFound/NotFound.jsx";
 
 const App = () => {
@@ -29,7 +31,7 @@ const App = () => {
 
     const LoginRoute = ({element}) => {
         if(auth.token) {
-            const home = auth.role === "ROLE_ADMIN" ? "/dashboard" : "/explore";
+            const home = auth.role === "ROLE_ADMIN" ? "/dashboard" : auth.role === "ROLE_AUDITOR" ? "/audit" : "/explore";
             return <Navigate to={home} replace />;
         }
         return element;
@@ -49,7 +51,7 @@ const App = () => {
                     { id: "admin-cashier-only", duration: 5000 }
                 );
             }
-            const fallback = auth.role === "ROLE_ADMIN" ? "/dashboard" : "/explore";
+            const fallback = auth.role === "ROLE_ADMIN" ? "/dashboard" : auth.role === "ROLE_AUDITOR" ? "/audit" : "/explore";
             return <Navigate to={fallback} replace />;
         }
 
@@ -82,8 +84,10 @@ const App = () => {
 
                 <Route path="/customer-display" element={<CustomerDisplay />} />
                 <Route path="/login" element={<LoginRoute element={<Login />} />} />
-                <Route path="/orders" element={<ProtectedRoute element={<OrderHistory />} allowedRoles={['ROLE_USER', 'ROLE_ADMIN']} />} />
-                <Route path="/reports" element={<ProtectedRoute element={<UnifiedReports />} allowedRoles={["ROLE_USER", "ROLE_ADMIN"]} />} />
+                <Route path="/orders" element={<ProtectedRoute element={<OrderHistory />} allowedRoles={['ROLE_USER', 'ROLE_ADMIN', 'ROLE_AUDITOR']} />} />
+                <Route path="/reports" element={<ProtectedRoute element={<UnifiedReports />} allowedRoles={["ROLE_USER", "ROLE_ADMIN", "ROLE_AUDITOR"]} />} />
+                <Route path="/audit" element={<ProtectedRoute element={<AuditJournal />} allowedRoles={["ROLE_ADMIN", "ROLE_AUDITOR"]} />} />
+                <Route path="/nap-export" element={<ProtectedRoute element={<AnnexExport />} allowedRoles={["ROLE_ADMIN", "ROLE_AUDITOR"]} />} />
                 <Route path="/" element={<Login />} />
                 <Route path="*" element={<NotFound />} />
 

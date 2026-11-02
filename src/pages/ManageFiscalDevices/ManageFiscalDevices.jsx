@@ -10,6 +10,7 @@ const ManageFiscalDevices = () => {
     const [editingDevice, setEditingDevice] = useState(null);
     const [formData, setFormData] = useState({
         serialNumber: '',
+        individualNumber: '',
         manufacturer: '',
         model: '',
         fiscalMemoryNumber: '',
@@ -48,7 +49,11 @@ const ManageFiscalDevices = () => {
     };
 
     const handleInputChange = (e) => {
-        const { name, value } = e.target;
+        const { name } = e.target;
+        let value = e.target.value;
+        if (name === "individualNumber") {
+            value = value.replace(/\D/g, "").slice(0, 8);
+        }
         setFormData(prev => ({
             ...prev,
             [name]: value
@@ -58,6 +63,7 @@ const ManageFiscalDevices = () => {
     const resetForm = () => {
         setFormData({
             serialNumber: '',
+            individualNumber: '',
             manufacturer: '',
             model: '',
             fiscalMemoryNumber: '',
@@ -104,6 +110,7 @@ const ManageFiscalDevices = () => {
         setEditingDevice(device);
         setFormData({
             serialNumber: device.serialNumber,
+            individualNumber: device.individualNumber || '',
             manufacturer: device.manufacturer || '',
             model: device.model || '',
             fiscalMemoryNumber: device.fiscalMemoryNumber || '',
@@ -214,6 +221,20 @@ const ManageFiscalDevices = () => {
                                                 onChange={handleInputChange}
                                                 required
                                                 disabled={editingDevice}
+                                            />
+                                        </div>
+                                        <div className="col-md-6 mb-3">
+                                            <label className="form-label">Индивидуален номер (8 цифри) *</label>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                name="individualNumber"
+                                                value={formData.individualNumber}
+                                                onChange={handleInputChange}
+                                                inputMode="numeric"
+                                                pattern="[0-9]{8}"
+                                                maxLength={8}
+                                                required
                                             />
                                         </div>
                                         <div className="col-md-6 mb-3">
@@ -336,6 +357,7 @@ const ManageFiscalDevices = () => {
                                         <thead>
                                             <tr>
                                                 <th>Сериен номер</th>
+                                                <th>Индивидуален номер</th>
                                                 <th>Производител</th>
                                                 <th>Модел</th>
                                                 <th>Локация</th>
@@ -350,6 +372,7 @@ const ManageFiscalDevices = () => {
                                                     <td>
                                                         <strong>{device.serialNumber}</strong>
                                                     </td>
+                                                    <td>{device.individualNumber || '-'}</td>
                                                     <td>{device.manufacturer || '-'}</td>
                                                     <td>{device.model || '-'}</td>
                                                     <td>{device.location || '-'}</td>

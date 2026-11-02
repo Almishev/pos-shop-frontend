@@ -336,6 +336,7 @@ const OrderHistory = () => {
                             <thead className="table-dark">
                             <tr>
                                 <th>Поръчка</th>
+                                <th>УНП</th>
                                 <th>Касиер</th>
                                 <th>Клиент</th>
                                 <th>Артикули</th>
@@ -350,6 +351,7 @@ const OrderHistory = () => {
                             {orders.map(order => (
                                 <tr key={order.orderId}>
                                     <td><code>{order.orderId}</code></td>
+                                    <td><code>{order.uniqueSaleNumber || '-'}</code></td>
                                     <td>{order.cashierUsername || '-'}</td>
                                     <td>{order.customerName} <br/>
                                         <small className="text-muted">{order.phoneNumber}</small>

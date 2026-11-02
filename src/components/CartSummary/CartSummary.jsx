@@ -444,9 +444,14 @@ const CartSummary = ({loyaltyCustomer, onClearLoyaltyCustomer}) => {
             } catch (fiscalError) {
                 console.error('Fiscal device error:', fiscalError);
                 await deleteOrderOnFailure(savedData.orderId);
+                const detail = fiscalError?.response?.data?.detail
+                    || fiscalError?.response?.data?.message
+                    || fiscalError?.message;
                 toast.error(
-                    'Продажбата е отказана: фискалният бон не е издаден. Стоките са върнати в склада.',
-                    { duration: 7000 }
+                    detail
+                        ? `Продажбата е отказана: ${detail} Стоките са върнати в склада.`
+                        : 'Продажбата е отказана: фискалният бон не е издаден. Стоките са върнати в склада.',
+                    { duration: 8000 }
                 );
                 return;
             }

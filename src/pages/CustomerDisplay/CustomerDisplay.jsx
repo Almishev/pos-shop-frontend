@@ -72,7 +72,7 @@ const CustomerDisplay = () => {
     return (
         <div className={`cfd cfd-${state.type || "idle"}`}>
             <header className="cfd-header">
-                <div className="cfd-brand">Supermarket POS</div>
+                <div className="cfd-brand">Pirin Pixel POS-Shop</div>
                 <div className="cfd-clock">
                     {new Date(state.updatedAt || Date.now()).toLocaleTimeString("bg-BG", {
                         hour: "2-digit",

@@ -1,7 +1,10 @@
 {
-  "name": "client",
+  "name": "pirin-pixel-pos-shop",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Pirin Pixel POS-Shop — касов и складов софтуер за магазини (продажби, фискализация, лоялност, отчети).",
+  "license": "UNLICENSED",
+  "author": "Pirin Pixel",
   "type": "module",
   "scripts": {
     "dev": "vite",

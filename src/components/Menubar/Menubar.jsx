@@ -5,6 +5,7 @@ import {useContext, useState} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
 import CashDrawerControl from "../CashDrawerControl/CashDrawerControl.jsx";
 import {openCustomerDisplayWindow} from "../../util/customerDisplaySync.js";
+import {logoutRequest} from "../../Service/AuditService.js";
 import toast from "react-hot-toast";
 
 const Menubar = () => {
@@ -12,8 +13,12 @@ const Menubar = () => {
     const location = useLocation();
     const {setAuthData, auth} = useContext(AppContext);
     const [showCashDrawer, setShowCashDrawer] = useState(false);
-    const logout = () => {
-        // Изчистваме ВСИЧКИ auth данни от localStorage
+    const logout = async () => {
+        try {
+            await logoutRequest();
+        } catch (error) {
+            console.error(error);
+        }
         localStorage.removeItem("token");
         localStorage.removeItem("role");
         localStorage.removeItem("email");
@@ -47,6 +52,8 @@ const Menubar = () => {
         || location.pathname === '/loyalty';
 
     const isAdmin = auth.role === "ROLE_ADMIN";
+    const isAuditor = auth.role === "ROLE_AUDITOR";
+    const isCashier = auth.role === "ROLE_USER";
 
     return (
         <nav className="navbar navbar-expand-lg navbar-dark bg-dark px-2">
@@ -67,7 +74,7 @@ const Menubar = () => {
                         )
                     }
                     {
-                        !isAdmin && (
+                        isCashier && (
                             <li className="nav-item">
                                 <Link className={`nav-link ${isActive('/explore') ? 'fw-bold text-warning': ''}`} to="/explore">Продажби</Link>
                             </li>
@@ -168,7 +175,7 @@ const Menubar = () => {
                         )
                     }
                     {
-                        !isAdmin && (
+                        isCashier && (
                             <li className="nav-item">
                                 <Link className={`nav-link ${isActive('/loyalty') ? 'fw-bold text-warning': ''}`} to="/loyalty">Лоялност</Link>
                             </li>
@@ -180,6 +187,16 @@ const Menubar = () => {
                     <li className="nav-item">
                         <Link className={`nav-link ${isActive('/reports') ? 'fw-bold text-warning': ''}`} to="/reports">Отчети</Link>
                     </li>
+                    {(isAdmin || isAuditor) && (
+                        <>
+                            <li className="nav-item">
+                                <Link className={`nav-link ${isActive('/audit') ? 'fw-bold text-warning': ''}`} to="/audit">Дневник</Link>
+                            </li>
+                            <li className="nav-item">
+                                <Link className={`nav-link ${isActive('/nap-export') ? 'fw-bold text-warning': ''}`} to="/nap-export">Експорт НАП</Link>
+                            </li>
+                        </>
+                    )}
                     {
                         isAdmin && (
                             <li className="nav-item">
@@ -189,7 +206,7 @@ const Menubar = () => {
                     }
                 </ul>
                 {/* Right actions — cash drawer is cashier-only */}
-                {!isAdmin && (
+                {isCashier && (
                 <ul className="navbar-nav me-3 gap-2 flex-row align-items-center">
                     <li className="nav-item">
                         <button
@@ -237,9 +254,7 @@ const Menubar = () => {
                                 </a>
                             </li>
                             <li>
-                                <a href="#!" className="dropdown-item">
-                                    Дневник
-                                </a>
+                                <Link className="dropdown-item" to="/audit">Дневник</Link>
                             </li>
                             <li>
                                 <hr className="dropdown-divider" />
@@ -254,7 +269,7 @@ const Menubar = () => {
                 </ul>
             </div>
             {/* Cash Drawer Modal */}
-            {!isAdmin && showCashDrawer && (
+            {isCashier && showCashDrawer && (
                 <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
                     <div className="modal-dialog modal-lg">
                         <div className="modal-content">

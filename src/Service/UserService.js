@@ -24,6 +24,11 @@ export const addUser = async (user) => {
     return instance.post('/admin/register', user);
 };
 
+export const updateUser = async (id, user) => {
+    const instance = createAuthInstance();
+    return instance.put(`/admin/users/${id}`, user);
+};
+
 export const deleteUser = async (id) => {
     const instance = createAuthInstance();
     return instance.delete(`/admin/users/${id}`);

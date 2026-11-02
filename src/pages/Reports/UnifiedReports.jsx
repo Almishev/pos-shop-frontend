@@ -494,15 +494,6 @@ const UnifiedReports = () => {
 
     const renderReportActions = (report) => (
         <div className="btn-group" role="group">
-            {report.status === 'GENERATED' && isAdmin && (
-                <button
-                    className="btn btn-sm btn-outline-success"
-                    onClick={() => sendReportToNAF(report.id)}
-                    title="Изпрати към НАП"
-                >
-                    <i className="bi bi-send"></i>
-                </button>
-            )}
             <button
                 className="btn btn-sm btn-outline-info"
                 title="Детайли"
@@ -531,19 +522,6 @@ const UnifiedReports = () => {
         </div>
     );
 
-    const sendReportToNAF = async (reportId) => {
-        if (window.confirm('Сигурни ли сте, че искате да изпратите този отчет към НАП?')) {
-            try {
-                await FiscalService.sendReportToNAF(reportId);
-                toast.success('Отчетът е изпратен към НАП');
-                loadFiscalData();
-            } catch (error) {
-                toast.error('Грешка при изпращане към НАП');
-                console.error('Error sending report:', error);
-            }
-        }
-    };
-
     const showReportDetailsModal = (report) => {
         setSelectedReport(report);
         setShowReportDetails(true);
@@ -563,7 +541,7 @@ const UnifiedReports = () => {
             };
             const statusToBg = {
                 GENERATED: 'ГЕНЕРИРАН',
-                SENT_TO_NAF: 'ИЗПРАТЕН КЪМ НАП',
+                SENT_TO_NAF: 'ГЕНЕРИРАН',
                 CONFIRMED: 'ПОТВЪРДЕН',
                 ERROR: 'ГРЕШКА'
             };
@@ -677,7 +655,7 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
             };
             const statusToBg = {
                 GENERATED: 'ГЕНЕРИРАН',
-                SENT_TO_NAF: 'ИЗПРАТЕН КЪМ НАП',
+                SENT_TO_NAF: 'ГЕНЕРИРАН',
                 CONFIRMED: 'ПОТВЪРДЕН',
                 ERROR: 'ГРЕШКА'
             };
@@ -927,9 +905,16 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
             'ERROR': 'badge-danger'
         };
         
+        const statusLabels = {
+            'GENERATED': 'ГЕНЕРИРАН',
+            'SENT_TO_NAF': 'ГЕНЕРИРАН',
+            'CONFIRMED': 'ПОТВЪРДЕН',
+            'ERROR': 'ГРЕШКА'
+        };
+
         return (
             <span className={`badge ${statusClasses[status] || 'badge-secondary'}`}>
-                {status}
+                {statusLabels[status] || status}
             </span>
         );
     };
@@ -1351,6 +1336,8 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                     <p className="text-muted mb-3">
                                         Сменен отчет за смяната от Контрол на касата. Без избор на дата —
                                         едно действие в края на работния ден (препоръчително преди 00:00).
+                                        Ако забравите, системата автоматично затваря смяната в 23:55,
+                                        за да може да се пусне автоматичният общ дневен отчет за НАП.
                                     </p>
                                     <div className="row mb-3">
                                         <div className="col-md-4 mb-2">
@@ -1525,9 +1512,11 @@ ${report.reportType !== 'STORE_DAILY' ? `КОНТРОЛ НА КАСАТА
                                             {selectedReportType === 'STORE_DAILY' && (
                                                 <div className="alert alert-info mb-3">
                                                     <i className="bi bi-info-circle me-2"></i>
-                                                    <strong>Общ дневен отчет за магазина:</strong> Възможен е само след като
-                                                    всички касиери са генерирали сменен отчет (няма отворени касови сесии).
+                                                    <strong>Общ дневен отчет за магазина (ВАЖЕН за НАП):</strong> Възможен е само след като
+                                                    всички касиери са приключили смяна (няма отворени касови сесии).
                                                     Отчита продажбите по <strong>календарен ден 00:00–23:59</strong> (като НАП / час на бона).
+                                                    Ако управителят забрави, системата го генерира автоматично в <strong>23:55</strong>
+                                                    (след автоматично затваряне на отворени смени).
                                                     Продажби след полунощ от нощна смяна влизат в дневния за <strong>следващия</strong> ден.
                                                 </div>
                                             )}

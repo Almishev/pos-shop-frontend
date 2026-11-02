@@ -2,11 +2,11 @@ import {useState} from "react";
 import {deleteUser} from "../../Service/UserService.js";
 import toast from "react-hot-toast";
 
-const UsersList = ({users, setUsers}) => {
+const UsersList = ({users, setUsers, onEdit}) => {
     const [searchTerm, setSearchTerm] = useState("");
 
     const filteredUsers = users.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase())
+        (user.name || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const deleteByUserId = async (id) => {
@@ -45,10 +45,15 @@ const UsersList = ({users, setUsers}) => {
                             <div className="card p-3 bg-dark" style={{maxWidth: '100%'}}>
                                 <div className="d-flex align-items-center">
                                     <div className="flex-grow-1">
-                                        <h5 className="mb-1 text-white">{user.name}</h5>
+                                        <h5 className="mb-1 text-white">{user.name || "—"}</h5>
                                         <p className="mb-0 text-white">{user.email}</p>
+                                        <p className="mb-0 text-white-50">Оператор: {user.operatorCode || "—"}</p>
+                                        <p className="mb-0 text-white-50">{user.position || "Без длъжност"} · {roleLabel(user.role)}</p>
                                     </div>
-                                    <div>
+                                    <div className="d-flex gap-2">
+                                        <button className="btn btn-warning btn-sm" onClick={() => onEdit(user)}>
+                                            Допълни
+                                        </button>
                                         <button className="btn btn-danger btn-sm" onClick={() => deleteByUserId(user.userId)}>
                                             <i className="bi bi-trash"></i>
                                         </button>
@@ -64,3 +69,9 @@ const UsersList = ({users, setUsers}) => {
 }
 
 export default UsersList;
+
+function roleLabel(role) {
+    if (role === "ROLE_ADMIN") return "Администратор";
+    if (role === "ROLE_AUDITOR") return "Одитор";
+    return "Касиер";
+}

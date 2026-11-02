@@ -93,7 +93,11 @@ const Login = () => {
                 localStorage.setItem("email", response.data.email);
                 localStorage.setItem("name", response.data.name);
                 setAuthData(response.data.token, response.data.role, response.data.email, response.data.name);
-                const home = response.data.role === "ROLE_ADMIN" ? "/dashboard" : "/explore";
+                const home = response.data.role === "ROLE_ADMIN"
+                    ? "/dashboard"
+                    : response.data.role === "ROLE_AUDITOR"
+                        ? "/audit"
+                        : "/explore";
                 navigate(home, { replace: true });
             }
         } catch (error) {
@@ -122,6 +126,9 @@ const Login = () => {
 
     return (
         <div className="bg-light d-flex align-items-center justify-content-center vh-100 login-background">
+            <div className="login-app-badge" aria-label="Pirin Pixel POS-Shop version 1.0.0">
+                Pirin Pixel POS-Shop · v1.0.0
+            </div>
             <div className="card shadow-lg w-100 login-card">
                 <div className="card-body">
                     <div className="text-center">

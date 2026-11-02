@@ -120,6 +120,7 @@ export const buildReceiptPrintHtml = (orderDetails) => {
 <body>
   <h2>Касова бележка</h2>
   <p><strong>Номер на поръчка:</strong> ${escapeHtml(orderDetails.orderId)}</p>
+  ${orderDetails.uniqueSaleNumber ? `<p><strong>УНП:</strong> ${escapeHtml(orderDetails.uniqueSaleNumber)}</p>` : ''}
   ${showName ? `<p><strong>Клиент:</strong> ${escapeHtml(name)}</p>` : ''}
   ${showPhone ? `<p><strong>Телефон:</strong> ${escapeHtml(phone)}</p>` : ''}
   <hr/>
@@ -190,6 +191,11 @@ const ReceiptPopup = ({orderDetails, onClose, onPrint}) => {
                 <p>
                     <strong>Номер на поръчка:</strong> {orderDetails.orderId}
                 </p>
+                {orderDetails.uniqueSaleNumber && (
+                    <p>
+                        <strong>УНП:</strong> {orderDetails.uniqueSaleNumber}
+                    </p>
+                )}
                 {(() => {
                     const name = (orderDetails.customerName || '').trim();
                     const phone = (orderDetails.phoneNumber || '').trim();
